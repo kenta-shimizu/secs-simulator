@@ -52,7 +52,7 @@ public class SmlDataItemParser {
 	protected SeekValueResult parsing(String s, int fromIndex) throws SmlParseException {
 		
 		try {
-			SeekCharResult r = seekAngleBlankBegin(s, fromIndex);
+			SeekCharResult r = seekAngleBranketBegin(s, fromIndex);
 			SeekStringResult s2ir = this.seekSecs2ItemString(s, r.index + 1);
 			SeekStringResult s2sr = this.seekSizeString(s, s2ir.endIndex);
 			
@@ -136,7 +136,7 @@ public class SmlDataItemParser {
 			
 			if ( r.c == ABE ) {
 				
-				return new SeekValueResult(Secs2.ascii(sb), (r.index + 1));
+				return seekValueResult(Secs2.ascii(sb), (r.index + 1));
 				
 			} else if ( r.c == DQUOT )  {
 				
@@ -167,7 +167,7 @@ public class SmlDataItemParser {
 	private SeekValueResult parseDefaults(String str, int fromIndex, Secs2Item secs2Item)
 			throws SmlParseException {
 		
-		SeekCharResult r = this.seekAngleBlankEnd(str, fromIndex);
+		SeekCharResult r = this.seekAngleBranketEnd(str, fromIndex);
 		
 		String ss = str.substring(fromIndex, r.index).trim();
 		
@@ -206,7 +206,7 @@ public class SmlDataItemParser {
 					}
 				}
 			}
-			return new SeekValueResult(Secs2.bool(ll), endIndex);
+			return seekValueResult(Secs2.bool(ll), endIndex);
 			/* break; */
 		}
 		case BINARY:{
@@ -214,7 +214,7 @@ public class SmlDataItemParser {
 			for ( String v : values ) {
 				ll.add(toByte(v));
 			}
-			return new SeekValueResult(Secs2.binary(ll), endIndex);
+			return seekValueResult(Secs2.binary(ll), endIndex);
 			/* break */
 		}
 		case INT1: {
@@ -222,7 +222,7 @@ public class SmlDataItemParser {
 			for ( String v : values ) {
 				ll.add(new BigInteger(v));
 			}
-			return new SeekValueResult(Secs2.int1(ll), endIndex);
+			return seekValueResult(Secs2.int1(ll), endIndex);
 			/* break; */
 		}
 		case INT2: {
@@ -230,7 +230,7 @@ public class SmlDataItemParser {
 			for ( String v : values ) {
 				ll.add(new BigInteger(v));
 			}
-			return new SeekValueResult(Secs2.int2(ll), endIndex);
+			return seekValueResult(Secs2.int2(ll), endIndex);
 			/* break; */
 		}
 		case INT4: {
@@ -238,7 +238,7 @@ public class SmlDataItemParser {
 			for ( String v : values ) {
 				ll.add(new BigInteger(v));
 			}
-			return new SeekValueResult(Secs2.int4(ll), endIndex);
+			return seekValueResult(Secs2.int4(ll), endIndex);
 			/* break; */
 		}
 		case INT8: {
@@ -246,7 +246,7 @@ public class SmlDataItemParser {
 			for ( String v : values ) {
 				ll.add(new BigInteger(v));
 			}
-			return new SeekValueResult(Secs2.int8(ll), endIndex);
+			return seekValueResult(Secs2.int8(ll), endIndex);
 			/* break; */
 		}
 		case UINT1: {
@@ -254,7 +254,7 @@ public class SmlDataItemParser {
 			for ( String v : values ) {
 				ll.add(new BigInteger(v).abs());
 			}
-			return new SeekValueResult(Secs2.uint1(ll), endIndex);
+			return seekValueResult(Secs2.uint1(ll), endIndex);
 			/* break; */
 		}
 		case UINT2: {
@@ -262,7 +262,7 @@ public class SmlDataItemParser {
 			for ( String v : values ) {
 				ll.add(new BigInteger(v).abs());
 			}
-			return new SeekValueResult(Secs2.uint2(ll), endIndex);
+			return seekValueResult(Secs2.uint2(ll), endIndex);
 			/* break; */
 		}
 		case UINT4: {
@@ -270,7 +270,7 @@ public class SmlDataItemParser {
 			for ( String v : values ) {
 				ll.add(new BigInteger(v).abs());
 			}
-			return new SeekValueResult(Secs2.uint4(ll), endIndex);
+			return seekValueResult(Secs2.uint4(ll), endIndex);
 			/* break; */
 		}
 		case UINT8: {
@@ -278,7 +278,7 @@ public class SmlDataItemParser {
 			for ( String v : values ) {
 				ll.add(new BigInteger(v).abs());
 			}
-			return new SeekValueResult(Secs2.uint8(ll), endIndex);
+			return seekValueResult(Secs2.uint8(ll), endIndex);
 			/* break; */
 		}
 		case FLOAT4: {
@@ -286,7 +286,7 @@ public class SmlDataItemParser {
 			for ( String v : values ) {
 				ll.add(Float.valueOf(v));
 			}
-			return new SeekValueResult(Secs2.float4(ll), endIndex);
+			return seekValueResult(Secs2.float4(ll), endIndex);
 			/* break; */
 		}
 		case FLOAT8: {
@@ -294,7 +294,7 @@ public class SmlDataItemParser {
 			for ( String v : values ) {
 				ll.add(Double.valueOf(v));
 			}
-			return new SeekValueResult(Secs2.float8(ll), endIndex);
+			return seekValueResult(Secs2.float8(ll), endIndex);
 			/* break; */
 		}
 		default: {
@@ -356,34 +356,34 @@ public class SmlDataItemParser {
 	protected static final char DQUOT = '"';
 	protected static final char ZERO = '0';
 	
-	protected class SeekCharResult {
+	protected final class SeekCharResult {
 		
-		private final char c;
-		private final int index;
+		public final char c;
+		public final int index;
 		
-		protected SeekCharResult(char c, int index) {
+		private SeekCharResult(char c, int index) {
 			this.c = c;
 			this.index = index;
 		}
 	}
 	
-	protected class SeekStringResult {
+	protected final class SeekStringResult {
 		
-		private final String str;
-		private final int endIndex;
+		public final String str;
+		public final int endIndex;
 		
-		protected SeekStringResult(String str, int endIndex) {
+		private SeekStringResult(String str, int endIndex) {
 			this.str = str;
 			this.endIndex = endIndex;
 		}
 	}
 	
-	protected class SeekValueResult {
+	protected final class SeekValueResult {
 		
-		private final Secs2 value;
-		private final int endIndex;
+		public final Secs2 value;
+		public final int endIndex;
 		
-		protected SeekValueResult(Secs2 value, int endIndex) {
+		private SeekValueResult(Secs2 value, int endIndex) {
 			this.value = value;
 			this.endIndex = endIndex;
 		}
@@ -394,7 +394,7 @@ public class SmlDataItemParser {
 		for (int i = fromIndex; ; ++i) {
 			char c = s.charAt(i);
 			if ( c > SPACE ) {
-				return new SeekCharResult(c, i);
+				return seekCharResult(c, i);
 			}
 		}
 	}
@@ -404,17 +404,17 @@ public class SmlDataItemParser {
 			char c = s.charAt(i);
 			for ( char sc : seekChar ) {
 				if ( c == sc ) {
-					return new SeekCharResult(c, i);
+					return seekCharResult(c, i);
 				}
 			}
 		}
 	}
 	
-	protected SeekCharResult seekAngleBlankBegin(String s, int fromIndex) {
+	protected SeekCharResult seekAngleBranketBegin(String s, int fromIndex) {
 		return seekNextChar(s, fromIndex, ABB);
 	}
 	
-	protected SeekCharResult seekAngleBlankEnd(String s, int fromIndex) {
+	protected SeekCharResult seekAngleBranketEnd(String s, int fromIndex) {
 		return seekNextChar(s, fromIndex, ABE);
 	}
 	
@@ -432,7 +432,7 @@ public class SmlDataItemParser {
 			endIndex = r.index;
 		}
 		
-		return new SeekStringResult(s.substring(beginIndex, endIndex), endIndex);
+		return seekStringResult(s.substring(beginIndex, endIndex), endIndex);
 	}
 	
 	protected SeekStringResult seekSizeString(String s, int fromIndex) {
@@ -443,7 +443,7 @@ public class SmlDataItemParser {
 		{
 			SeekCharResult r = seekNextChar(s, fromIndex);
 			if ( r.c != SBB ) {
-				return new SeekStringResult("", fromIndex);
+				return seekStringResult("", fromIndex);
 			}
 			beginIndex = r.index;
 		}
@@ -452,7 +452,19 @@ public class SmlDataItemParser {
 			endIndex = r.index + 1;
 		}
 		
-		return new SeekStringResult(s.substring(beginIndex, endIndex), endIndex);
+		return seekStringResult(s.substring(beginIndex, endIndex), endIndex);
+	}
+	
+	protected final SeekCharResult seekCharResult(char c, int index) {
+		return new SeekCharResult(c, index);
+	}
+	
+	protected final SeekStringResult seekStringResult(String str, int endIndex) {
+		return new SeekStringResult(str, endIndex);
+	}
+	
+	protected final SeekValueResult seekValueResult(Secs2 value, int endIndex) {
+		return new SeekValueResult(value, endIndex);
 	}
 	
 }

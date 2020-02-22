@@ -14,8 +14,8 @@ import com.shimizukenta.secs.SecsMessage;
 import com.shimizukenta.secs.SecsSendMessageException;
 import com.shimizukenta.secs.SecsWaitReplyMessageException;
 import com.shimizukenta.secs.sml.SmlMessage;
-import com.shimizukenta.secs.sml.SmlMessageParser;
 import com.shimizukenta.secs.sml.SmlParseException;
+import com.shimizukenta.secssimulator.extendsml.ExtendSmlMessageParser;
 
 public interface SecsSimulator {
 	
@@ -46,6 +46,10 @@ public interface SecsSimulator {
 	public boolean addSml(CharSequence alias, SmlMessage sml);
 	public boolean removeSml(CharSequence alias);
 	
+	default public SmlMessage parseSml(CharSequence sml) throws SmlParseException {
+		return ExtendSmlMessageParser.getInstance().parse(sml);
+	}
+	
 	public static final String SmlExtension = "sml";
 	
 	default public boolean addSmlFile(Path path) throws IOException, SmlParseException {
@@ -55,9 +59,9 @@ public interface SecsSimulator {
 				) {
 			
 			String sml = lines.collect(Collectors.joining());
-			SmlMessage sm = SmlMessageParser.getInstance().parse(sml);
+			SmlMessage sm = parseSml(sml);
 			
-			String alias = path.getFileName().toString().toString();
+			String alias = path.getFileName().toString();
 			
 			String ext = "." + SmlExtension;
 			

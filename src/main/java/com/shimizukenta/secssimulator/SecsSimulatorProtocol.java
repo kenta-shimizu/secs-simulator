@@ -4,7 +4,7 @@ public enum SecsSimulatorProtocol {
 	
 	HSMS_SS_PASSIVE(true),
 	HSMS_SS_ACTIVE(true),
-	SECS1_ON_TCP_IP(true),
+	SECS1_ON_TCP_IP(false),
 	
 	;
 	

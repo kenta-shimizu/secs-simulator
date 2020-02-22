@@ -3,6 +3,7 @@ package com.shimizukenta.secssimulator;
 import java.io.Serializable;
 
 import com.shimizukenta.secs.hsmsss.HsmsSsCommunicatorConfig;
+import com.shimizukenta.secs.hsmsss.HsmsSsProtocol;
 import com.shimizukenta.secs.secs1ontcpip.Secs1OnTcpIpCommunicatorConfig;
 
 public abstract class AbstractSecsSimulatorConfig implements Serializable {
@@ -17,12 +18,42 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 		protocol = SecsSimulatorProtocol.HSMS_SS_PASSIVE;
 	}
 	
+	public SecsSimulatorProtocol protocol() {
+		synchronized ( this ) {
+			return protocol;
+		}
+	}
+	
+	public void protocol(SecsSimulatorProtocol protocol) {
+		synchronized ( this ) {
+			this.protocol = protocol;
+			
+			switch ( protocol ) {
+			case HSMS_SS_PASSIVE: {
+				hsmsSsCommConfig.protocol(HsmsSsProtocol.PASSIVE);
+				break;
+			}
+			case HSMS_SS_ACTIVE: {
+				hsmsSsCommConfig.protocol(HsmsSsProtocol.ACTIVE);
+				break;
+			}
+			default: {
+				/* nothing */
+			}
+			}
+		}
+	}
+	
 	public HsmsSsCommunicatorConfig hsmsSsCommunicatorConfig() {
-		return hsmsSsCommConfig;
+		synchronized ( this ) {
+			return hsmsSsCommConfig;
+		}
 	}
 	
 	public Secs1OnTcpIpCommunicatorConfig secs1OnTcpIpCommunicatorConfig() {
-		return secs1OnTcpIpCommConfig;
+		synchronized ( this ) {
+			return secs1OnTcpIpCommConfig;
+		}
 	}
 	
 }
