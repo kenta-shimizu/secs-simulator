@@ -9,16 +9,23 @@ public enum CliCommand {
 	
 	OPEN(1, "open"),
 	CLOSE(1, "close"),
-	QUIT(1, "quit"),
+	QUIT(1, "quit", "exit"),
 	
 	SEND_SML(2, "ss", "sendsml", "send-sml"),
 	SEND_DIRECT(2, "sd", "senddirect", "send-direct"),
 	LINKTEST(1, "linktest"),
 	
+	LIST_SML(2, "list"),
+	SHOW_SML(2, "show"),
+	ADD_SML(2, "addfile", "add-file"),
+	ADD_SMLS(2, "addfiles", "add-files"),
+	
 	PWD(2, "pwd"),
 	CD(2, "cd"),
+	LS(1, "ls"),
 	
 	LOG(2, "log"),
+	MACRO(2, "macro"),
 	
 	;
 	
@@ -59,8 +66,11 @@ public enum CliCommand {
 		
 		if ( cmd.split > 1 ) {
 			
-			String[] ss = requestLine.toString().trim().split("\\s+");
-			return new CliRequest(cmd, Arrays.copyOfRange(ss, 1, cmd.split));
+			String[] ss = requestLine.toString().trim().split("\\s+", cmd.split);
+			
+			ss = Arrays.copyOfRange(ss, 1, ss.length);
+			
+			return new CliRequest(cmd, ss);
 			
 		} else {
 			

@@ -57,6 +57,11 @@ public class Secs2Now extends Secs2Ascii {
 	}
 	
 	@Override
+	public String toString() {
+		return "<NOW [" + size() + "] >";
+	}
+	
+	@Override
 	protected String toStringValue() {
 		return "\"" + now() + "\"";
 	}

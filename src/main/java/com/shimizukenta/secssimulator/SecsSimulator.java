@@ -6,42 +6,34 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.shimizukenta.secs.SecsException;
+import com.shimizukenta.secs.SecsCommunicator;
 import com.shimizukenta.secs.SecsMessage;
-import com.shimizukenta.secs.SecsSendMessageException;
-import com.shimizukenta.secs.SecsWaitReplyMessageException;
 import com.shimizukenta.secs.sml.SmlMessage;
 import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.extendsml.ExtendSmlMessageParser;
 
 public interface SecsSimulator {
 	
-	public void openCommunicator() throws IOException;
+	public SecsCommunicator openCommunicator() throws IOException;
 	public void closeCommunicator() throws IOException;
 	public void quitApplication();
 	
 	public void protocol(SecsSimulatorProtocol protocol);
 	public SecsSimulatorProtocol protocol();
 	
-	public Optional<SecsMessage> send(SmlMessage sml)
-			throws SecsSendMessageException, SecsWaitReplyMessageException, SecsException
-			, InterruptedException;
+	public Optional<SecsMessage> send(SmlMessage sml) throws SecsSimulatorException, InterruptedException;
+	public Optional<SecsMessage> send(SecsMessage primaryMsg, SmlMessage replySml) throws SecsSimulatorException, InterruptedException;
 	
-	public Optional<SecsMessage> send(SecsMessage primaryMsg, SmlMessage replySml)
-			throws SecsSendMessageException, SecsWaitReplyMessageException, SecsException
-			, InterruptedException;
-	
-	public boolean linktest();
-	
-	public void startLogging(Path path) throws IOException;
-	public void stopLogging();
+	public boolean linktest() throws InterruptedException;
 	
 	
-	public Path pwd(Path path);
-	public void cd(Path path) throws IOException;
+	/* SMLs */
+	public Set<String> smlAliases();
+	public Optional<SmlMessage> sml(CharSequence alias);
 	
 	public boolean addSml(CharSequence alias, SmlMessage sml);
 	public boolean removeSml(CharSequence alias);
@@ -96,5 +88,15 @@ public interface SecsSimulator {
 			return true;
 		}
 	}
+	
+	
+	/* Logging */
+	public void startLogging(Path path) throws IOException;
+	public void stopLogging();
+	
+	
+	/* Macros */
+	public void startMacro(Path path);
+	public void stopMacro();
 	
 }

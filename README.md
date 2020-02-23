@@ -27,7 +27,7 @@ now making...
 
 ## Auto Reply
 
-retur reply automatically if Reply-SxFy is only one and y is even number and wbit is false.
+return reply automatically if Reply-SxFy is only one and y is even number and wbit is false.
 
 
 ## Special SML
