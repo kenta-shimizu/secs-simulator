@@ -1,8 +1,10 @@
-# secs-cli-simulator
+# secs-simulator
 
 now making...
 
 ## Introduction
+
+## CLI
 
 ## Config
 
