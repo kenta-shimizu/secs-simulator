@@ -11,7 +11,7 @@ public enum CliCommand {
 	CLOSE(1, "close"),
 	QUIT(1, "quit", "exit"),
 	
-	SEND_SML(2, "ss", "sendsml", "send-sml"),
+	SEND_SML(2, "ss", "send", "sendsml", "send-sml"),
 	SEND_DIRECT(2, "sd", "senddirect", "send-direct"),
 	LINKTEST(1, "linktest"),
 	
@@ -26,6 +26,7 @@ public enum CliCommand {
 	
 	LOG(2, "log"),
 	MACRO(2, "macro"),
+	AUTO_REPLY(2, "autoreply", "auto-reply"),
 	
 	;
 	

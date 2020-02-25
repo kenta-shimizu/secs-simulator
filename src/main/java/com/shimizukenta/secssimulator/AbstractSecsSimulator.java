@@ -389,7 +389,6 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	
 	@Override
 	public void stopMacro() {
-		
 		synchronized ( this ) {
 			if ( thMacro != null ) {
 				thMacro.interrupt();

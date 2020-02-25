@@ -247,6 +247,12 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 								}
 								break;
 							}
+							case AUTO_REPLY: {
+								
+								boolean f = request.option(0).map(Boolean::parseBoolean).orElse(false);
+								config.autoReply(f);
+								break;
+							}
 							default: {
 								/* Nothing */
 							}

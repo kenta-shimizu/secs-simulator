@@ -1,5 +1,6 @@
 package com.shimizukenta.secssimulator.cli;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.file.Path;
@@ -9,6 +10,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 
+import com.shimizukenta.jsonhub.JsonHub;
 import com.shimizukenta.secssimulator.AbstractSecsSimulatorConfig;
 import com.shimizukenta.secssimulator.SecsSimulatorProtocol;
 
@@ -95,12 +97,227 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 		}
 	}
 	
-	public void setByJson(Path path) {
+	
+	private void protocol(String value) {
 		
-		//TODO
+		if ( sameKey(value, PROTOCOL_HSMS_SS_PASSIVE) ) {
+			
+			protocol(SecsSimulatorProtocol.HSMS_SS_PASSIVE);
+			
+		} else  if ( sameKey(value, PROTOCOL_HSMS_SS_ACTIVE) ) {
+			
+			protocol(SecsSimulatorProtocol.HSMS_SS_ACTIVE);
+			
+		} else if ( sameKey(value, PROTOCOL_SECS1_ON_TCP_IP, PROTOCOL_SECS1) ) {
+			
+			protocol(SecsSimulatorProtocol.SECS1_ON_TCP_IP);
+		}
 	}
 	
-	public static CliSecsSimulatorConfig get(String[] args) {
+	public void socketAddress(SocketAddress addr) {
+		synchronized ( this ) {
+			hsmsSsCommunicatorConfig().socketAddress(addr);
+			secs1OnTcpIpCommunicatorConfig().socketAddress(addr);
+		}
+	}
+	
+	private void socketAddress(String value) {
+		String[] ss = value.split(":");
+		int port = Integer.parseInt(ss[1]);
+		socketAddress(new InetSocketAddress(ss[0], port));
+	}
+	
+	public void deviceId(int value) {
+		synchronized ( this ) {
+			hsmsSsCommunicatorConfig().deviceId(value);
+			secs1OnTcpIpCommunicatorConfig().deviceId(value);
+		}
+	}
+	
+	public void sessionId(int value) {
+		synchronized ( this ) {
+			hsmsSsCommunicatorConfig().sessionId(value);
+		}
+	}
+	
+	public void isEquip(boolean f) {
+		synchronized ( this ) {
+			hsmsSsCommunicatorConfig().isEquip(f);
+			secs1OnTcpIpCommunicatorConfig().isEquip(f);
+		}
+	}
+	
+	public void isMaster(boolean f) {
+		synchronized ( this ) {
+			secs1OnTcpIpCommunicatorConfig().isMaster(f);
+		}
+	}
+	
+	public void timeoutT1(float value) {
+		synchronized ( this ) {
+			hsmsSsCommunicatorConfig().timeout().t1(value);
+			secs1OnTcpIpCommunicatorConfig().timeout().t1(value);
+		}
+	}
+	
+	public void timeoutT2(float value) {
+		synchronized ( this ) {
+			hsmsSsCommunicatorConfig().timeout().t2(value);
+			secs1OnTcpIpCommunicatorConfig().timeout().t2(value);
+		}
+	}
+	
+	public void timeoutT3(float value) {
+		synchronized ( this ) {
+			hsmsSsCommunicatorConfig().timeout().t3(value);
+			secs1OnTcpIpCommunicatorConfig().timeout().t3(value);
+		}
+	}
+	
+	public void timeoutT4(float value) {
+		synchronized ( this ) {
+			hsmsSsCommunicatorConfig().timeout().t4(value);
+			secs1OnTcpIpCommunicatorConfig().timeout().t4(value);
+		}
+	}
+	
+	public void timeoutT5(float value) {
+		synchronized ( this ) {
+			hsmsSsCommunicatorConfig().timeout().t5(value);
+			secs1OnTcpIpCommunicatorConfig().timeout().t5(value);
+		}
+	}
+	
+	public void timeoutT6(float value) {
+		synchronized ( this ) {
+			hsmsSsCommunicatorConfig().timeout().t6(value);
+			secs1OnTcpIpCommunicatorConfig().timeout().t6(value);
+		}
+	}
+	
+	public void timeoutT7(float value) {
+		synchronized ( this ) {
+			hsmsSsCommunicatorConfig().timeout().t7(value);
+			secs1OnTcpIpCommunicatorConfig().timeout().t7(value);
+		}
+	}
+	
+	public void timeoutT8(float value) {
+		synchronized ( this ) {
+			hsmsSsCommunicatorConfig().timeout().t8(value);
+			secs1OnTcpIpCommunicatorConfig().timeout().t8(value);
+		}
+	}
+	
+	public void retry(int value) {
+		synchronized ( this ) {
+			secs1OnTcpIpCommunicatorConfig().retry(value);
+		}
+	}
+	
+	public void linktest(float value) {
+		synchronized ( this ) {
+			hsmsSsCommunicatorConfig().linktest(value);
+		}
+	}
+	
+	public void rebindIfPassive(float value) {
+		synchronized ( this ) {
+			hsmsSsCommunicatorConfig().rebindIfPassive(value);
+		}
+	}
+	
+	
+	/*
+	 *******************************
+	 * JsonPattern
+	 *******************************
+	{
+		"communicator": {
+			"protocol": "protorol-string",
+			"socketAddress": "socket-address-string",
+			"deviceId": number,
+			"sessionId": number,
+			"isEquip": boolean,
+			"isMaster": boolean,
+			"timeout": {
+				"t1": number,
+				"t2": number,
+				"t3": number,
+				"t4": number,
+				"t5": number,
+				"t6": number,
+				"t7": number,
+				"t8": number
+			},
+			"retry": number,
+			"linktest": number,
+			"rebindIfPassive": number
+		},
+		"autoReply": true,
+		"smlFiles": [
+			"/path/to/sxfy.sml",
+			...
+		],
+		"smlDirectories": [
+			"/path/to/directory",
+			...
+		],
+		"logging": "/path/to/log.log",
+		"macro": "path/to/macro.macro",
+		"autoOpen": false
+	}
+	 *******************************
+	 */
+	
+	public void setByJson(Path path) throws IOException {
+		
+		JsonHub jh = JsonHub.fromFile(path);
+		
+		{
+			JsonHub comm = jh.getOrDefault("communicator");
+			
+			comm.getOrDefault("protocol").optionalString().ifPresent(this::protocol);
+			comm.getOrDefault("socketAddress").optionalString().ifPresent(this::socketAddress);
+			comm.getOrDefault("deviceId").optionalInt().ifPresent(this::deviceId);
+			comm.getOrDefault("sessionId").optionalInt().ifPresent(this::sessionId);
+			comm.getOrDefault("isEquip").optionalBoolean().ifPresent(this::isEquip);
+			comm.getOrDefault("isMaster").optionalBoolean().ifPresent(this::isMaster);
+			
+			{
+				JsonHub tt = comm.getOrDefault("timeout");
+				
+				tt.getOrDefault("t1").optionalNubmer().map(Number::floatValue).ifPresent(this::timeoutT1);
+				tt.getOrDefault("t2").optionalNubmer().map(Number::floatValue).ifPresent(this::timeoutT2);
+				tt.getOrDefault("t3").optionalNubmer().map(Number::floatValue).ifPresent(this::timeoutT3);
+				tt.getOrDefault("t4").optionalNubmer().map(Number::floatValue).ifPresent(this::timeoutT4);
+				tt.getOrDefault("t5").optionalNubmer().map(Number::floatValue).ifPresent(this::timeoutT5);
+				tt.getOrDefault("t6").optionalNubmer().map(Number::floatValue).ifPresent(this::timeoutT6);
+				tt.getOrDefault("t7").optionalNubmer().map(Number::floatValue).ifPresent(this::timeoutT7);
+				tt.getOrDefault("t8").optionalNubmer().map(Number::floatValue).ifPresent(this::timeoutT8);
+			}
+			
+			comm.getOrDefault("retry").optionalInt().ifPresent(this::retry);
+			comm.getOrDefault("linktest").optionalNubmer().map(Number::floatValue).ifPresent(this::linktest);
+			comm.getOrDefault("rebindIfPassive").optionalNubmer().map(Number::floatValue).ifPresent(this::rebindIfPassive);
+		}
+		
+		jh.getOrDefault("autoReply").optionalBoolean().ifPresent(this::autoReply);
+		
+		jh.getOrDefault("smlFiles").forEach(x -> {
+			x.optionalString().map(Paths::get).ifPresent(this::smlFile);
+		});
+		
+		jh.getOrDefault("smlDirectories").forEach(x -> {
+			x.optionalString().map(Paths::get).ifPresent(this::smlDirectory);
+		});
+		
+		jh.getOrDefault("logging").optionalString().map(Paths::get).ifPresent(this::logging);
+		jh.getOrDefault("macro").optionalString().map(Paths::get).ifPresent(this::macro);
+		jh.getOrDefault("autoOpen").optionalBoolean().ifPresent(this::autoOpen);
+	}
+	
+	public static CliSecsSimulatorConfig get(String[] args) throws IOException {
 		
 		final CliSecsSimulatorConfig conf = new CliSecsSimulatorConfig();
 		
@@ -116,104 +333,71 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 			}
 			
 			if ( sameKey(key, "--protocol") ) {
-				
-				if ( sameKey(value, PROTOCOL_HSMS_SS_PASSIVE) ) {
-					conf.protocol(SecsSimulatorProtocol.HSMS_SS_PASSIVE);
-					continue;
-				}
-				
-				if ( sameKey(value, PROTOCOL_HSMS_SS_ACTIVE) ) {
-					conf.protocol(SecsSimulatorProtocol.HSMS_SS_ACTIVE);
-					continue;
-				}
-				
-				if ( sameKey(value, PROTOCOL_SECS1_ON_TCP_IP, PROTOCOL_SECS1) ) {
-					conf.protocol(SecsSimulatorProtocol.SECS1_ON_TCP_IP);
-					continue;
-				}
-				
+				conf.protocol(value);
 				continue;
 			}
 			
 			if ( sameKey(key, "--socket-address", "--socketaddress") ) {
-				String[] ss = value.split(":");
-				int port = Integer.parseInt(ss[1]);
-				SocketAddress addr = new InetSocketAddress(ss[0], port);
-				conf.hsmsSsCommunicatorConfig().socketAddress(addr);
-				conf.secs1OnTcpIpCommunicatorConfig().socketAddress(addr);
+				conf.socketAddress(value);
 				continue;
 			}
 			
 			if ( sameKey(key, "--devicd-id", "--devicdid") ) {
-				int v = Integer.parseInt(value);
-				conf.hsmsSsCommunicatorConfig().deviceId(v);
-				conf.secs1OnTcpIpCommunicatorConfig().deviceId(v);
+				conf.deviceId(Integer.parseInt(value));
 				continue;
 			}
 			
 			if ( sameKey(key, "--session-id", "--sessionid") ) {
-				int v = Integer.parseInt(value);
-				conf.hsmsSsCommunicatorConfig().sessionId(v);
+				conf.sessionId(Integer.parseInt(value));
 				continue;
 			}
 			
 			if ( sameKey(key, "--equip") ) {
-				boolean f = Boolean.parseBoolean(value);
-				conf.hsmsSsCommunicatorConfig().isEquip(f);
-				conf.secs1OnTcpIpCommunicatorConfig().isEquip(f);
+				conf.isEquip(Boolean.parseBoolean(value));
 				continue;
 			}
 			
 			if ( sameKey(key, "--master") ) {
-				boolean f = Boolean.parseBoolean(value);
-				conf.secs1OnTcpIpCommunicatorConfig().isMaster(f);
+				conf.isMaster(Boolean.parseBoolean(value));
 				continue;
 			}
 			
 			if ( sameKey(key, "--rebind") ) {
-				float v = Float.valueOf(value);
-				conf.hsmsSsCommunicatorConfig().rebindIfPassive(v);
+				conf.rebindIfPassive(Float.valueOf(value));
 				continue;
 			}
 			
 			if ( sameKey(key, "--link-test", "--linktest") ) {
-				float v = Float.valueOf(value);
-				conf.hsmsSsCommunicatorConfig().linktest(v);
+				conf.linktest(Float.valueOf(value));
 				continue;
 			}
 			
 			if ( sameKey(key, "--sml", "--smlfile") ) {
-				Path path = Paths.get(value);
-				conf.smlFile(path);
+				conf.smlFile(Paths.get(value));
 				continue;
 			}
 			
 			if ( sameKey(key, "--smls", "--smlfiles") ) {
-				Path path = Paths.get(value);
-				conf.smlDirectory(path);
+				conf.smlDirectory(Paths.get(value));
 				continue;
 			}
 			
 			if ( sameKey(key, "--auto-reply", "--autoreply") ) {
-				boolean f = Boolean.parseBoolean(value);
-				conf.autoReply(f);
+				conf.autoReply(Boolean.parseBoolean(value));
 				continue;
 			}
 			
 			if ( sameKey(key, "--logging", "--log") ) {
-				Path path = Paths.get(value);
-				conf.logging(path);
+				conf.logging(Paths.get(value));
 			}
 			
 			if ( sameKey(key, "--macro") ) {
-				Path path = Paths.get(value);
-				conf.macro(path);
+				conf.macro(Paths.get(value));
 				continue;
 			}
 			
 			if ( sameKey(key, "--auto-open", "--autoopen") ) {
-				boolean f = Boolean.valueOf(value);
-				conf.autoOpen(f);
+				conf.autoOpen(Boolean.valueOf(value));
 				continue;
 			}
 		}

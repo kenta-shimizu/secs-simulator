@@ -1,0 +1,33 @@
+{
+	"communicator": {
+		"protocol": "secs1-on-tcp-ip",
+		"socketAddress": "127.0.0.1:23000",
+		"deviceId": 10,
+		"sessionId": 10,
+		"isEquip": true,
+		"isMaster": true,
+		"timeout": {
+			"t1": 1.0,
+			"t2": 15.0,
+			"t3": 45.0,
+			"t4": 45.0,
+			"t5": 10.0,
+			"t6": 5.0,
+			"t7": 10.0,
+			"t8": 6.0
+		},
+		"retry": 3,
+		"linktest": 120.0,
+		"rebindIfPassive": true
+	},
+	"autoReply": true,
+	"smlFiles": [
+		"/path/to/sxfy.sml"
+	],
+	"smlDirectories": [
+		"/path/to/directory"
+	],
+	"logging": "/path/to/log.log",
+	"macro": "path/to/macro.macro",
+	"autoOpen": false
+}
