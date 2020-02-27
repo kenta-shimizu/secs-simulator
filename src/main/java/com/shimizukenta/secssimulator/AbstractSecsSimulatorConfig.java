@@ -11,12 +11,16 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 	private static final long serialVersionUID = 2514470591604580145L;
 	
 	private boolean autoReply;
+	private boolean autoReplySxF0;
+	private boolean autoReplyS9Fy;
 	private SecsSimulatorProtocol protocol;
 	private final HsmsSsCommunicatorConfig hsmsSsCommConfig = new HsmsSsCommunicatorConfig();
 	private final Secs1OnTcpIpCommunicatorConfig secs1OnTcpIpCommConfig = new Secs1OnTcpIpCommunicatorConfig();
 	
 	public AbstractSecsSimulatorConfig() {
 		autoReply = true;
+		autoReplySxF0 = false;
+		autoReplyS9Fy = false;
 		protocol = SecsSimulatorProtocol.HSMS_SS_PASSIVE;
 	}
 	
@@ -31,6 +35,31 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 			return autoReply;
 		}
 	}
+	
+	public void autoReplySxF0(boolean f) {
+		synchronized ( this ) {
+			autoReplySxF0 = f;
+		}
+	}
+	
+	public boolean autoReplySxF0() {
+		synchronized ( this ) {
+			return autoReplySxF0;
+		}
+	}
+	
+	public void autoReplyS9Fy(boolean f) {
+		synchronized ( this ) {
+			autoReplyS9Fy = f;
+		}
+	}
+	
+	public boolean autoReplyS9Fy() {
+		synchronized ( this ) {
+			return autoReplyS9Fy;
+		}
+	}
+	
 	public SecsSimulatorProtocol protocol() {
 		synchronized ( this ) {
 			return protocol;

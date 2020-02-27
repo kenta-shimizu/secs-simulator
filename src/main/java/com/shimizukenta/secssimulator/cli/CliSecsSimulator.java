@@ -9,6 +9,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.shimizukenta.secs.SecsCommunicator;
@@ -25,7 +28,7 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 		try {
 			CliSecsSimulatorConfig config = CliSecsSimulatorConfig.get(args);
 			
-			echo("Simulator started.");
+			echo("Simulator started");
 			
 			new CliSecsSimulator(config).run();
 		}
@@ -35,6 +38,12 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 		
 		echo("Simulator finished");
 	}
+	
+	private final ExecutorService execServ = Executors.newCachedThreadPool(r -> {
+		Thread th = new Thread(r);
+		th.setDaemon(true);
+		return th;
+	});
 	
 	private final CliSecsSimulatorConfig config;
 	private Path pwd;
@@ -50,10 +59,10 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 		
 		try {
 			
-			this.addSecsLogListener(log -> {echo(log);});
+			this.addSecsLogListener(log -> {echo(toSimpleThrowableLog(log));});
 			this.addSecsLogListener(log -> {
 				try {
-					putLog(log);
+					putLog(toSimpleThrowableLog(log));
 				}
 				catch ( InterruptedException ignore ) {
 				}
@@ -271,6 +280,19 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 			echo(e);
 		}
 		finally {
+			
+			try {
+				execServ.shutdown();
+				if ( ! execServ.awaitTermination(1L, TimeUnit.MILLISECONDS) ) {
+					execServ.shutdownNow();
+					if ( ! execServ.awaitTermination(5L, TimeUnit.SECONDS) ) {
+						echo("ExecutorService#shutdown failed");
+					}
+				}
+			}
+			catch ( InterruptedException giveup ) {
+			}
+			
 			quitApplication();
 		}
 	}

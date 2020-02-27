@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -21,10 +22,13 @@ import java.util.stream.Collectors;
 import com.shimizukenta.secs.SecsCommunicatableStateChangeListener;
 import com.shimizukenta.secs.SecsCommunicator;
 import com.shimizukenta.secs.SecsException;
+import com.shimizukenta.secs.SecsLog;
 import com.shimizukenta.secs.SecsLogListener;
 import com.shimizukenta.secs.SecsMessage;
 import com.shimizukenta.secs.SecsMessageReceiveListener;
+import com.shimizukenta.secs.SecsWaitReplyMessageException;
 import com.shimizukenta.secs.hsmsss.HsmsSsCommunicator;
+import com.shimizukenta.secs.secs2.Secs2;
 import com.shimizukenta.secs.sml.SmlMessage;
 
 public abstract class AbstractSecsSimulator implements SecsSimulator {
@@ -121,6 +125,34 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 					}
 				}
 				
+				if (config.autoReplySxF0()) {
+					
+					final LocalSecsMessage reply = autoReplySxF0(primaryMsg).orElse(null);
+					
+					if ( reply != null ) {
+						
+						try {
+							send(primaryMsg, reply);
+						}
+						catch (InterruptedException | SecsSimulatorException ignore) {
+						}
+					}
+				}
+				
+				if (config.autoReplyS9Fy()) {
+					
+					final LocalSecsMessage s9fy = autoReplyS9Fy(primaryMsg).orElse(null);
+					
+					if ( s9fy != null ) {
+						
+						try {
+							send(s9fy);
+						}
+						catch (InterruptedException | SecsSimulatorException ignore) {
+						}
+					}
+				}
+				
 				if ( primaryMsg.wbit() ) {
 					synchronized ( waitPrimaryMsgs ) {
 						waitPrimaryMsgs.add(primaryMsg);
@@ -208,6 +240,24 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		try {
 			return getCommunicator().orElseThrow(SecsSimulatorNotOpenException::new).send(sml);
 		}
+		catch ( SecsWaitReplyMessageException e ) {
+			
+			if ( config.autoReplyS9Fy() ) {
+				
+				SecsMessage m = e.secsMessage().orElse(null);
+				
+				if ( m != null ) {
+					
+					try {
+						send(new LocalSecsMessage(9, 9, false, Secs2.binary(m.header10Bytes())));
+					}
+					catch (SecsSimulatorException giveup) {
+					}
+				}
+			}
+			
+			throw new SecsSimulatorSendException(e);
+		}
 		catch ( SecsException e ) {
 			throw new SecsSimulatorSendException(e);
 		}
@@ -222,7 +272,36 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			throw new SecsSimulatorSendException(e);
 		}
 	}
-
+	
+	private Optional<SecsMessage> send(LocalSecsMessage msg) throws SecsSimulatorException, InterruptedException {
+		
+		try {
+			return getCommunicator().orElseThrow(SecsSimulatorNotOpenException::new)
+					.send(msg.strm
+							, msg.func
+							, msg.wbit
+							, msg.secs2);
+		}
+		catch ( SecsException e ) {
+			throw new SecsSimulatorSendException(e);
+		}
+	}
+	
+	private Optional<SecsMessage> send(SecsMessage primaryMsg, LocalSecsMessage reply) throws SecsSimulatorException, InterruptedException {
+		
+		try {
+			return getCommunicator().orElseThrow(SecsSimulatorNotOpenException::new)
+					.send(primaryMsg
+							, reply.strm
+							, reply.func
+							, reply.wbit
+							, reply.secs2);
+		}
+		catch ( SecsException e ) {
+			throw new SecsSimulatorSendException(e);
+		}
+	}
+	
 	@Override
 	public boolean linktest() throws InterruptedException {
 		SecsCommunicator comm = getCommunicator().orElse(null);
@@ -291,30 +370,143 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	
 	private Optional<SmlMessage> autoReply(int primaryStream, int primaryFunction, boolean primaryWbit) {
 		
-		if ( ! primaryWbit ) {
+		if ( primaryWbit ) {
+			
+			List<SmlMessage> ss = autoReplys(primaryStream, primaryFunction);
+			return (ss.size() == 1) ? Optional.of(ss.get(0)) : Optional.empty();
+			
+		} else {
+			
 			return Optional.empty();
 		}
+	}
+	
+	private List<SmlMessage> autoReplys(int primaryStream, int primaryFunction) {
 		
-		List<SmlMessage> ss = smls.stream()
+		return smls.stream()
 				.map(x -> x.sm)
 				.filter(x -> ! x.wbit())
 				.filter(s -> s.getStream() == primaryStream)
 				.filter(x -> x.getFunction() == primaryFunction + 1)
 				.filter(x -> (x.getFunction() % 2) == 0)
 				.collect(Collectors.toList());
+	}
+	
+	private List<SmlMessage> autoReplys(int primaryStream) {
 		
-		return (ss.size() == 1) ? Optional.of(ss.get(0)) : Optional.empty();
+		return smls.stream()
+				.map(x -> x.sm)
+				.filter(x -> ! x.wbit())
+				.filter(s -> s.getStream() == primaryStream)
+				.filter(x -> (x.getFunction() % 2) == 0)
+				.collect(Collectors.toList());
+	}
+	
+	private Optional<LocalSecsMessage> autoReplySxF0(SecsMessage primary) {
+		
+		if ( primary.getStream() < 0 ) {
+			return Optional.empty();
+		}
+		
+		if ( ! equalsDeviceId(primary) ) {
+			return Optional.empty();
+		}
+		
+		int strm = primary.getStream();
+		int func = primary.getFunction();
+		boolean wbit = primary.wbit();
+		
+		if ( wbit ) {
+			
+			if ( autoReplys(strm, func).isEmpty() ) {
+				
+				if ( autoReplys(strm).isEmpty() ) {
+					return Optional.of(new LocalSecsMessage(0, 0, false, Secs2.empty()));
+				}
+				
+				return Optional.of(new LocalSecsMessage(strm, 0, false, Secs2.empty()));
+			}
+		}
+		
+		return Optional.empty();
+	}
+	
+	private Optional<LocalSecsMessage> autoReplyS9Fy(SecsMessage primary) {
+		
+		if ( primary.getStream() < 0 ) {
+			return Optional.empty();
+		}
+		
+		if ( ! equalsDeviceId(primary) ) {
+			return Optional.of(new LocalSecsMessage(9, 1, false, Secs2.binary(primary.header10Bytes())));
+		}
+		
+		int strm = primary.getStream();
+		int func = primary.getFunction();
+		boolean wbit = primary.wbit();
+		
+		if ( wbit ) {
+			
+			if ( autoReplys(strm, func).isEmpty() ) {
+				
+				if ( autoReplys(strm).isEmpty() ) {
+					return Optional.of(new LocalSecsMessage(9, 3, false, Secs2.binary(primary.header10Bytes())));
+				}
+				
+				return Optional.of(new LocalSecsMessage(9, 5, false, Secs2.binary(primary.header10Bytes())));
+			}
+		}
+		
+		return Optional.empty();
+	}
+	
+	private boolean equalsDeviceId(SecsMessage msg) {
+		return getCommunicator().filter(comm -> comm.deviceId() == msg.deviceId()).isPresent();
 	}
 	
 	
-	private final BlockingQueue<Object> logQueue = new LinkedBlockingQueue<>();
+	private static final Object commRefObj = new Object();
+	
+	protected SecsLog toSimpleThrowableLog(SecsLog log) {
+		
+		Object o = log.value().orElse(commRefObj);
+		
+		if (o instanceof Throwable) {
+			String s = o.getClass().getName();
+			return new SecsLog(log.subject(), log.timestamp(), s);
+		}
+		
+		return log;
+	}
+	
+	protected final BlockingQueue<Object> logQueue = new LinkedBlockingQueue<>();
 	
 	@Override
 	public void startLogging(Path path) throws IOException {
 		synchronized ( logQueue ) {
 			stopLogging();
+			thLogging = new Thread(loggingTask(path));
+			thLogging.start();
+		}
+	}
+
+	@Override
+	public void stopLogging() {
+		synchronized ( logQueue ) {
+			if ( thLogging != null ) {
+				thLogging.interrupt();
+				logQueue.clear();
+				thLogging = null;
+			}
+		}
+	}
+	
+	protected Runnable loggingTask(Path path) {
+		
+		return new Runnable() {
 			
-			thLogging = new Thread(() -> {
+			@Override
+			public void run() {
 				
 				try {
 					
@@ -338,27 +530,13 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 							bw.flush();
 						}
 					}
-					catch ( IOException e ) {
-						putLog(e);
+					catch ( IOException giveup ) {
 					}
 				}
 				catch ( InterruptedException ignore ) {
 				}
-			});
-			
-			thLogging.start();
-		}
-	}
-
-	@Override
-	public void stopLogging() {
-		synchronized ( logQueue ) {
-			if ( thLogging != null ) {
-				thLogging.interrupt();
-				logQueue.clear();
-				thLogging = null;
 			}
-		}
+		};
 	}
 	
 	protected void putLog(Object o) throws InterruptedException {
@@ -373,16 +551,9 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	/* Macros */
 	@Override
 	public void startMacro(Path path) {
-		
 		synchronized ( this ) {
 			stopMacro();
-			
-			thMacro = new Thread(() -> {
-				
-				//TODO
-				//macro
-			});
-			
+			thMacro = new Thread(macroTask(path));
 			thMacro.start();
 		}
 	}
@@ -397,4 +568,30 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		}
 	}
 	
+	protected Runnable macroTask(Path path) {
+		
+		return new Runnable() {
+			
+			@Override
+			public void run() {
+				
+				//TODO
+			}
+		};
+	}
+	
+	private class LocalSecsMessage {
+		
+		public int strm;
+		public int func;
+		public boolean wbit;
+		public Secs2 secs2;
+		
+		public LocalSecsMessage(int strm, int func, boolean wbit, Secs2 secs2) {
+			this.strm = strm;
+			this.func = func;
+			this.wbit = wbit;
+			this.secs2 = secs2;
+		}
+	}
 }
