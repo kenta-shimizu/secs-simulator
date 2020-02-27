@@ -8,7 +8,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -30,6 +29,9 @@ import com.shimizukenta.secs.SecsWaitReplyMessageException;
 import com.shimizukenta.secs.hsmsss.HsmsSsCommunicator;
 import com.shimizukenta.secs.secs2.Secs2;
 import com.shimizukenta.secs.sml.SmlMessage;
+import com.shimizukenta.secssimulator.macro.MacroFileReader;
+import com.shimizukenta.secssimulator.macro.MacroReport;
+import com.shimizukenta.secssimulator.macro.MacroRequest;
 
 public abstract class AbstractSecsSimulator implements SecsSimulator {
 
@@ -256,7 +258,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 				}
 			}
 			
-			throw new SecsSimulatorSendException(e);
+			throw new SecsSimulatorWaitReplyException(e);
 		}
 		catch ( SecsException e ) {
 			throw new SecsSimulatorSendException(e);
@@ -281,6 +283,9 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 							, msg.func
 							, msg.wbit
 							, msg.secs2);
+		}
+		catch ( SecsWaitReplyMessageException e ) {
+			throw new SecsSimulatorWaitReplyException(e);
 		}
 		catch ( SecsException e ) {
 			throw new SecsSimulatorSendException(e);
@@ -575,9 +580,48 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			@Override
 			public void run() {
 				
-				//TODO
+				try {
+					
+					List<MacroRequest> requests = MacroFileReader.getInstance().lines(path);
+					
+					for ( MacroRequest req : requests ) {
+						
+						try {
+							if ( req.command() != null ) {
+								
+								
+								//TODO
+								Thread.sleep(1000L);
+								
+								macroReport(MacroReport.requestFinished(path, req));
+							}
+						}
+						catch ( InterruptedException e ) {
+							throw e;
+						}
+					}
+					
+					macroReport(MacroReport.completed(path));
+				}
+				catch (RuntimeException | Error e) {
+					macroReport(MacroReport.failed(e, path));
+					throw e;
+				}
+				catch (Throwable t) {
+					macroReport(MacroReport.failed(t, path));
+				}
 			}
 		};
+	}
+	
+	/**
+	 * prototype-pattern-method<br />
+	 * report MacroReport
+	 * 
+	 * @param macroResult
+	 */
+	protected void macroReport(MacroReport result) {
+		/* Nothing */
 	}
 	
 	private class LocalSecsMessage {

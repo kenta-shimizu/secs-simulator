@@ -7,20 +7,22 @@ public enum CliCommand {
 	
 	UNDEFINED(-1, "UNDEFINED"),
 	
+	MANUAL(2, "MAN", "?"),
+	
 	OPEN(1, "open"),
 	CLOSE(1, "close"),
 	QUIT(1, "quit", "exit"),
 	
-	SEND_SML(2, "ss", "send", "sendsml", "send-sml"),
-	SEND_DIRECT(2, "sd", "senddirect", "send-direct"),
+	SEND_SML(2, "send", "ss", "sendsml", "send-sml"),
+	SEND_DIRECT(2, "senddirect", "sd", "send-direct"),
 	LINKTEST(1, "linktest"),
 	
-	LIST_SML(2, "list"),
+	LIST_SML(1, "list"),
 	SHOW_SML(2, "show"),
 	ADD_SML(2, "addfile", "add-file"),
 	ADD_SMLS(2, "addfiles", "add-files"),
 	
-	PWD(2, "pwd"),
+	PWD(1, "pwd"),
 	CD(2, "cd"),
 	LS(1, "ls"),
 	

@@ -25,9 +25,35 @@ public interface SecsSimulator {
 	public void protocol(SecsSimulatorProtocol protocol);
 	public SecsSimulatorProtocol protocol();
 	
+	/**
+	 * Blocking-mechod<br />
+	 * wait until reply-message if exist
+	 * 
+	 * @param sml
+	 * @return 
+	 * @throws SecsSimulatorException
+	 * @throws InterruptedException
+	 */
 	public Optional<SecsMessage> send(SmlMessage sml) throws SecsSimulatorException, InterruptedException;
+	
+	/**
+	 * Blocking-method<br />
+	 * 
+	 * @param primaryMsg
+	 * @param replySml
+	 * @return Optional.empty()
+	 * @throws SecsSimulatorException
+	 * @throws InterruptedException
+	 */
 	public Optional<SecsMessage> send(SecsMessage primaryMsg, SmlMessage replySml) throws SecsSimulatorException, InterruptedException;
 	
+	/**
+	 * Blocking-method<br />
+	 * wait until linktest.rsp
+	 * 
+	 * @return true if success
+	 * @throws InterruptedException
+	 */
 	public boolean linktest() throws InterruptedException;
 	
 	
