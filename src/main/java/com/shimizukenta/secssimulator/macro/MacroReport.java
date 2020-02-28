@@ -4,44 +4,35 @@ import java.nio.file.Path;
 
 public class MacroReport {
 	
-	public static final String COMPLETED = "macro completed";
-	public static final String FAILED = "macro failed";
-	public static final String INTERRUPT = "macro interrupted";
-	public static final String LINE_FINISHED = "macro-line finihsed";
+	public static final String COMPLETED = "Macro completed";
+	public static final String FAILED = "Macro failed";
+	public static final String CANCELLED = "Macro cancelled";
+	public static final String LINE_STARTED = "Macro-Line started";
+	public static final String LINE_FINISHED = "Macro-Line finished";
 	
-	private final boolean completed;
-	private final Throwable t;
+	private boolean done;
+	private Throwable t;
 	private final Path path;
-	private final MacroRequest request;
+	private MacroRequest request;
+	private boolean requestFinished;
 	
-	private MacroReport(boolean completed, Path path) {
-		this.completed = completed;
+	private MacroReport(Path path) {
 		this.path = path;
+		this.done = false;
 		this.t = null;
 		this.request = null;
+		this.requestFinished = false;
 	}
 	
-	private MacroReport(Path path, Throwable t) {
-		this.completed = true;
-		this.path = path;
-		this.t = t;
-		this.request = null;
+	public boolean isDone() {
+		return done;
 	}
 	
-	private MacroReport(Path path, MacroRequest request) {
-		this.completed = false;
-		this.path = path;
-		this.t = null;
-		this.request = request;
+	public boolean isCancelled() {
+		return (t != null) && (t instanceof InterruptedException);
 	}
 	
-	private static final String BR = System.lineSeparator();
-	
-	public boolean success() {
-		return completed;
-	}
-	
-	public Throwable cause() {
+	public Throwable getCause() {
 		return t;
 	}
 	
@@ -49,47 +40,80 @@ public class MacroReport {
 		return request;
 	}
 	
+	public boolean requestFinished() {
+		return requestFinished;
+	}
+	
+	private static final String BR = System.lineSeparator();
+	
 	@Override
 	public String toString() {
 		
-		if ( completed ) {
+		String fn = path.getFileName().toString();
+		
+		if ( isDone() ) {
 			
-			if ( t == null ) {
+			if ( getCause() == null ) {
 				
-				return COMPLETED + ", " + path.getFileName().toString();
+				return COMPLETED + ", " + fn;
 				
 			} else {
 				
-				if ( t instanceof InterruptedException ) {
+				if ( isCancelled() ) {
 					
-					return INTERRUPT + ", " + path.getFileName().toString();
+					return CANCELLED + ", " + fn;
 					
 				} else {
 					
-					return FAILED + ", " + path.getFileName().toString() + BR + t.toString();
+					return FAILED + ", " + fn + BR + t.toString();
 				}
 			}
 			
 		} else {
 			
-			return LINE_FINISHED + ", " + request;
+			if ( requestFinished() ) {
+				
+				return LINE_FINISHED + ", " + fn + BR + request;
+				
+			} else {
+				
+				return LINE_STARTED + ", " + fn + BR + request;
+			}
 		}
 	}
 	
 	public static MacroReport completed(Path path) {
-		return new MacroReport(true, path);
+		MacroReport r = new MacroReport(path);
+		r.done = true;
+		return r;
+	}
+	
+	public static MacroReport interrupted(Path path, InterruptedException e) {
+		MacroReport r = new MacroReport(path);
+		r.done = true;
+		r.t = e;
+		return r;
+	}
+	
+	public static MacroReport failed(Path path, Throwable t) {
+		MacroReport r = new MacroReport(path);
+		r.done = true;
+		r.t = t;
+		return r;
+	}
+	
+	public static MacroReport requestStarted(Path path, MacroRequest request) {
+		MacroReport r = new MacroReport(path);
+		r.request = request;
+		r.requestFinished = false;
+		return r;
 	}
 	
 	public static MacroReport requestFinished(Path path, MacroRequest request) {
-		return new MacroReport(path, request);
-	}
-	
-	public static MacroReport interrupted(InterruptedException e, Path path) {
-		return new MacroReport(path, e);
-	}
-	
-	public static MacroReport failed(Throwable t, Path path) {
-		return new MacroReport(path, t);
+		MacroReport r = new MacroReport(path);
+		r.request = request;
+		r.requestFinished = true;
+		return r;
 	}
 	
 }

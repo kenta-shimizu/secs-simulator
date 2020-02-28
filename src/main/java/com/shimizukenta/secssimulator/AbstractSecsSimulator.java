@@ -29,8 +29,10 @@ import com.shimizukenta.secs.SecsWaitReplyMessageException;
 import com.shimizukenta.secs.hsmsss.HsmsSsCommunicator;
 import com.shimizukenta.secs.secs2.Secs2;
 import com.shimizukenta.secs.sml.SmlMessage;
+import com.shimizukenta.secssimulator.macro.MacroExecutor;
 import com.shimizukenta.secssimulator.macro.MacroFileReader;
 import com.shimizukenta.secssimulator.macro.MacroReport;
+import com.shimizukenta.secssimulator.macro.MacroReportListener;
 import com.shimizukenta.secssimulator.macro.MacroRequest;
 
 public abstract class AbstractSecsSimulator implements SecsSimulator {
@@ -39,12 +41,16 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	private SecsCommunicator secsComm;
 	private Thread thLogging;
 	private Thread thMacro;
+	private final MacroExecutor macroExecutor;
 	
 	public AbstractSecsSimulator(AbstractSecsSimulatorConfig config) {
 		this.config = config;
 		this.secsComm = null;
 		this.thLogging = null;
 		this.thMacro = null;
+		
+		this.macroExecutor = new MacroExecutor(this);
+		this.addSecsMessageReceiveListener(this.macroExecutor::receive);
 	}
 	
 	private Optional<SecsCommunicator> getCommunicator() {
@@ -52,6 +58,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			return secsComm == null ? Optional.empty() : Optional.of(secsComm);
 		}
 	}
+	
 	
 	/* state-changed-listener */
 	private final Collection<SecsCommunicatableStateChangeListener> commStateChangedListenrs = new CopyOnWriteArrayList<>();
@@ -68,6 +75,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return f;
 	}
 	
+	
 	/* receive-message-listener */
 	private final Collection<SecsMessageReceiveListener> recvMsgListeners = new CopyOnWriteArrayList<>();
 	
@@ -82,6 +90,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		getCommunicator().ifPresent(comm -> {comm.removeSecsMessageReceiveListener(lstnr);});
 		return f;
 	}
+	
 	
 	/* log-listener */
 	private final Collection<SecsLogListener> logListeners = new CopyOnWriteArrayList<>();
@@ -196,6 +205,12 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			stopMacro();
 		}
 		catch (IOException giveup) {
+		}
+		
+		try {
+			macroExecutor.shutdown();
+		}
+		catch ( InterruptedException giveup ) {
 		}
 	}
 
@@ -584,44 +599,43 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 					
 					List<MacroRequest> requests = MacroFileReader.getInstance().lines(path);
 					
-					for ( MacroRequest req : requests ) {
+					for ( MacroRequest r : requests ) {
 						
-						try {
-							if ( req.command() != null ) {
-								
-								
-								//TODO
-								Thread.sleep(1000L);
-								
-								macroReport(MacroReport.requestFinished(path, req));
-							}
-						}
-						catch ( InterruptedException e ) {
-							throw e;
+						if ( r.command() != null ) {
+							macroReport(MacroReport.requestStarted(path, r));
+							macroExecutor.execute(r);
+							macroReport(MacroReport.requestFinished(path, r));
 						}
 					}
 					
 					macroReport(MacroReport.completed(path));
 				}
+				catch ( InterruptedException e ) {
+					macroReport(MacroReport.interrupted(path, e));
+				}
 				catch (RuntimeException | Error e) {
-					macroReport(MacroReport.failed(e, path));
+					macroReport(MacroReport.failed(path, e));
 					throw e;
 				}
-				catch (Throwable t) {
-					macroReport(MacroReport.failed(t, path));
+				catch (Exception e) {
+					macroReport(MacroReport.failed(path, e));
 				}
 			}
 		};
 	}
 	
-	/**
-	 * prototype-pattern-method<br />
-	 * report MacroReport
-	 * 
-	 * @param macroResult
-	 */
-	protected void macroReport(MacroReport result) {
-		/* Nothing */
+	private final Collection<MacroReportListener> macroReportListeners = new CopyOnWriteArrayList<>();
+	
+	public boolean addMacroReportListener(MacroReportListener l) {
+		return macroReportListeners.add(l);
+	}
+	
+	public boolean removeMacroReportListener(MacroReportListener l) {
+		return macroReportListeners.remove(l);
+	}
+	
+	protected void macroReport(MacroReport r) {
+		macroReportListeners.forEach(l -> {l.report(r);});
 	}
 	
 	private class LocalSecsMessage {
@@ -638,4 +652,5 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			this.secs2 = secs2;
 		}
 	}
+	
 }

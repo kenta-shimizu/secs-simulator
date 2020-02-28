@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -24,7 +25,6 @@ import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.AbstractSecsSimulator;
 import com.shimizukenta.secssimulator.SecsSimulatorException;
 import com.shimizukenta.secssimulator.SecsSimulatorSmlEntryFailedException;
-import com.shimizukenta.secssimulator.macro.MacroReport;
 
 public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable {
 	
@@ -75,6 +75,8 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 				}
 			});
 			
+			this.addMacroReportListener(r -> {echo(r);});
+			
 			for ( Path path : config.smlFiles() ) {
 				try {
 					if ( ! addSmlFile(path) ) {
@@ -113,176 +115,175 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 					
 					for ( ;; ) {
 						
-						CliRequest request = CliCommand.getRequest(br.readLine());
-						
-						switch ( request.command() ) {
-						case MANUAL: {
+						try {
+							CliRequest request = CliCommand.getRequest(br.readLine());
 							
-							
-							//TODO
-							
-							break;
-						}
-						case QUIT: {
-							echo("Quiting...");
-							return;
-							/* break; */
-						}
-						case OPEN: {
-							openCommunicator();
-							break;
-						}
-						case CLOSE: {
-							closeCommunicator();
-							echo("Closed-communicator");
-							break;
-						}
-						case PWD: {
-							synchronized ( this ) {
-								echo("PWD: " + this.pwd.toAbsolutePath());
-							}
-							break;
-						}
-						case CD: {
-							synchronized ( this ) {
-								request.option(0)
-								.map(Paths::get)
-								.ifPresent(path -> {
-									this.pwd = pwd.resolve(path).normalize();
-								});
-							}
-							break;
-						}
-						case LS: {
-							
-							synchronized ( this ) {
+							switch ( request.command() ) {
+							case MANUAL: {
 								
-								try (
-										DirectoryStream<Path> paths = Files.newDirectoryStream(pwd);
-										) {
-									
-									StringBuilder sb = new StringBuilder();
-									
-									for ( Path p : paths ) {
-										sb.append(p.normalize().toAbsolutePath())
-										.append(System.lineSeparator());
-									}
-									
-									echo(sb);
+								
+								//TODO
+								
+								break;
+							}
+							case QUIT: {
+								echo("Quiting...");
+								return;
+								/* break; */
+							}
+							case OPEN: {
+								openCommunicator();
+								break;
+							}
+							case CLOSE: {
+								closeCommunicator();
+								echo("Closed-communicator");
+								break;
+							}
+							case PWD: {
+								synchronized ( this ) {
+									echo("PWD: " + this.pwd.toAbsolutePath());
 								}
+								break;
 							}
-							break;
-						}
-						case LIST_SML: {
-							
-							Set<String> smls = smlAliases();
-							
-							if ( smls.isEmpty() ) {
-								
-								echo("SMLs not entry");
-								
-							} else {
-								
-								String s = smls.stream()
-										.sorted()
-										.collect(Collectors.joining(System.lineSeparator()));
-								echo(s);
+							case CD: {
+								synchronized ( this ) {
+									request.option(0)
+									.map(Paths::get)
+									.ifPresent(path -> {
+										this.pwd = pwd.resolve(path).normalize();
+									});
+								}
+								break;
 							}
-							break;
-						}
-						case SHOW_SML: {
-							
-							Optional<String> alias = request.option(0);
-							String s = alias
-									.flatMap(this::sml)
-									.map(x -> x.toString())
-									.orElse("");
-							
-							if ( s.isEmpty() ) {
+							case LS: {
 								
-								echo("SML-Alias not found \"" + alias.orElse("") + "\"");
-								
-							} else {
-								
-								echo(s);
+								synchronized ( this ) {
+									
+									try (
+											DirectoryStream<Path> paths = Files.newDirectoryStream(pwd);
+											) {
+										
+										StringBuilder sb = new StringBuilder();
+										
+										for ( Path p : paths ) {
+											sb.append(p.normalize().toAbsolutePath())
+											.append(System.lineSeparator());
+										}
+										
+										echo(sb);
+									}
+								}
+								break;
 							}
-							break;
-						}
-						case SEND_SML: {
-							
-							Optional<String> alias = request.option(0);
-							SmlMessage sm = alias.flatMap(this::sml).orElse(null);
-							
-							if ( sm == null ) {
+							case LIST_SML: {
 								
-								echo("SML-Alias not found \"" + alias.orElse("") + "\"");
+								Set<String> smls = smlAliases();
 								
-							} else {
-								
-								asyncSend(sm);
+								if ( smls.isEmpty() ) {
+									
+									echo("SMLs not entry");
+									
+								} else {
+									
+									String s = smls.stream()
+											.sorted()
+											.collect(Collectors.joining(System.lineSeparator()));
+									echo(s);
+								}
+								break;
 							}
-							break;
-						}
-						case SEND_DIRECT: {
-							
-							String s = request.option(0).orElse(null);
-							
-							if ( s != null ) {
+							case SHOW_SML: {
 								
-								try {
+								Optional<String> alias = request.option(0);
+								String s = alias
+										.flatMap(this::sml)
+										.map(x -> x.toString())
+										.orElse("");
+								
+								if ( s.isEmpty() ) {
+									
+									echo("SML-Alias not found \"" + alias.orElse("") + "\"");
+									
+								} else {
+									
+									echo(s);
+								}
+								break;
+							}
+							case SEND_SML: {
+								
+								Optional<String> alias = request.option(0);
+								SmlMessage sm = alias.flatMap(this::sml).orElse(null);
+								
+								if ( sm == null ) {
+									
+									echo("SML-Alias not found \"" + alias.orElse("") + "\"");
+									
+								} else {
+									
+									asyncSend(sm);
+								}
+								break;
+							}
+							case SEND_DIRECT: {
+								
+								String s = request.option(0).orElse(null);
+								
+								if ( s != null ) {
 									SmlMessage sm = parseSml(s);
 									asyncSend(sm);
 								}
-								catch (SmlParseException e) {
-									echo(e);
+								break;
+							}
+							case LINKTEST: {
+								
+								asyncLinktest();
+								break;
+							}
+							case LOG: {
+								
+								String ps = request.option(0).orElse(null);
+								
+								if ( ps == null ) {
+									stopLogging();
+								} else {
+									startLogging(pwd.resolve(ps));
 								}
+								break;
 							}
-							break;
-						}
-						case LINKTEST: {
-							
-							asyncLinktest();
-							break;
-						}
-						case LOG: {
-							
-							Path path = request.option(0).map(pwd::resolve).orElse(null);
-							
-							if ( path == null ) {
-								stopLogging();
-							} else {
-								startLogging(path);
+							case MACRO: {
+								
+								String ps = request.option(0).orElse(null);
+								
+								if ( ps == null ) {
+									stopMacro();
+								} else {
+									startMacro(pwd.resolve(ps));
+								}
+								break;
 							}
-							break;
-						}
-						case MACRO: {
-							
-							Path path = request.option(0).map(pwd::resolve).orElse(null);
-							
-							if ( path == null ) {
-								stopMacro();
-							} else {
-								startMacro(path);
+							case AUTO_REPLY: {
+								
+								boolean f = request.option(0).map(Boolean::parseBoolean).orElse(! config.autoReply());
+								config.autoReply(f);
+								echo("auto-reply: " + config.autoReply());
+								break;
 							}
-							break;
+							default: {
+								/* Nothing */
+							}
+							}
 						}
-						case AUTO_REPLY: {
-							
-							boolean f = request.option(0).map(Boolean::parseBoolean).orElse(! config.autoReply());
-							config.autoReply(f);
-							echo("auto-reply: " + config.autoReply());
-							break;
-						}
-						default: {
-							/* Nothing */
-						}
+						catch (InvalidPathException | SmlParseException e ) {
+							echo(e);
 						}
 					}
 				}
 			}
 		}
-		catch ( IOException | SecsSimulatorException e ) {
-			echo(e);
+		catch ( Throwable t ) {
+			echo(t);
 		}
 		finally {
 			
@@ -357,9 +358,11 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 					});
 			
 			try {
-				synchronized ( this ) {
-					logging = true;
+				synchronized ( syncLog ) {
+					this.logging = true;
 				}
+				
+				echo("Start-Logging: " + path.toString());
 				
 				execServ.invokeAny(tasks);
 			}
@@ -369,13 +372,11 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 				echo(e.getCause());
 			}
 			finally {
-				synchronized ( this ) {
-					logging = false;
+				synchronized ( syncLog ) {
+					this.logging = false;
 				}
 			}
 		});
-		
-		echo("Start-Logging: " + path.toString());
 	}
 	
 	@Override
@@ -387,7 +388,7 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 	
 	@Override
 	protected void putLog(Object o) throws InterruptedException {
-		synchronized ( this ) {
+		synchronized ( syncLog ) {
 			if ( this.logging ) {
 				logQueue.put(o);
 			}
@@ -417,6 +418,7 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 					});
 			
 			try {
+				echo("Start-Macro: " + path.toString());
 				execServ.invokeAny(tasks);
 			}
 			catch ( InterruptedException ignore ) {
@@ -425,8 +427,6 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 				echo(e);
 			}
 		});
-		
-		echo("Start-Macro: " + path.toString());
 	}
 	
 	@Override
@@ -436,21 +436,6 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 		}
 	}
 	
-	@Override
-	protected void macroReport(MacroReport result) {
-		echo(result);
-	}
-	
-	
-	@Override
-	public void quitApplication() {
-		try {
-			closeCommunicator();
-		}
-		catch (IOException giveup) {
-		}
-	}
-
 	
 	private static final Object syncEcho = new Object();
 	

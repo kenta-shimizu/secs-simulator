@@ -54,7 +54,7 @@ public enum CliCommand {
 			}
 			
 			for (String a : v.commands ) {
-				if ( a.equals(c) ) {
+				if ( a.equalsIgnoreCase(c) ) {
 					return v;
 				}
 			}
@@ -62,6 +62,8 @@ public enum CliCommand {
 		
 		return UNDEFINED;
 	}
+	
+	private static final String[] emptyArray = new String[0];
 	
 	public static CliRequest getRequest(CharSequence requestLine) {
 		
@@ -77,7 +79,7 @@ public enum CliCommand {
 			
 		} else {
 			
-			return new CliRequest(cmd, new String[0]);
+			return new CliRequest(cmd, emptyArray);
 		}
 	}
 }

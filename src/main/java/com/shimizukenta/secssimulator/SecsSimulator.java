@@ -76,7 +76,7 @@ public interface SecsSimulator {
 				Stream<String> lines = Files.lines(path, StandardCharsets.US_ASCII);
 				) {
 			
-			String sml = lines.collect(Collectors.joining());
+			String sml = lines.collect(Collectors.joining(" "));
 			SmlMessage sm = parseSml(sml);
 			
 			String alias = path.getFileName().toString();

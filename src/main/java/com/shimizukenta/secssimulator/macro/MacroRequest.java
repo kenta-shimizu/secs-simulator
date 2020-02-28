@@ -42,9 +42,9 @@ public class MacroRequest {
 		.append(", ")
 		.append(command);
 		
-		//TODO
-		//optoins
-		
+		for ( String op : options ) {
+			sb.append(", ").append("\"").append(op).append("\"");
+		}
 		
 		return sb.toString();
 	}
