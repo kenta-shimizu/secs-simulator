@@ -20,6 +20,7 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 	
 	private static final String PROTOCOL_SECS1 = "secs1";
 	private static final String PROTOCOL_SECS1_ON_TCP_IP = "secs1-on-tcp-ip";
+	private static final String PROTOCOL_SECS1_ON_TCP_IP_RECEIVER = "secs1-on-tcp-ip-receiver";
 	private static final String PROTOCOL_HSMS_SS_PASSIVE = "hsms-ss-passive";
 	private static final String PROTOCOL_HSMS_SS_ACTIVE = "hsms-ss-active";
 	
@@ -111,6 +112,10 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 		} else if ( sameKey(value, PROTOCOL_SECS1_ON_TCP_IP, PROTOCOL_SECS1) ) {
 			
 			protocol(SecsSimulatorProtocol.SECS1_ON_TCP_IP);
+			
+		} else if ( sameKey(value, PROTOCOL_SECS1_ON_TCP_IP_RECEIVER) ) {
+			
+			protocol(SecsSimulatorProtocol.SECS1_ON_TCP_IP_RECEIVER);
 		}
 	}
 	
@@ -118,6 +123,7 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 		synchronized ( this ) {
 			hsmsSsCommunicatorConfig().socketAddress(addr);
 			secs1OnTcpIpCommunicatorConfig().socketAddress(addr);
+			secs1AdapterSocketAddress(addr);
 		}
 	}
 	
@@ -131,6 +137,7 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 		synchronized ( this ) {
 			hsmsSsCommunicatorConfig().deviceId(value);
 			secs1OnTcpIpCommunicatorConfig().deviceId(value);
+			secs1OnTcpIpReceiverCommunicatorConfig().deviceId(value);
 		}
 	}
 	
@@ -144,12 +151,14 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 		synchronized ( this ) {
 			hsmsSsCommunicatorConfig().isEquip(f);
 			secs1OnTcpIpCommunicatorConfig().isEquip(f);
+			secs1OnTcpIpReceiverCommunicatorConfig().isEquip(f);
 		}
 	}
 	
 	public void isMaster(boolean f) {
 		synchronized ( this ) {
 			secs1OnTcpIpCommunicatorConfig().isMaster(f);
+			secs1OnTcpIpReceiverCommunicatorConfig().isMaster(f);
 		}
 	}
 	
@@ -157,6 +166,7 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 		synchronized ( this ) {
 			hsmsSsCommunicatorConfig().timeout().t1(value);
 			secs1OnTcpIpCommunicatorConfig().timeout().t1(value);
+			secs1OnTcpIpReceiverCommunicatorConfig().timeout().t1(value);
 		}
 	}
 	
@@ -164,6 +174,7 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 		synchronized ( this ) {
 			hsmsSsCommunicatorConfig().timeout().t2(value);
 			secs1OnTcpIpCommunicatorConfig().timeout().t2(value);
+			secs1OnTcpIpReceiverCommunicatorConfig().timeout().t2(value);
 		}
 	}
 	
@@ -171,6 +182,7 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 		synchronized ( this ) {
 			hsmsSsCommunicatorConfig().timeout().t3(value);
 			secs1OnTcpIpCommunicatorConfig().timeout().t3(value);
+			secs1OnTcpIpReceiverCommunicatorConfig().timeout().t3(value);
 		}
 	}
 	
@@ -178,6 +190,7 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 		synchronized ( this ) {
 			hsmsSsCommunicatorConfig().timeout().t4(value);
 			secs1OnTcpIpCommunicatorConfig().timeout().t4(value);
+			secs1OnTcpIpReceiverCommunicatorConfig().timeout().t4(value);
 		}
 	}
 	
@@ -185,6 +198,7 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 		synchronized ( this ) {
 			hsmsSsCommunicatorConfig().timeout().t5(value);
 			secs1OnTcpIpCommunicatorConfig().timeout().t5(value);
+			secs1OnTcpIpReceiverCommunicatorConfig().timeout().t5(value);
 		}
 	}
 	
@@ -192,6 +206,7 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 		synchronized ( this ) {
 			hsmsSsCommunicatorConfig().timeout().t6(value);
 			secs1OnTcpIpCommunicatorConfig().timeout().t6(value);
+			secs1OnTcpIpReceiverCommunicatorConfig().timeout().t6(value);
 		}
 	}
 	
@@ -199,6 +214,7 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 		synchronized ( this ) {
 			hsmsSsCommunicatorConfig().timeout().t7(value);
 			secs1OnTcpIpCommunicatorConfig().timeout().t7(value);
+			secs1OnTcpIpReceiverCommunicatorConfig().timeout().t7(value);
 		}
 	}
 	
@@ -206,12 +222,14 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 		synchronized ( this ) {
 			hsmsSsCommunicatorConfig().timeout().t8(value);
 			secs1OnTcpIpCommunicatorConfig().timeout().t8(value);
+			secs1OnTcpIpReceiverCommunicatorConfig().timeout().t8(value);
 		}
 	}
 	
 	public void retry(int value) {
 		synchronized ( this ) {
 			secs1OnTcpIpCommunicatorConfig().retry(value);
+			secs1OnTcpIpReceiverCommunicatorConfig().retry(value);
 		}
 	}
 	
@@ -255,6 +273,8 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 			"rebindIfPassive": number
 		},
 		"autoReply": true,
+		"autoReplyS9Fy": false,
+		"autoReplySxF0": false,
 		"smlFiles": [
 			"/path/to/sxfy.sml",
 			...
@@ -303,6 +323,8 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 		}
 		
 		jh.getOrDefault("autoReply").optionalBoolean().ifPresent(this::autoReply);
+		jh.getOrDefault("autoReplyS9Fy").optionalBoolean().ifPresent(this::autoReplyS9Fy);
+		jh.getOrDefault("autoReplySxF0").optionalBoolean().ifPresent(this::autoReplySxF0);
 		
 		jh.getOrDefault("smlFiles").forEach(x -> {
 			x.optionalString().map(Paths::get).ifPresent(this::smlFile);
@@ -384,6 +406,16 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 			
 			if ( sameKey(key, "--auto-reply", "--autoreply") ) {
 				conf.autoReply(Boolean.parseBoolean(value));
+				continue;
+			}
+			
+			if ( sameKey(key, "--auto-reply-s9fy", "--autoreplys9fy") ) {
+				conf.autoReplyS9Fy(Boolean.parseBoolean(value));
+				continue;
+			}
+			
+			if ( sameKey(key, "--auto-reply-sxf0", "--autoreplysxf0") ) {
+				conf.autoReplySxF0(Boolean.parseBoolean(value));
 				continue;
 			}
 			

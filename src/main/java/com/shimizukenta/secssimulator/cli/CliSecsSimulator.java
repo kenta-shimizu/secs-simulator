@@ -121,9 +121,16 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 							switch ( request.command() ) {
 							case MANUAL: {
 								
+								String cmd = request.option(0).orElse("");
 								
-								//TODO
-								
+								if ( cmd.isEmpty() ) {
+									
+									echo(CliCommand.getManuals());
+									
+								} else {
+									
+									echo(CliCommand.getDetailManual(cmd));
+								}
 								break;
 							}
 							case QUIT: {
@@ -141,17 +148,20 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 								break;
 							}
 							case PWD: {
+								
 								synchronized ( this ) {
 									echo("PWD: " + this.pwd.toAbsolutePath());
 								}
 								break;
 							}
 							case CD: {
+								
 								synchronized ( this ) {
 									request.option(0)
-									.map(Paths::get)
+									.map(pwd::resolve)
+									.map(Path::normalize)
 									.ifPresent(path -> {
-										this.pwd = pwd.resolve(path).normalize();
+										this.pwd = path;
 									});
 								}
 								break;
@@ -160,8 +170,10 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 								
 								synchronized ( this ) {
 									
+									Path path = request.option(0).map(pwd::resolve).orElse(pwd);
+									
 									try (
-											DirectoryStream<Path> paths = Files.newDirectoryStream(pwd);
+											DirectoryStream<Path> paths = Files.newDirectoryStream(path);
 											) {
 										
 										StringBuilder sb = new StringBuilder();
@@ -172,6 +184,21 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 										}
 										
 										echo(sb);
+									}
+								}
+								break;
+							}
+							case MKDIR: {
+								
+								synchronized ( this ) {
+									
+									Path path = request.option(0)
+											.map(pwd::resolve)
+											.map(Path::normalize)
+											.orElse(null);
+									
+									if ( path != null ) {
+										Files.createDirectory(path);
 									}
 								}
 								break;
@@ -209,6 +236,32 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 									
 									echo(s);
 								}
+								break;
+							}
+							case ADD_SML: {
+								
+								Path path = request.option(0).map(pwd::resolve).orElse(null);
+								
+								if ( path == null ) {
+									echo("request option path/of/file.sml");
+								} else {
+									if ( ! addSmlFile(path) ) {
+										echo("add-sml failed. \"" + path.normalize().toString() + "\"");
+									}
+								}
+								break;
+							}
+							case ADD_SMLS: {
+								
+								Path path = request.option(0).map(pwd::resolve).orElse(pwd);
+								if ( ! addSmlFiles(path) ) {
+									echo("add-smls failed. \"" + path.normalize().toString() + "\"");
+								}
+								break;
+							}
+							case REMOVE_SML: {
+								
+								request.option(0).ifPresent(this::removeSml);
 								break;
 							}
 							case SEND_SML: {
@@ -270,12 +323,27 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 								echo("auto-reply: " + config.autoReply());
 								break;
 							}
+							case AUTO_REPLY_S9Fy: {
+								
+								boolean f = request.option(0).map(Boolean::parseBoolean).orElse(! config.autoReplyS9Fy());
+								config.autoReplyS9Fy(f);
+								echo("auto-reply-S9Fy: " + config.autoReplyS9Fy());
+								break;
+							}
+							case AUTO_REPLY_SxF0: {
+								
+								boolean f = request.option(0).map(Boolean::parseBoolean).orElse(! config.autoReplySxF0());
+								config.autoReplySxF0(f);
+								echo("auto-reply-SxF0: " + config.autoReplySxF0());
+								break;
+							}
 							default: {
 								/* Nothing */
 							}
 							}
 						}
-						catch (InvalidPathException | SmlParseException e ) {
+						catch (InvalidPathException | IOException | SmlParseException e ) {
+							
 							echo(e);
 						}
 					}

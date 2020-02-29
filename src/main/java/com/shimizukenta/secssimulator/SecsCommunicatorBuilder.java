@@ -32,6 +32,11 @@ public class SecsCommunicatorBuilder {
 			return Secs1OnTcpIpCommunicator.newInstance(config.secs1OnTcpIpCommunicatorConfig());
 			/* break */
 		}
+		case SECS1_ON_TCP_IP_RECEIVER: {
+			
+			return Secs1OnTcpIpCommunicator.newInstance(config.secs1OnTcpIpReceiverCommunicatorConfig());
+			/* break */
+		}
 		default: {
 			
 			throw new IllegalStateException("Unknown protocol");

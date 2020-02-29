@@ -1,6 +1,6 @@
 {
 	"communicator": {
-		"protocol": "secs1-on-tcp-ip",
+		"protocol": "secs1-on-tcp-ip-receiver",
 		"socketAddress": "127.0.0.1:23000",
 		"deviceId": 10,
 		"sessionId": 10,
@@ -21,6 +21,8 @@
 		"rebindIfPassive": true
 	},
 	"autoReply": true,
+	"autoReplyS9Fy": false,
+	"autoReplySxF0": false,
 	"smlFiles": [
 		"/path/to/sxfy.sml"
 	],

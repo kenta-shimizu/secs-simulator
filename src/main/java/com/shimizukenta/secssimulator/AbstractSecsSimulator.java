@@ -2,6 +2,8 @@ package com.shimizukenta.secssimulator;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,6 +41,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 
 	private final AbstractSecsSimulatorConfig config;
 	private SecsCommunicator secsComm;
+	private TcpIpAdapter tcpipAdapter;
 	private Thread thLogging;
 	private Thread thMacro;
 	private final MacroExecutor macroExecutor;
@@ -46,6 +49,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	public AbstractSecsSimulator(AbstractSecsSimulatorConfig config) {
 		this.config = config;
 		this.secsComm = null;
+		this.tcpipAdapter = null;
 		this.thLogging = null;
 		this.thMacro = null;
 		
@@ -114,6 +118,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	public SecsCommunicator openCommunicator() throws IOException {
 		
 		synchronized ( this ) {
+			
 			closeCommunicator();
 			
 			final SecsCommunicator comm = SecsCommunicatorBuilder.getInstance().build(config);
@@ -175,6 +180,15 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			commStateChangedListenrs.forEach(comm::addSecsCommunicatableStateChangeListener);
 			logListeners.forEach(comm::addSecsLogListener);
 			
+			if ( config.protocol() == SecsSimulatorProtocol.SECS1_ON_TCP_IP_RECEIVER ) {
+				
+				SocketAddress s = new InetSocketAddress("127.0.0.1", 0);
+				tcpipAdapter = TcpIpAdapter.open(config.secs1AdapterSocketAddress(), s);
+				
+				SocketAddress bx = tcpipAdapter.socketAddressB();
+				config.secs1OnTcpIpReceiverCommunicatorConfig().socketAddress(bx);
+			}
+			
 			comm.open();
 			
 			this.secsComm = comm;
@@ -185,14 +199,37 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	
 	@Override
 	public void closeCommunicator() throws IOException {
+		
 		synchronized ( this ) {
+			
+			IOException ioExcept = null;
+			
 			if ( secsComm != null ) {
 				try {
 					secsComm.close();
 				}
+				catch (IOException e) {
+					ioExcept = e;
+				}
 				finally {
 					secsComm = null;
 				}
+			}
+			
+			if ( tcpipAdapter != null ) {
+				try {
+					tcpipAdapter.close();
+				}
+				catch ( IOException e ) {
+					ioExcept = e;
+				}
+				finally {
+					tcpipAdapter = null;
+				}
+			}
+			
+			if ( ioExcept != null ) {
+				throw ioExcept;
 			}
 		}
 	}
@@ -205,12 +242,6 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			stopMacro();
 		}
 		catch (IOException giveup) {
-		}
-		
-		try {
-			macroExecutor.shutdown();
-		}
-		catch ( InterruptedException giveup ) {
 		}
 	}
 

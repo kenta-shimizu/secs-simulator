@@ -1,37 +1,32 @@
 package com.shimizukenta.secssimulator.macro;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.shimizukenta.secs.SecsCommunicatableStateChangeListener;
 import com.shimizukenta.secs.SecsCommunicator;
 import com.shimizukenta.secs.SecsMessage;
+import com.shimizukenta.secs.sml.SmlMessage;
+import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.SecsSimulator;
+import com.shimizukenta.secssimulator.SecsSimulatorException;
 
 public class MacroExecutor {
 	
 	public static final long defaultSleepMilliSec = 1000L;
 	
-	private final ExecutorService execServ = Executors.newCachedThreadPool(r -> {
-		Thread th = new Thread(r);
-		th.setDaemon(true);
-		return th;
-	});
-	
 	private final SecsSimulator parent;
+	private SecsMessage lastRecvMsg;
 	
 	public MacroExecutor(SecsSimulator parent) {
 		this.parent = parent;
+		this.lastRecvMsg = null;
 	}
 	
-	public void execute(MacroRequest request)
-			throws InterruptedException, MacroException {
+	public void execute(MacroRequest request) throws InterruptedException, MacroException {
 		
 		switch ( request.command() ) {
 		case OPEN: {
@@ -56,20 +51,33 @@ public class MacroExecutor {
 		}
 		case SEND_SML: {
 			
-			//TODO
+			Optional<String> alias = request.option(0);
+			SmlMessage sm = alias.flatMap(parent::sml).orElse(null);
 			
+			if ( sm == null ) {
+				
+				throw new MacroException("SML-Alias not found \"" + alias.orElse("") + "\"");
+				
+			} else {
+				
+				send(sm);
+			}
 			break;
 		}
 		case SEND_DIRECT: {
 			
-			//TODO
-			
+			try {
+				SmlMessage sm = parent.parseSml(request.option(0).orElse(""));
+				send(sm);
+			}
+			catch ( SmlParseException e ) {
+				throw new MacroException(e);
+			}
 			break;
 		}
 		case WAIT: {
 			
-			//TODO
-			
+			waitMessage(request.option(0).orElse(""));
 			break;
 		}
 		case SLEEP: {
@@ -94,51 +102,91 @@ public class MacroExecutor {
 		}
 	}
 	
-	public void shutdown() throws InterruptedException {
-		
-		execServ.shutdown();
-		if ( execServ.awaitTermination(1L, TimeUnit.MILLISECONDS) ) {
-			return;
-		}
-		
-		execServ.shutdownNow();
-		if ( execServ.awaitTermination(5L, TimeUnit.SECONDS) ) {
-			return;
-		}
-	}
+	private final Object waitMsgSyncObj = new Object();
 	
 	public void receive(SecsMessage recvMsg) {
-		
-		//TODO
+		synchronized ( waitMsgSyncObj ) {
+			this.lastRecvMsg = recvMsg;
+			waitMsgSyncObj.notifyAll();
+		}
 	}
 	
-	private void waitMessage(int strm, int func)
-			throws InterruptedException, MacroException {
+	protected static final String GROUP_STREAM = "STREAM";
+	protected static final String GROUP_FUNCTION = "FUNCTION";
+	protected static final String pregMessage = "[Ss](?<" + GROUP_STREAM + ">[0-9]{1,3})[Ff](?<" + GROUP_FUNCTION + ">[0-9]{1,3})";
+	
+	protected static final Pattern ptnMessage = Pattern.compile("^" + pregMessage + "$");
+	
+	private void waitMessage(String sxfy) throws InterruptedException, MacroException {
 		
-		//TODO
+		Matcher m = ptnMessage.matcher(sxfy.trim());
+		
+		if ( ! m.matches() ) {
+			throw new MacroException("Wait preg pattern not match \"" + sxfy + "\"");
+		}
+		
+		final int strm = Integer.parseInt(m.group(GROUP_STREAM));
+		final int func = Integer.parseInt(m.group(GROUP_FUNCTION));
+		
+		synchronized ( waitMsgSyncObj ) {
+			
+			for ( ;; ) {
+				
+				if ( this.lastRecvMsg != null ) {
+					
+					try {
+						if ( lastRecvMsg.getStream() == strm && lastRecvMsg.getFunction() == func ) {
+							return;
+						}
+					}
+					finally {
+						this.lastRecvMsg = null;
+					}
+				}
+				
+				waitMsgSyncObj.wait();
+			}
+		}
 	}
+	
+	
+	private final Object commSyncObj = new Object();
 	
 	private void openCommunicator() throws InterruptedException, IOException {
 		
 		final SecsCommunicator comm = parent.openCommunicator();
 		
 		final SecsCommunicatableStateChangeListener lstnr = communicated -> {
-			synchronized ( this ) {
+			synchronized ( commSyncObj ) {
 				if ( communicated ) {
-					this.notifyAll();
+					commSyncObj.notifyAll();
 				}
 			}
 		};
 		
-		try {
-			synchronized ( this ) {
+		synchronized ( commSyncObj ) {
+			try {
 				comm.addSecsCommunicatableStateChangeListener(lstnr);
-				this.wait();
+				commSyncObj.wait();
 			}
-		}
-		finally {
-			comm.removeSecsCommunicatableStateChangeListener(lstnr);
+			finally {
+				comm.removeSecsCommunicatableStateChangeListener(lstnr);
+			}
 		}
 	}
 	
+	private Optional<SecsMessage> send(SmlMessage sm) throws InterruptedException, MacroException {
+		
+		try {
+			return parent.send(sm);
+		}
+		catch ( SecsSimulatorException e ) {
+			Throwable t = e.getCause();
+			if ( t == null ) {
+				throw new MacroException(e);
+			} else {
+				throw new MacroException(t);
+			}
+		}
+	}
 }

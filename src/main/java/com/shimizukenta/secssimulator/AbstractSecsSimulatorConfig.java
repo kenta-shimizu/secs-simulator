@@ -1,6 +1,7 @@
 package com.shimizukenta.secssimulator;
 
 import java.io.Serializable;
+import java.net.SocketAddress;
 
 import com.shimizukenta.secs.hsmsss.HsmsSsCommunicatorConfig;
 import com.shimizukenta.secs.hsmsss.HsmsSsProtocol;
@@ -16,12 +17,15 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 	private SecsSimulatorProtocol protocol;
 	private final HsmsSsCommunicatorConfig hsmsSsCommConfig = new HsmsSsCommunicatorConfig();
 	private final Secs1OnTcpIpCommunicatorConfig secs1OnTcpIpCommConfig = new Secs1OnTcpIpCommunicatorConfig();
+	private final Secs1OnTcpIpCommunicatorConfig secs1OnTcpIpRecvCommConfig = new Secs1OnTcpIpCommunicatorConfig();
+	private SocketAddress secs1AdapterSocketAddress;
 	
 	public AbstractSecsSimulatorConfig() {
 		autoReply = true;
 		autoReplySxF0 = false;
 		autoReplyS9Fy = false;
 		protocol = SecsSimulatorProtocol.HSMS_SS_PASSIVE;
+		secs1AdapterSocketAddress = null;
 	}
 	
 	public void autoReply(boolean f) {
@@ -98,4 +102,21 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 		}
 	}
 	
+	public Secs1OnTcpIpCommunicatorConfig secs1OnTcpIpReceiverCommunicatorConfig() {
+		synchronized ( this ) {
+			return secs1OnTcpIpRecvCommConfig;
+		}
+	}
+	
+	public void secs1AdapterSocketAddress(SocketAddress addr) {
+		synchronized ( this ) {
+			secs1AdapterSocketAddress = addr;
+		}
+	}
+	
+	public SocketAddress secs1AdapterSocketAddress() {
+		synchronized ( this ) {
+			return secs1AdapterSocketAddress;
+		}
+	}
 }

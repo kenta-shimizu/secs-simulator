@@ -21,6 +21,8 @@
 		"rebindIfPassive": true
 	},
 	"autoReply": true,
+	"autoReplyS9Fy": false,
+	"autoReplySxF0": false,
 	"smlFiles": [
 		"/path/to/sxfy.sml"
 	],
