@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -59,10 +60,15 @@ public interface SecsSimulator {
 	
 	/* SMLs */
 	public Set<String> smlAliases();
+	public List<String> sortedSmlAliases();
 	public Optional<SmlMessage> sml(CharSequence alias);
 	
 	public boolean addSml(CharSequence alias, SmlMessage sml);
 	public boolean removeSml(CharSequence alias);
+	
+	public boolean addSmlAliasListChangedListener(SmlAliasListChangedListener l);
+	public boolean removeSmlAliasListChangedListener(SmlAliasListChangedListener l);
+	
 	
 	default public SmlMessage parseSml(CharSequence sml) throws SmlParseException {
 		return ExtendSmlMessageParser.getInstance().parse(sml);

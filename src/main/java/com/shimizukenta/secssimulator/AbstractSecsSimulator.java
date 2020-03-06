@@ -11,7 +11,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -363,36 +362,23 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	}
 	
 	
-	private class SmlAlias {
-		
-		private final String alias;
-		private final SmlMessage sm;
-		
-		private SmlAlias(CharSequence alias, SmlMessage sm) {
-			this.alias = Objects.requireNonNull(alias).toString();
-			this.sm = Objects.requireNonNull(sm);
-		}
-		
-		@Override
-		public int hashCode() {
-			return alias.hashCode();
-		}
-		
-		@Override
-		public boolean equals(Object o) {
-			if ((o != null) && (o instanceof SmlAlias)) {
-				return ((SmlAlias)o).alias.equals(alias);
-			} else {
-				return false;
-			}
-		}
-	}
-	
 	private final Set<SmlAlias> smls = new CopyOnWriteArraySet<>();
+	
+	protected Set<SmlAlias> smls() {
+		return smls;
+	}
 	
 	@Override
 	public Set<String> smlAliases() {
-		return smls.stream().map(x -> x.alias).collect(Collectors.toSet());
+		return smls.stream().map(x -> x.alias()).collect(Collectors.toSet());
+	}
+	
+	@Override
+	public List<String> sortedSmlAliases() {
+		return smls.stream()
+				.sorted()
+				.map(s -> s.alias())
+				.collect(Collectors.toList());
 	}
 	
 	@Override
@@ -401,19 +387,48 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			return Optional.empty();
 		} else {
 			String s = alias.toString();
-			return smls.stream().filter(x -> x.alias.equals(s)).map(x -> x.sm).findFirst();
+			return smls.stream().filter(x -> x.alias().equals(s)).map(x -> x.smlMessage()).findFirst();
 		}
 	}
 	
+	
+	private final Collection<SmlAliasListChangedListener> smlAliasListChangedListeners = new ArrayList<>();
+	
 	@Override
 	public boolean addSml(CharSequence alias, SmlMessage sml) {
-		return smls.add(new SmlAlias(alias, sml));
+		synchronized ( smlAliasListChangedListeners ) {
+			boolean f = smls.add(new SmlAlias(alias, sml));
+			if ( f ) {
+				smlAliasListChangedListeners.forEach(l -> {l.changed(sortedSmlAliases());});
+			}
+			return f;
+		}
 	}
 
 	@Override
 	public boolean removeSml(CharSequence alias) {
-		return smls.removeIf(s -> alias.toString().equals(s.alias));
+		synchronized ( smlAliasListChangedListeners ) {
+			boolean f = smls.removeIf(s -> alias.toString().equals(s.alias()));
+			if ( f ) {
+				smlAliasListChangedListeners.forEach(l -> {l.changed(sortedSmlAliases());});
+			}
+			return f;
+		}
 	}
+	
+	public boolean addSmlAliasListChangedListener(SmlAliasListChangedListener l) {
+		synchronized ( smlAliasListChangedListeners ) {
+			l.changed(sortedSmlAliases());
+			return smlAliasListChangedListeners.add(l);
+		}
+	}
+	
+	public boolean removeSmlAliasListChangedListener(SmlAliasListChangedListener l) {
+		synchronized ( smlAliasListChangedListeners ) {
+			return smlAliasListChangedListeners.remove(l);
+		}
+	}
+
 	
 	private Optional<SmlMessage> autoReply(SecsMessage primaryMsg) {
 		return autoReply(primaryMsg.getStream(), primaryMsg.getFunction(), primaryMsg.wbit());
@@ -435,7 +450,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	private List<SmlMessage> autoReplys(int primaryStream, int primaryFunction) {
 		
 		return smls.stream()
-				.map(x -> x.sm)
+				.map(x -> x.smlMessage())
 				.filter(x -> ! x.wbit())
 				.filter(s -> s.getStream() == primaryStream)
 				.filter(x -> x.getFunction() == primaryFunction + 1)
@@ -446,7 +461,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	private List<SmlMessage> autoReplys(int primaryStream) {
 		
 		return smls.stream()
-				.map(x -> x.sm)
+				.map(x -> x.smlMessage())
 				.filter(x -> ! x.wbit())
 				.filter(s -> s.getStream() == primaryStream)
 				.filter(x -> (x.getFunction() % 2) == 0)

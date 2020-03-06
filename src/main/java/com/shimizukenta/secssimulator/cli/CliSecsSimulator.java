@@ -10,8 +10,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -205,24 +205,22 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 							}
 							case LIST_SML: {
 								
-								Set<String> smls = smlAliases();
+								List<String> aliases = sortedSmlAliases();
 								
-								if ( smls.isEmpty() ) {
+								if ( aliases.isEmpty() ) {
 									
 									echo("SMLs not entry");
 									
 								} else {
 									
-									String s = smls.stream()
-											.sorted()
-											.collect(Collectors.joining(System.lineSeparator()));
-									echo(s);
+									echo(aliases.stream().collect(Collectors.joining(System.lineSeparator())));
 								}
 								break;
 							}
 							case SHOW_SML: {
 								
 								Optional<String> alias = request.option(0);
+								
 								String s = alias
 										.flatMap(this::sml)
 										.map(x -> x.toString())
