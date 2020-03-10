@@ -48,8 +48,10 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 	
 	public void autoReply(boolean f) {
 		synchronized ( autoReplyStateChangedListeners ) {
-			this.autoReply = f;
-			autoReplyStateChangedListeners.forEach(l -> {l.changed(f);});
+			if (this.autoReply != f) {
+				this.autoReply = f;
+				autoReplyStateChangedListeners.forEach(l -> {l.changed(f);});
+			}
 		}
 	}
 	
@@ -77,8 +79,10 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 	
 	public void autoReplySxF0(boolean f) {
 		synchronized ( autoReplySxF0StateChangedListeners ) {
-			autoReplySxF0 = f;
-			autoReplySxF0StateChangedListeners.forEach(l -> {l.changed(f);});
+			if ( autoReplySxF0 != f ) {
+				autoReplySxF0 = f;
+				autoReplySxF0StateChangedListeners.forEach(l -> {l.changed(f);});
+			}
 		}
 	}
 	
@@ -106,8 +110,10 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 	
 	public void autoReplyS9Fy(boolean f) {
 		synchronized ( autoReplyS9FyStateChangedListeners ) {
-			autoReplyS9Fy = f;
-			autoReplyS9FyStateChangedListeners.forEach(l -> {l.changed(f);});
+			if ( autoReplyS9Fy != f ) {
+				autoReplyS9Fy = f;
+				autoReplyS9FyStateChangedListeners.forEach(l -> {l.changed(f);});
+			}
 		}
 	}
 	

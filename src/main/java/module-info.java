@@ -9,4 +9,6 @@ module com.shimizukenta.secssimulator {
 	exports com.shimizukenta.secs.secs2;
 	exports com.shimizukenta.secs.sml;
 	exports com.shimizukenta.jsonhub;
+	
+	requires javafx.controls;
 }

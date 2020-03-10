@@ -53,12 +53,14 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 	private final CliSecsSimulatorConfig config;
 	private Path pwd;
 	private boolean logging;
+	private boolean started;
 	
 	public CliSecsSimulator(CliSecsSimulatorConfig config) {
 		super(config);
 		this.config = config;
 		this.pwd = Paths.get(".").normalize();
 		this.logging = false;
+		started = false;
 	}
 	
 	@Override
@@ -98,6 +100,26 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 					throw new SecsSimulatorSmlEntryFailedException(path, e);
 				}
 			}
+			
+			config.addAutoReplyStateChangedListener(f -> {
+				if ( started ) {
+					echo("auto-reply: " + f);
+				}
+			});
+			
+			config.addAutoReplySxF0StateChangedListener(f -> {
+				if ( started ) {
+					echo("auto-reply-SxF0: " + f);
+				}
+			});
+			
+			config.addAutoReplyS9FyStateChangedListener(f -> {
+				if ( started ) {
+					echo("auto-reply-S9Fy: " + f);
+				}
+			});
+			
+			started = true;
 			
 			config.logging().ifPresent(this::startLogging);
 			
@@ -318,21 +340,18 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 								
 								boolean f = request.option(0).map(Boolean::parseBoolean).orElse(! config.autoReply());
 								config.autoReply(f);
-								echo("auto-reply: " + config.autoReply());
 								break;
 							}
 							case AUTO_REPLY_S9Fy: {
 								
 								boolean f = request.option(0).map(Boolean::parseBoolean).orElse(! config.autoReplyS9Fy());
 								config.autoReplyS9Fy(f);
-								echo("auto-reply-S9Fy: " + config.autoReplyS9Fy());
 								break;
 							}
 							case AUTO_REPLY_SxF0: {
 								
 								boolean f = request.option(0).map(Boolean::parseBoolean).orElse(! config.autoReplySxF0());
 								config.autoReplySxF0(f);
-								echo("auto-reply-SxF0: " + config.autoReplySxF0());
 								break;
 							}
 							default: {
