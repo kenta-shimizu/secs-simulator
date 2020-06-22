@@ -7,21 +7,20 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.shimizukenta.secs.SecsCommunicatableStateChangeListener;
-import com.shimizukenta.secs.SecsCommunicator;
 import com.shimizukenta.secs.SecsMessage;
 import com.shimizukenta.secs.sml.SmlMessage;
 import com.shimizukenta.secs.sml.SmlParseException;
-import com.shimizukenta.secssimulator.SecsSimulator;
+import com.shimizukenta.secssimulator.AbstractSecsSimulator;
 import com.shimizukenta.secssimulator.SecsSimulatorException;
 
 public class MacroExecutor {
 	
 	public static final long defaultSleepMilliSec = 1000L;
 	
-	private final SecsSimulator parent;
+	private final AbstractSecsSimulator parent;
 	private SecsMessage lastRecvMsg;
 	
-	public MacroExecutor(SecsSimulator parent) {
+	public MacroExecutor(AbstractSecsSimulator parent) {
 		this.parent = parent;
 		this.lastRecvMsg = null;
 	}
@@ -154,7 +153,7 @@ public class MacroExecutor {
 	
 	private void openCommunicator() throws InterruptedException, IOException {
 		
-		final SecsCommunicator comm = parent.openCommunicator();
+		parent.openCommunicator();
 		
 		final SecsCommunicatableStateChangeListener lstnr = communicated -> {
 			synchronized ( commSyncObj ) {
@@ -166,11 +165,11 @@ public class MacroExecutor {
 		
 		synchronized ( commSyncObj ) {
 			try {
-				comm.addSecsCommunicatableStateChangeListener(lstnr);
+				parent.addSecsCommunicatableStateChangeListener(lstnr);
 				commSyncObj.wait();
 			}
 			finally {
-				comm.removeSecsCommunicatableStateChangeListener(lstnr);
+				parent.removeSecsCommunicatableStateChangeListener(lstnr);
 			}
 		}
 	}

@@ -19,7 +19,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import com.shimizukenta.secs.SecsCommunicator;
 import com.shimizukenta.secs.sml.SmlMessage;
 import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.AbstractSecsSimulator;
@@ -60,7 +59,7 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 		this.config = config;
 		this.pwd = Paths.get(".").normalize();
 		this.logging = false;
-		started = false;
+		this.started = false;
 	}
 	
 	@Override
@@ -389,9 +388,9 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 	}
 	
 	@Override
-	public SecsCommunicator openCommunicator() throws IOException {
+	public void openCommunicator() throws IOException {
 		echo("Try-open-communicator");
-		return super.openCommunicator();
+		super.openCommunicator();
 	}
 	
 	private void asyncSend(SmlMessage sm) {
@@ -436,8 +435,12 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 						return syncLog;
 					},
 					() -> {
-						synchronized ( syncLog ) {
-							syncLog.wait();
+						try {
+							synchronized ( syncLog ) {
+								syncLog.wait();
+							}
+						}
+						catch ( InterruptedException ignore ) {
 						}
 						return syncLog;
 					});
@@ -496,8 +499,12 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 						return syncMacro;
 					},
 					() -> {
-						synchronized ( syncMacro ) {
-							syncMacro.wait();
+						try {
+							synchronized ( syncMacro ) {
+								syncMacro.wait();
+							}
+						}
+						catch ( InterruptedException ignore ) {
 						}
 						return syncMacro;
 					});

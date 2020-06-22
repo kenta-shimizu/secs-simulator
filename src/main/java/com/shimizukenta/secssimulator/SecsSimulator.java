@@ -11,7 +11,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.shimizukenta.secs.SecsCommunicator;
 import com.shimizukenta.secs.SecsMessage;
 import com.shimizukenta.secs.sml.SmlMessage;
 import com.shimizukenta.secs.sml.SmlParseException;
@@ -19,7 +18,7 @@ import com.shimizukenta.secssimulator.extendsml.ExtendSmlMessageParser;
 
 public interface SecsSimulator {
 	
-	public SecsCommunicator openCommunicator() throws IOException;
+	public void openCommunicator() throws IOException;
 	public void closeCommunicator() throws IOException;
 	public void quitApplication();
 	

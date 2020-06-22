@@ -66,13 +66,13 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	/* state-changed-listener */
 	private final Collection<SecsCommunicatableStateChangeListener> commStateChangedListenrs = new CopyOnWriteArrayList<>();
 	
-	protected boolean addSecsCommunicatableStateChangeListener(SecsCommunicatableStateChangeListener lstnr) {
+	public boolean addSecsCommunicatableStateChangeListener(SecsCommunicatableStateChangeListener lstnr) {
 		boolean f = commStateChangedListenrs.add(lstnr);
 		getCommunicator().ifPresent(comm -> {comm.addSecsCommunicatableStateChangeListener(lstnr);});
 		return f;
 	}
 	
-	protected boolean removeSecsCommunicatableStateChangeListener(SecsCommunicatableStateChangeListener lstnr) {
+	public boolean removeSecsCommunicatableStateChangeListener(SecsCommunicatableStateChangeListener lstnr) {
 		boolean f = commStateChangedListenrs.remove(lstnr);
 		getCommunicator().ifPresent(comm -> {comm.removeSecsCommunicatableStateChangeListener(lstnr);});
 		return f;
@@ -114,7 +114,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	private final Collection<SecsMessage> waitPrimaryMsgs = new ArrayList<>();
 	
 	@Override
-	public SecsCommunicator openCommunicator() throws IOException {
+	public void openCommunicator() throws IOException {
 		
 		synchronized ( this ) {
 			
@@ -191,8 +191,6 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			comm.open();
 			
 			this.secsComm = comm;
-			
-			return comm;
 		}
 	}
 	
