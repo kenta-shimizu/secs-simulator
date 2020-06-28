@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -18,6 +19,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.shimizukenta.secs.SecsCommunicatableStateChangeListener;
 import com.shimizukenta.secs.SecsCommunicator;
@@ -30,6 +32,8 @@ import com.shimizukenta.secs.SecsWaitReplyMessageException;
 import com.shimizukenta.secs.hsmsss.HsmsSsCommunicator;
 import com.shimizukenta.secs.secs2.Secs2;
 import com.shimizukenta.secs.sml.SmlMessage;
+import com.shimizukenta.secs.sml.SmlParseException;
+import com.shimizukenta.secssimulator.extendsml.ExtendSmlMessageParser;
 import com.shimizukenta.secssimulator.macro.MacroExecutor;
 import com.shimizukenta.secssimulator.macro.MacroFileReader;
 import com.shimizukenta.secssimulator.macro.MacroReport;
@@ -242,13 +246,11 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		}
 	}
 
-	@Override
-	public void protocol(SecsSimulatorProtocol protocol) {
+	protected void protocol(SecsSimulatorProtocol protocol) {
 		this.config.protocol(protocol);
 	}
 
-	@Override
-	public SecsSimulatorProtocol protocol() {
+	protected SecsSimulatorProtocol protocol() {
 		return this.config.protocol();
 	}
 	
@@ -366,20 +368,17 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return smls;
 	}
 	
-	@Override
-	public Set<String> smlAliases() {
+	protected Set<String> smlAliases() {
 		return smls.stream().map(x -> x.alias()).collect(Collectors.toSet());
 	}
 	
-	@Override
-	public List<String> sortedSmlAliases() {
+	protected List<String> sortedSmlAliases() {
 		return smls.stream()
 				.sorted()
 				.map(s -> s.alias())
 				.collect(Collectors.toList());
 	}
 	
-	@Override
 	public Optional<SmlMessage> sml(CharSequence alias) {
 		if ( alias == null ) {
 			return Optional.empty();
@@ -402,7 +401,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			return f;
 		}
 	}
-
+	
 	@Override
 	public boolean removeSml(CharSequence alias) {
 		synchronized ( smlAliasListChangedListeners ) {
@@ -414,6 +413,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		}
 	}
 	
+	@Override
 	public boolean addSmlAliasListChangedListener(SmlAliasListChangedListener l) {
 		synchronized ( smlAliasListChangedListeners ) {
 			l.changed(sortedSmlAliases());
@@ -421,6 +421,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		}
 	}
 	
+	@Override
 	public boolean removeSmlAliasListChangedListener(SmlAliasListChangedListener l) {
 		synchronized ( smlAliasListChangedListeners ) {
 			return smlAliasListChangedListeners.remove(l);
@@ -526,6 +527,57 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	
 	private boolean equalsDeviceId(SecsMessage msg) {
 		return getCommunicator().filter(comm -> comm.deviceId() == msg.deviceId()).isPresent();
+	}
+	
+	public SmlMessage parseSml(CharSequence sml) throws SmlParseException {
+		return ExtendSmlMessageParser.getInstance().parse(sml);
+	}
+	
+	protected static final String SmlExtension = "sml";
+	
+	protected boolean addSmlFile(Path path) throws IOException, SmlParseException {
+		
+		try (
+				Stream<String> lines = Files.lines(path, StandardCharsets.US_ASCII);
+				) {
+			
+			String sml = lines.collect(Collectors.joining(" "));
+			SmlMessage sm = parseSml(sml);
+			
+			String alias = path.getFileName().toString();
+			
+			String ext = "." + SmlExtension;
+			
+			if ( alias.toLowerCase().endsWith(ext) ) {
+				alias = alias.substring(0, alias.length() - ext.length());
+			}
+			
+			return addSml(alias, sm);
+		}
+		catch ( SmlParseException e ) {
+			throw new SmlParseException(path.getFileName().toString(), e);
+		}
+		
+	}
+	
+	protected boolean addSmlFiles(Path directory) throws IOException, SmlParseException {
+		
+		try (
+				DirectoryStream<Path> paths = Files.newDirectoryStream(
+						directory
+						, path -> {
+							return path.toString().toLowerCase().endsWith("." + SmlExtension);
+						});
+				) {
+			
+			for ( Path path : paths ) {
+				if ( ! addSmlFile(path) ) {
+					return false;
+				}
+			}
+			
+			return true;
+		}
 	}
 	
 	

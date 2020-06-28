@@ -1,4 +1,4 @@
-package com.shimizukenta.secssimulator.cli;
+package com.shimizukenta.secssimulator.gui.swing;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -11,12 +11,12 @@ import java.util.HashSet;
 import java.util.Optional;
 
 import com.shimizukenta.jsonhub.JsonHub;
-import com.shimizukenta.secssimulator.AbstractSecsSimulatorConfig;
 import com.shimizukenta.secssimulator.SecsSimulatorProtocol;
+import com.shimizukenta.secssimulator.gui.AbstractGuiSecsSimulatorConfig;
 
-public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
+public class SwingSecsSimulatorConfig extends AbstractGuiSecsSimulatorConfig {
 
-	private static final long serialVersionUID = -4642182855193964949L;
+	private static final long serialVersionUID = 72651094938332985L;
 	
 	private static final String PROTOCOL_SECS1 = "secs1";
 	private static final String PROTOCOL_SECS1_ON_TCP_IP = "secs1-on-tcp-ip";
@@ -30,7 +30,7 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 	private final Collection<Path> smlFiles = new HashSet<>();
 	private final Collection<Path> smlDirs = new HashSet<>();
 	
-	public CliSecsSimulatorConfig() {
+	public SwingSecsSimulatorConfig() {
 		super();
 		
 		log = null;
@@ -339,9 +339,9 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 		jh.getOrDefault("autoOpen").optionalBoolean().ifPresent(this::autoOpen);
 	}
 	
-	public static CliSecsSimulatorConfig get(String[] args) {
+	public static SwingSecsSimulatorConfig get(String[] args) {
 		
-		final CliSecsSimulatorConfig conf = new CliSecsSimulatorConfig();
+		final SwingSecsSimulatorConfig conf = new SwingSecsSimulatorConfig();
 		
 		for ( int i = 0, m = args.length; i < m; i += 2 ) {
 			

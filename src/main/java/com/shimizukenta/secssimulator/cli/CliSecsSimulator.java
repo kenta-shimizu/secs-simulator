@@ -537,8 +537,8 @@ public class CliSecsSimulator extends AbstractSecsSimulator implements Runnable 
 				((Throwable) o).printStackTrace();
 			} else {
 				System.out.println(o);
+				System.out.println();
 			}
-			System.out.println();
 		}
 	}
 }
