@@ -4,28 +4,29 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.shimizukenta.secs.AbstractSecsInnerEngine;
 import com.shimizukenta.secs.SecsException;
 import com.shimizukenta.secs.SecsSendMessageException;
 import com.shimizukenta.secs.SecsWaitReplyMessageException;
+import com.shimizukenta.secs.TimeProperty;
 import com.shimizukenta.secs.secs2.Secs2BuildException;
 import com.shimizukenta.secs.secs2.Secs2ByteBuffersBuilder;
 
-public class HsmsSsSendReplyManager {
+public class HsmsSsSendReplyManager extends AbstractSecsInnerEngine {
 	
 	private final Collection<Pack> packs = new ArrayList<>();
 	
 	private final HsmsSsCommunicator parent;
 	
 	public HsmsSsSendReplyManager(HsmsSsCommunicator parent) {
+		super(parent);
 		this.parent = parent;
 	}
 	
@@ -94,6 +95,12 @@ public class HsmsSsSendReplyManager {
 		}
 	}
 	
+	private static final long MAX_BUFFER_SIZE = 256L * 256L;
+	
+	protected long prototypeMaxBufferSize() {
+		return MAX_BUFFER_SIZE;
+	}
+	
 	public void send(AsynchronousSocketChannel channel, HsmsSsMessage msg)
 			throws SecsSendMessageException, SecsException
 			, InterruptedException {
@@ -109,10 +116,33 @@ public class HsmsSsSendReplyManager {
 					throw new HsmsSsTooBigSendMessageException(msg);
 				}
 				
-				parent.putTrySendMessagePassThrough(msg);
+				notifyTrySendMessagePassThrough(msg);
 				
-				{
-					ByteBuffer buffer = ByteBuffer.allocate(14);
+				long bufferSize = len + 4L;
+				
+				if ( bufferSize > prototypeMaxBufferSize() ) {
+					
+					{
+						ByteBuffer buffer = ByteBuffer.allocate(14);
+						
+						buffer.put((byte)(len >> 24));
+						buffer.put((byte)(len >> 16));
+						buffer.put((byte)(len >>  8));
+						buffer.put((byte)(len      ));
+						buffer.put(msg.header10Bytes());
+						
+						((Buffer)buffer).flip();
+						
+						send(channel, buffer);
+					}
+					
+					for ( ByteBuffer buffer : bb.getByteBuffers() ) {
+						send(channel, buffer);
+					}
+					
+				} else {
+					
+					ByteBuffer buffer = ByteBuffer.allocate((int)bufferSize);
 					
 					buffer.put((byte)(len >> 24));
 					buffer.put((byte)(len >> 16));
@@ -120,17 +150,17 @@ public class HsmsSsSendReplyManager {
 					buffer.put((byte)(len      ));
 					buffer.put(msg.header10Bytes());
 					
+					for ( ByteBuffer bf : bb.getByteBuffers() ) {
+						buffer.put(bf);
+					}
+					
 					((Buffer)buffer).flip();
 					
 					send(channel, buffer);
 				}
 				
-				for ( ByteBuffer buffer : bb.getByteBuffers() ) {
-					send(channel, buffer);
-				}
-				
-				parent.putSendedMessagePassThrough(msg);
-				parent.notifyLog("Sended HsmsSs-Message", msg);
+				notifySendedMessagePassThrough(msg);
+				notifyLog("Sended HsmsSs-Message", msg);
 			}
 			catch ( ExecutionException e ) {
 				
@@ -153,7 +183,7 @@ public class HsmsSsSendReplyManager {
 		
 		while ( buffer.hasRemaining() ) {
 			
-			Future<Integer> f = channel.write(buffer);
+			final Future<Integer> f = channel.write(buffer);
 			
 			try {
 				int w = f.get().intValue();
@@ -169,53 +199,52 @@ public class HsmsSsSendReplyManager {
 		}
 	}
 	
-	private HsmsSsMessage reply(Pack p, float timeout)
+	private HsmsSsMessage reply(Pack p, TimeProperty timeout)
 			throws SecsWaitReplyMessageException, SecsException
 			, TimeoutException, InterruptedException {
 		
-		Collection<Callable<HsmsSsMessage>> tasks = Arrays.asList(
-				() -> {
-					
-					try {
-						synchronized ( packs ) {
-							for ( ;; ) {
-								HsmsSsMessage m = p.replyMsg();
-								if ( m != null ) {
-									return m;
-								}
-								packs.wait();
-							}
+		final Callable<HsmsSsMessage> getMsgTask = () -> {
+			
+			try {
+				synchronized ( packs ) {
+					for ( ;; ) {
+						HsmsSsMessage m = p.replyMsg();
+						if ( m != null ) {
+							return m;
 						}
+						packs.wait();
 					}
-					catch ( InterruptedException ignroe ) {
-					}
+				}
+			}
+			catch ( InterruptedException ignroe ) {
+			}
+			
+			return null;
+		};
+		
+		final Callable<HsmsSsMessage> checkTerminateTask = () -> {
+			
+			try {
+				synchronized ( packs ) {
 					
-					return null;
-				},
-				() -> {
-					
-					try {
-						synchronized ( packs ) {
-							
-							for ( ;; ) {
-								
-								if ( packs.isEmpty() ) {
-									return null;
-								}
-								
-								packs.wait();
-							}
+					for ( ;; ) {
+						
+						if ( packs.isEmpty() ) {
+							return null;
 						}
+						
+						packs.wait();
 					}
-					catch ( InterruptedException ignore ) {
-					}
-					
-					return null;
-				});
+				}
+			}
+			catch ( InterruptedException ignore ) {
+			}
+			
+			return null;
+		};
 		
 		try {
-			long t = (long)(timeout * 1000.0F);
-			HsmsSsMessage msg = parent.executorService().invokeAny(tasks, t, TimeUnit.MILLISECONDS);
+			HsmsSsMessage msg = executeInvokeAny(getMsgTask, checkTerminateTask, timeout);
 			
 			if ( msg == null ) {
 				throw new HsmsSsDetectTerminateException();

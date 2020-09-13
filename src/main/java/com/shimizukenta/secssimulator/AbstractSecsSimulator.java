@@ -1,25 +1,25 @@
 package com.shimizukenta.secssimulator;
 
-import java.io.BufferedWriter;
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.shimizukenta.secs.SecsCommunicatableStateChangeListener;
 import com.shimizukenta.secs.SecsCommunicator;
@@ -34,31 +34,166 @@ import com.shimizukenta.secs.secs2.Secs2;
 import com.shimizukenta.secs.sml.SmlMessage;
 import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.extendsml.ExtendSmlMessageParser;
-import com.shimizukenta.secssimulator.macro.MacroExecutor;
-import com.shimizukenta.secssimulator.macro.MacroFileReader;
-import com.shimizukenta.secssimulator.macro.MacroReport;
+import com.shimizukenta.secssimulator.log.LoggerEngine;
+import com.shimizukenta.secssimulator.macro.MacroEngine;
 import com.shimizukenta.secssimulator.macro.MacroReportListener;
-import com.shimizukenta.secssimulator.macro.MacroRequest;
 
 public abstract class AbstractSecsSimulator implements SecsSimulator {
-
+	
+	private final ExecutorService execServ = Executors.newCachedThreadPool(r -> {
+		Thread th = new Thread(r);
+		th.setDaemon(true);
+		return th;
+	});
+	
+	protected ExecutorService executorService() {
+		return this.execServ;
+	}
+	
+	protected static Runnable createLoopTask(InterruptableRunnable r) {
+		return new Runnable() {
+			@Override
+			public void run() {
+				try {
+					for ( ;; ) {
+						r.run();
+					}
+				}
+				catch ( InterruptedException ignore ) {
+				}
+			}
+		};
+	}
+	
+	protected void executeLoopTask(InterruptableRunnable r) {
+		this.execServ.execute(createLoopTask(r));
+	}
+	
+	protected <T> T executeInvokeAny(Collection<? extends Callable<T>> tasks)
+			throws InterruptedException, ExecutionException {
+		return execServ.invokeAny(tasks);
+	}
+	
+	protected <T> T executeInvokeAny(Callable<T> task)
+			throws InterruptedException, ExecutionException {
+		return execServ.invokeAny(Collections.singleton(task));
+	}
+	
+	protected <T> T executeInvokeAny(Callable<T> task1, Callable<T> task2)
+			throws InterruptedException, ExecutionException {
+		return execServ.invokeAny(Arrays.asList(task1, task2));
+	}
+	
+	protected <T> T executeInvokeAny(Callable<T> task1, Callable<T> task2, Callable<T> task3)
+			throws InterruptedException, ExecutionException {
+		return execServ.invokeAny(Arrays.asList(task1, task2, task3));
+	}
+	
+	
+	private final Collection<Closeable> closeables = new ArrayList<>();
+	
+	private final LoggerEngine logger;
+	private final MacroEngine macro;
+	
 	private final AbstractSecsSimulatorConfig config;
+	
 	private SecsCommunicator secsComm;
 	private TcpIpAdapter tcpipAdapter;
-	private Thread thLogging;
-	private Thread thMacro;
-	private final MacroExecutor macroExecutor;
+	
+	private boolean opened;
+	private boolean closed;
+	
 	
 	public AbstractSecsSimulator(AbstractSecsSimulatorConfig config) {
 		this.config = config;
+		
+		this.logger = new LoggerEngine(this);
+		this.closeables.add(this.logger);
+		
+		this.macro = new MacroEngine(this);
+		this.closeables.add(this.macro);
+		
 		this.secsComm = null;
 		this.tcpipAdapter = null;
-		this.thLogging = null;
-		this.thMacro = null;
 		
-		this.macroExecutor = new MacroExecutor(this);
-		this.addSecsMessageReceiveListener(this.macroExecutor::receive);
+		this.opened = false;
+		this.closed = false;
+		
 	}
+	
+	@Override
+	public void open() throws IOException {
+		
+		synchronized ( this ) {
+			
+			if ( this.closed ) {
+				throw new IOException("Already closed");
+			}
+			
+			if ( this.opened ) {
+				throw new IOException("Already opened");
+			}
+			
+			this.opened = true;
+		}
+		
+		logger.open();
+		macro.open();
+	}
+	
+	@Override
+	public void close() throws IOException {
+		
+		synchronized ( this ) {
+			
+			if ( this.closed ) {
+				return;
+			}
+			
+			this.closed = true;
+		}
+		
+		IOException ioExcept = null;
+		
+		try {
+			execServ.shutdown();
+			if ( ! execServ.awaitTermination(1L, TimeUnit.MILLISECONDS) ) {
+				execServ.shutdownNow();
+				if ( ! execServ.awaitTermination(5L, TimeUnit.SECONDS) ) {
+					ioExcept = new IOException("ExecutorService#shutdown failed");
+				}
+			}
+		}
+		catch ( InterruptedException giveup ) {
+		}
+		
+		for ( Closeable c : closeables ) {
+			try {
+				c.close();
+			}
+			catch ( IOException e ) {
+				ioExcept = e;
+			}
+		}
+		
+		if ( ioExcept != null ) {
+			throw ioExcept;
+		}
+	}
+	
+	@Override
+	public boolean isOpen() {
+		synchronized ( this ) {
+			return this.opened && ! this.closed;
+		}
+	}
+	
+	public boolean isClosed() {
+		synchronized ( this ) {
+			return this.closed;
+		}
+	}
+	
 	
 	private Optional<SecsCommunicator> getCommunicator() {
 		synchronized ( this ) {
@@ -68,18 +203,18 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	
 	
 	/* state-changed-listener */
-	private final Collection<SecsCommunicatableStateChangeListener> commStateChangedListenrs = new CopyOnWriteArrayList<>();
+	private final BooleanProperty communicateState = new BooleanProperty(false);
 	
-	public boolean addSecsCommunicatableStateChangeListener(SecsCommunicatableStateChangeListener lstnr) {
-		boolean f = commStateChangedListenrs.add(lstnr);
-		getCommunicator().ifPresent(comm -> {comm.addSecsCommunicatableStateChangeListener(lstnr);});
-		return f;
+	protected boolean addSecsCommunicatableStateChangeListener(SecsCommunicatableStateChangeListener lstnr) {
+		return communicateState.addChangedListener(lstnr::changed);
 	}
 	
-	public boolean removeSecsCommunicatableStateChangeListener(SecsCommunicatableStateChangeListener lstnr) {
-		boolean f = commStateChangedListenrs.remove(lstnr);
-		getCommunicator().ifPresent(comm -> {comm.removeSecsCommunicatableStateChangeListener(lstnr);});
-		return f;
+	protected boolean removeSecsCommunicatableStateChangeListener(SecsCommunicatableStateChangeListener lstnr) {
+		return communicateState.removeChangedListener(lstnr::changed);
+	}
+	
+	protected void waitUntilCommunicatable() throws InterruptedException {
+		communicateState.waitUntilTrue();
 	}
 	
 	
@@ -87,15 +222,11 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	private final Collection<SecsMessageReceiveListener> recvMsgListeners = new CopyOnWriteArrayList<>();
 	
 	protected boolean addSecsMessageReceiveListener(SecsMessageReceiveListener lstnr) {
-		boolean f = recvMsgListeners.add(lstnr);
-		getCommunicator().ifPresent(comm -> {comm.addSecsMessageReceiveListener(lstnr);});
-		return f;
+		return recvMsgListeners.add(lstnr);
 	}
 	
 	protected boolean removeSecsMessageReceiveListener(SecsMessageReceiveListener lstnr) {
-		boolean f = recvMsgListeners.remove(lstnr);
-		getCommunicator().ifPresent(comm -> {comm.removeSecsMessageReceiveListener(lstnr);});
-		return f;
+		return recvMsgListeners.remove(lstnr);
 	}
 	
 	
@@ -103,22 +234,18 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	private final Collection<SecsLogListener> logListeners = new CopyOnWriteArrayList<>();
 	
 	protected boolean addSecsLogListener(SecsLogListener lstnr) {
-		boolean f = logListeners.add(lstnr);
-		getCommunicator().ifPresent(comm -> {comm.addSecsLogListener(lstnr);});
-		return f;
+		return logListeners.add(lstnr);
 	}
 	
 	protected boolean removeSecsLogListener(SecsLogListener lstnr) {
-		boolean f = logListeners.remove(lstnr);
-		getCommunicator().ifPresent(comm -> {comm.removeSecsLogListener(lstnr);});
-		return f;
+		return logListeners.remove(lstnr);
 	}
 	
 	
 	private final Collection<SecsMessage> waitPrimaryMsgs = new ArrayList<>();
 	
 	@Override
-	public void openCommunicator() throws IOException {
+	public SecsCommunicator openCommunicator() throws IOException {
 		
 		synchronized ( this ) {
 			
@@ -126,9 +253,11 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			
 			final SecsCommunicator comm = SecsCommunicatorBuilder.getInstance().build(config);
 			
+			comm.addSecsCommunicatableStateChangeListener(communicateState::set);
+			
 			comm.addSecsMessageReceiveListener(primaryMsg -> {
 				
-				if ( config.autoReply() ) {
+				if ( config.autoReply().get() ) {
 					
 					final SmlMessage sml = autoReply(primaryMsg).orElse(null);
 					
@@ -144,7 +273,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 					}
 				}
 				
-				if (config.autoReplySxF0()) {
+				if ( config.autoReplySxF0().get() ) {
 					
 					final LocalSecsMessage reply = autoReplySxF0(primaryMsg).orElse(null);
 					
@@ -158,7 +287,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 					}
 				}
 				
-				if (config.autoReplyS9Fy()) {
+				if ( config.autoReplyS9Fy().get() ) {
 					
 					final LocalSecsMessage s9fy = autoReplyS9Fy(primaryMsg).orElse(null);
 					
@@ -179,22 +308,36 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 				}
 			});
 			
-			recvMsgListeners.forEach(comm::addSecsMessageReceiveListener);
-			commStateChangedListenrs.forEach(comm::addSecsCommunicatableStateChangeListener);
-			logListeners.forEach(comm::addSecsLogListener);
+			comm.addSecsMessageReceiveListener(msg -> {
+				this.recvMsgListeners.forEach(l -> {
+					l.received(msg);
+				});
+			});
 			
-			if ( config.protocol() == SecsSimulatorProtocol.SECS1_ON_TCP_IP_RECEIVER ) {
+			comm.addSecsLogListener(log -> {
+				this.logListeners.forEach(l -> {
+					l.received(log);
+				});
+			});
+			
+			if ( config.protocol().get() == SecsSimulatorProtocol.SECS1_ON_TCP_IP_RECEIVER ) {
 				
 				SocketAddress s = new InetSocketAddress("127.0.0.1", 0);
-				tcpipAdapter = TcpIpAdapter.open(config.secs1AdapterSocketAddress(), s);
+				tcpipAdapter = TcpIpAdapter.open(config.secs1AdapterSocketAddress().get(), s);
 				
 				SocketAddress bx = tcpipAdapter.socketAddressB();
 				config.secs1OnTcpIpReceiverCommunicatorConfig().socketAddress(bx);
+				
+				tcpipAdapter.addThrowableListener((sock, t) -> {
+					//TODO
+				});
 			}
 			
 			comm.open();
 			
 			this.secsComm = comm;
+			
+			return comm;
 		}
 	}
 	
@@ -246,13 +389,17 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		}
 	}
 
-	protected void protocol(SecsSimulatorProtocol protocol) {
-		this.config.protocol(protocol);
+	@Override
+	public void protocol(SecsSimulatorProtocol protocol) {
+		this.config.protocol().set(protocol);
 	}
 
-	protected SecsSimulatorProtocol protocol() {
-		return this.config.protocol();
+	@Override
+	public SecsSimulatorProtocol protocol() {
+		return this.config.protocol().get();
 	}
+	
+	
 	
 	private Optional<SecsMessage> waitPrimaryMessage(SmlMessage sml) {
 		
@@ -289,7 +436,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		}
 		catch ( SecsWaitReplyMessageException e ) {
 			
-			if ( config.autoReplyS9Fy() ) {
+			if ( config.autoReplyS9Fy().get() ) {
 				
 				SecsMessage m = e.secsMessage().orElse(null);
 				
@@ -368,17 +515,20 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return smls;
 	}
 	
-	protected Set<String> smlAliases() {
+	@Override
+	public Set<String> smlAliases() {
 		return smls.stream().map(x -> x.alias()).collect(Collectors.toSet());
 	}
 	
-	protected List<String> sortedSmlAliases() {
+	@Override
+	public List<String> sortedSmlAliases() {
 		return smls.stream()
 				.sorted()
 				.map(s -> s.alias())
 				.collect(Collectors.toList());
 	}
 	
+	@Override
 	public Optional<SmlMessage> sml(CharSequence alias) {
 		if ( alias == null ) {
 			return Optional.empty();
@@ -388,8 +538,12 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		}
 	}
 	
+	protected SmlMessage parseSml(CharSequence sml) throws SmlParseException {
+		return ExtendSmlMessageParser.getInstance().parse(sml);
+	}
+
 	
-	private final Collection<SmlAliasListChangedListener> smlAliasListChangedListeners = new ArrayList<>();
+	private final Collection<SmlAliasListChangeListener> smlAliasListChangedListeners = new ArrayList<>();
 	
 	@Override
 	public boolean addSml(CharSequence alias, SmlMessage sml) {
@@ -401,7 +555,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			return f;
 		}
 	}
-	
+
 	@Override
 	public boolean removeSml(CharSequence alias) {
 		synchronized ( smlAliasListChangedListeners ) {
@@ -413,16 +567,14 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		}
 	}
 	
-	@Override
-	public boolean addSmlAliasListChangedListener(SmlAliasListChangedListener l) {
+	public boolean addSmlAliasListChangedListener(SmlAliasListChangeListener l) {
 		synchronized ( smlAliasListChangedListeners ) {
 			l.changed(sortedSmlAliases());
 			return smlAliasListChangedListeners.add(l);
 		}
 	}
 	
-	@Override
-	public boolean removeSmlAliasListChangedListener(SmlAliasListChangedListener l) {
+	public boolean removeSmlAliasListChangedListener(SmlAliasListChangeListener l) {
 		synchronized ( smlAliasListChangedListeners ) {
 			return smlAliasListChangedListeners.remove(l);
 		}
@@ -529,57 +681,6 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return getCommunicator().filter(comm -> comm.deviceId() == msg.deviceId()).isPresent();
 	}
 	
-	public SmlMessage parseSml(CharSequence sml) throws SmlParseException {
-		return ExtendSmlMessageParser.getInstance().parse(sml);
-	}
-	
-	protected static final String SmlExtension = "sml";
-	
-	protected boolean addSmlFile(Path path) throws IOException, SmlParseException {
-		
-		try (
-				Stream<String> lines = Files.lines(path, StandardCharsets.US_ASCII);
-				) {
-			
-			String sml = lines.collect(Collectors.joining(" "));
-			SmlMessage sm = parseSml(sml);
-			
-			String alias = path.getFileName().toString();
-			
-			String ext = "." + SmlExtension;
-			
-			if ( alias.toLowerCase().endsWith(ext) ) {
-				alias = alias.substring(0, alias.length() - ext.length());
-			}
-			
-			return addSml(alias, sm);
-		}
-		catch ( SmlParseException e ) {
-			throw new SmlParseException(path.getFileName().toString(), e);
-		}
-		
-	}
-	
-	protected boolean addSmlFiles(Path directory) throws IOException, SmlParseException {
-		
-		try (
-				DirectoryStream<Path> paths = Files.newDirectoryStream(
-						directory
-						, path -> {
-							return path.toString().toLowerCase().endsWith("." + SmlExtension);
-						});
-				) {
-			
-			for ( Path path : paths ) {
-				if ( ! addSmlFile(path) ) {
-					return false;
-				}
-			}
-			
-			return true;
-		}
-	}
-	
 	
 	private static final Object commRefObj = new Object();
 	
@@ -595,144 +696,46 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return log;
 	}
 	
-	protected final BlockingQueue<Object> logQueue = new LinkedBlockingQueue<>();
 	
+	/* Logging */
 	@Override
 	public void startLogging(Path path) throws IOException {
-		synchronized ( logQueue ) {
-			stopLogging();
-			thLogging = new Thread(loggingTask(path));
-			thLogging.start();
-		}
+		this.logger.start(path);
 	}
 
 	@Override
 	public void stopLogging() {
-		synchronized ( logQueue ) {
-			if ( thLogging != null ) {
-				thLogging.interrupt();
-				logQueue.clear();
-				thLogging = null;
-			}
-		}
+		this.logger.stop();
 	}
 	
-	protected Runnable loggingTask(Path path) {
-		
-		return new Runnable() {
-			
-			@Override
-			public void run() {
-				
-				try {
-					
-					try (
-							BufferedWriter bw = Files.newBufferedWriter(
-									path
-									, StandardCharsets.UTF_8
-									, StandardOpenOption.WRITE
-									, StandardOpenOption.CREATE
-									, StandardOpenOption.APPEND);
-							) {
-						
-						for ( ;; ) {
-							
-							Object o = logQueue.take();
-							
-							bw.write(o.toString());
-							bw.newLine();
-							bw.newLine();
-							
-							bw.flush();
-						}
-					}
-					catch ( IOException giveup ) {
-					}
-				}
-				catch ( InterruptedException ignore ) {
-				}
-			}
-		};
+	protected void notifyLog(Object o) {
+		this.logger.putLog(o);
 	}
 	
-	protected void putLog(Object o) throws InterruptedException {
-		synchronized ( logQueue ) {
-			if ( thLogging != null ) {
-				logQueue.put(o);
-			}
-		}
+	protected BooleanProperty logging() {
+		return this.logger.logging();
 	}
 	
 	
 	/* Macros */
 	@Override
 	public void startMacro(Path path) {
-		synchronized ( this ) {
-			stopMacro();
-			thMacro = new Thread(macroTask(path));
-			thMacro.start();
-		}
+		macro.start(path);
 	}
 	
 	@Override
 	public void stopMacro() {
-		synchronized ( this ) {
-			if ( thMacro != null ) {
-				thMacro.interrupt();
-				thMacro = null;
-			}
-		}
+		macro.stop();
 	}
-	
-	protected Runnable macroTask(Path path) {
-		
-		return new Runnable() {
-			
-			@Override
-			public void run() {
-				
-				try {
-					
-					List<MacroRequest> requests = MacroFileReader.getInstance().lines(path);
-					
-					for ( MacroRequest r : requests ) {
-						
-						if ( r.command() != null ) {
-							macroReport(MacroReport.requestStarted(path, r));
-							macroExecutor.execute(r);
-							macroReport(MacroReport.requestFinished(path, r));
-						}
-					}
-					
-					macroReport(MacroReport.completed(path));
-				}
-				catch ( InterruptedException e ) {
-					macroReport(MacroReport.interrupted(path, e));
-				}
-				catch (RuntimeException | Error e) {
-					macroReport(MacroReport.failed(path, e));
-					throw e;
-				}
-				catch (Exception e) {
-					macroReport(MacroReport.failed(path, e));
-				}
-			}
-		};
-	}
-	
-	private final Collection<MacroReportListener> macroReportListeners = new CopyOnWriteArrayList<>();
 	
 	public boolean addMacroReportListener(MacroReportListener l) {
-		return macroReportListeners.add(l);
+		return macro.addMacroReportListener(l);
 	}
 	
 	public boolean removeMacroReportListener(MacroReportListener l) {
-		return macroReportListeners.remove(l);
+		return macro.removeMacroReportListener(l);
 	}
 	
-	protected void macroReport(MacroReport r) {
-		macroReportListeners.forEach(l -> {l.report(r);});
-	}
 	
 	private class LocalSecsMessage {
 		

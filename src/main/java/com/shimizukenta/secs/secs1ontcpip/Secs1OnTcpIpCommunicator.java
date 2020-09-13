@@ -7,7 +7,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
@@ -15,11 +14,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.shimizukenta.secs.SecsException;
 import com.shimizukenta.secs.SecsSendMessageException;
+import com.shimizukenta.secs.TimeProperty;
 import com.shimizukenta.secs.secs1.Secs1Communicator;
 import com.shimizukenta.secs.secs1.Secs1DetectTerminateException;
 import com.shimizukenta.secs.secs1.Secs1SendMessageException;
@@ -64,7 +63,8 @@ public class Secs1OnTcpIpCommunicator extends Secs1Communicator {
 	@Override
 	public void open() throws IOException {
 		super.open();
-		executorService().execute(createTask());
+		
+		executeConnectTask();
 	}
 	
 	@Override
@@ -72,15 +72,15 @@ public class Secs1OnTcpIpCommunicator extends Secs1Communicator {
 		super.close();
 	}
 	
-	private Runnable createTask() {
+	private void executeConnectTask() {
 		
-		return createLoopTask(() -> {
+		executeLoopTask(() -> {
 			
 			try (
 					AsynchronousSocketChannel ch = AsynchronousSocketChannel.open();
 					) {
 				
-				SocketAddress socketAddr = secs1OnTcpIpConfig.socketAddress();
+				SocketAddress socketAddr = secs1OnTcpIpConfig.socketAddress().getSocketAddress();
 				
 				String socketAddrString = socketAddr.toString();
 				
@@ -102,28 +102,54 @@ public class Secs1OnTcpIpCommunicator extends Secs1Communicator {
 							
 							final ByteBuffer buffer = ByteBuffer.allocate(1024);
 							
-							for ( ;; ) {
-								
-								((Buffer)buffer).clear();
-								
-								Future<Integer> f = ch.read(buffer);
+							final Callable<Void> task = () -> {
 								
 								try {
-									int r = f.get().intValue();
 									
-									if ( r < 0 ) {
-										break;
+									for ( ;; ) {
+										
+										((Buffer)buffer).clear();
+										
+										Future<Integer> f = ch.read(buffer);
+										
+										try {
+											int r = f.get().intValue();
+											
+											if ( r < 0 ) {
+												break;
+											}
+											
+											((Buffer)buffer).flip();
+											
+											putByte(buffer);
+											
+											circuitNotifyAll();
+										}
+										catch ( InterruptedException e ) {
+											f.cancel(true);
+											throw e;
+										}
+									}
+								}
+								catch ( ExecutionException e ) {
+									
+									Throwable t = e.getCause();
+									
+									if ( t instanceof RuntimeException ) {
+										throw (RuntimeException)t;
 									}
 									
-									((Buffer)buffer).flip();
-									
-									putByte(buffer);
+									if ( ! (t instanceof AsynchronousCloseException) ) {
+										notifyLog(e);
+									}
 								}
-								catch ( InterruptedException e ) {
-									f.cancel(true);
-									throw e;
+								catch ( InterruptedException ignore ) {
 								}
-							}
+								
+								return null;
+							};
+							
+							executeInvokeAny(task);
 						}
 						catch ( InterruptedException ignore) {
 						}
@@ -188,12 +214,7 @@ public class Secs1OnTcpIpCommunicator extends Secs1Communicator {
 				notifyLog(e);
 			}
 			
-			{
-				long t = (long)(secs1OnTcpIpConfig.reconnectSeconds() * 1000.0F);
-				if ( t > 0 ) {
-					TimeUnit.MILLISECONDS.sleep(t);
-				}
-			}
+			secs1OnTcpIpConfig.reconnectSeconds().sleep();
 		});
 	}
 	
@@ -211,10 +232,10 @@ public class Secs1OnTcpIpCommunicator extends Secs1Communicator {
 		Byte b = byteQueue.poll();
 		return b == null ? Optional.empty() : Optional.of(b);
 	}
-
+	
 	@Override
-	protected Optional<Byte> pollByte(long timeout, TimeUnit unit) throws InterruptedException {
-		Byte b = byteQueue.poll(timeout, unit);
+	protected Optional<Byte> pollByte(TimeProperty timeout) throws InterruptedException {
+		Byte b = timeout.poll(byteQueue);
 		return b == null ? Optional.empty() : Optional.of(b);
 	}
 	
@@ -222,11 +243,7 @@ public class Secs1OnTcpIpCommunicator extends Secs1Communicator {
 	protected Optional<Byte> pollByte(byte[] request) throws InterruptedException {
 		
 		try {
-			
-			Byte b = executorService().invokeAny(
-					Arrays.asList(createPollByteTask(request))
-					);
-			
+			Byte b = executeInvokeAny(createPollByteTask(request));
 			if ( b != null ) {
 				return Optional.of(b);
 			}
@@ -239,21 +256,21 @@ public class Secs1OnTcpIpCommunicator extends Secs1Communicator {
 				throw (RuntimeException)t;
 			}
 			
-			notifyLog(e);
+			if ( t instanceof Error ) {
+				throw (Error)t;
+			}
+			
+			notifyLog(t);
 		}
 		
 		return Optional.empty();
 	}
 	
 	@Override
-	protected Optional<Byte> pollByte(byte[] request, long timeout, TimeUnit unit) throws InterruptedException {
+	protected Optional<Byte> pollByte(byte[] request, TimeProperty timeout) throws InterruptedException {
 		
 		try {
-			
-			Byte b = executorService().invokeAny(
-					Arrays.asList(createPollByteTask(request)),
-					timeout,unit);
-			
+			Byte b = executeInvokeAny(createPollByteTask(request), timeout);
 			if ( b != null ) {
 				return Optional.of(b);
 			}
@@ -268,7 +285,11 @@ public class Secs1OnTcpIpCommunicator extends Secs1Communicator {
 				throw (RuntimeException)t;
 			}
 			
-			notifyLog(e);
+			if ( t instanceof Error ) {
+				throw (Error)t;
+			}
+			
+			notifyLog(t);
 		}
 		
 		return Optional.empty();
@@ -343,7 +364,11 @@ public class Secs1OnTcpIpCommunicator extends Secs1Communicator {
 					throw (RuntimeException)t;
 				}
 				
-				throw new Secs1SendMessageException(e);
+				if ( t instanceof Error ) {
+					throw (Error)t;
+				}
+				
+				throw new Secs1SendMessageException(t);
 			}
 			catch ( InterruptedException e ) {
 				f.cancel(true);

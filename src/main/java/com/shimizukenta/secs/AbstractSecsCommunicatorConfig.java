@@ -2,51 +2,40 @@ package com.shimizukenta.secs;
 
 import java.io.Serializable;
 import java.util.Objects;
-import java.util.Optional;
 
 import com.shimizukenta.secs.gem.GemConfig;
 
 public abstract class AbstractSecsCommunicatorConfig implements Serializable {
 	
-	private static final long serialVersionUID = 5944298569476814051L;
+	private static final long serialVersionUID = -8456991094606676409L;
 	
 	private final SecsTimeout timeout = new SecsTimeout();
-	
-	private int deviceId;
-	private boolean isEquip;
+	private final IntegerProperty deviceId = new IntegerProperty(10);
+	private final BooleanProperty isEquip = new BooleanProperty(false);
 	private GemConfig gem;
 	
-	private String communicatorName;
+	private final Property<String> logSubjectHeader = new AbstractProperty<String>("") {
+		private static final long serialVersionUID = -1042714715990834253L;
+	};
 	
 	public AbstractSecsCommunicatorConfig() {
-		deviceId = 10;
-		isEquip = false;
 		gem = new GemConfig();
-		communicatorName = "";
 	}
 	
 	public void deviceId(int id) {
-		synchronized ( this ) {
-			this.deviceId = id;
-		}
+		this.deviceId.set(id);
 	}
 	
-	public int deviceId() {
-		synchronized ( this ) {
-			return deviceId;
-		}
+	public IntegerProperty deviceId() {
+		return deviceId;
 	}
 	
 	public void isEquip(boolean f) {
-		synchronized ( this ) {
-			this.isEquip = f;
-		}
+		this.isEquip.set(f);
 	}
 	
-	public boolean isEquip() {
-		synchronized ( this ) {
-			return isEquip;
-		}
+	public BooleanProperty isEquip() {
+		return isEquip;
 	}
 	
 	public SecsTimeout timeout() {
@@ -58,20 +47,22 @@ public abstract class AbstractSecsCommunicatorConfig implements Serializable {
 	}
 	
 	/**
-	 * if setted, insert name to subject of SecsLog
+	 * if setted, insert header to subject of SecsLog
 	 * 
-	 * @param name of Communicator
+	 * @param header of SecsLog
 	 */
-	public void communicatorName(CharSequence name) {
-		synchronized ( this ) {
-			this.communicatorName = Objects.requireNonNull(name).toString();
-		}
+	public void logSubjectHeader(CharSequence header) {
+		this.logSubjectHeader.set(Objects.requireNonNull(header).toString());
 	}
 	
-	public Optional<String> communicatorName() {
-		synchronized ( this ) {
-			return communicatorName.isEmpty() ? Optional.empty() : Optional.of(communicatorName);
-		}
+//	public Optional<String> logSubjectHeader() {
+//		synchronized ( this ) {
+//			return logSubjectHeader.isEmpty() ? Optional.empty() : Optional.of(logSubjectHeader);
+//		}
+//	}
+	
+	public Property<String> logSubjectHeader() {
+		return logSubjectHeader;
 	}
 	
 }

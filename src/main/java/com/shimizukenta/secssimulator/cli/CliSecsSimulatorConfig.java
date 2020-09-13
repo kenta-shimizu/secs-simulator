@@ -18,15 +18,8 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 
 	private static final long serialVersionUID = -4642182855193964949L;
 	
-	private static final String PROTOCOL_SECS1 = "secs1";
-	private static final String PROTOCOL_SECS1_ON_TCP_IP = "secs1-on-tcp-ip";
-	private static final String PROTOCOL_SECS1_ON_TCP_IP_RECEIVER = "secs1-on-tcp-ip-receiver";
-	private static final String PROTOCOL_HSMS_SS_PASSIVE = "hsms-ss-passive";
-	private static final String PROTOCOL_HSMS_SS_ACTIVE = "hsms-ss-active";
-	
 	private Path log;
 	private Path macro;
-	private boolean autoOpen;
 	private final Collection<Path> smlFiles = new HashSet<>();
 	private final Collection<Path> smlDirs = new HashSet<>();
 	
@@ -35,7 +28,6 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 		
 		log = null;
 		macro = null;
-		autoOpen = false;
 	}
 	
 	public void logging(Path path) {
@@ -59,18 +51,6 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 	public Optional<Path> macro() {
 		synchronized ( this ) {
 			return macro == null ? Optional.empty() : Optional.of(macro);
-		}
-	}
-	
-	public void autoOpen(boolean f) {
-		synchronized ( this ) {
-			this.autoOpen = f;
-		}
-	}
-	
-	public boolean autoOpen() {
-		synchronized ( this ) {
-			return autoOpen;
 		}
 	}
 	
@@ -100,30 +80,14 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 	
 	
 	private void protocol(String value) {
-		
-		if ( sameKey(value, PROTOCOL_HSMS_SS_PASSIVE) ) {
-			
-			protocol(SecsSimulatorProtocol.HSMS_SS_PASSIVE);
-			
-		} else  if ( sameKey(value, PROTOCOL_HSMS_SS_ACTIVE) ) {
-			
-			protocol(SecsSimulatorProtocol.HSMS_SS_ACTIVE);
-			
-		} else if ( sameKey(value, PROTOCOL_SECS1_ON_TCP_IP, PROTOCOL_SECS1) ) {
-			
-			protocol(SecsSimulatorProtocol.SECS1_ON_TCP_IP);
-			
-		} else if ( sameKey(value, PROTOCOL_SECS1_ON_TCP_IP_RECEIVER) ) {
-			
-			protocol(SecsSimulatorProtocol.SECS1_ON_TCP_IP_RECEIVER);
-		}
+		protocol().set(SecsSimulatorProtocol.get(value));
 	}
 	
 	public void socketAddress(SocketAddress addr) {
 		synchronized ( this ) {
 			hsmsSsCommunicatorConfig().socketAddress(addr);
 			secs1OnTcpIpCommunicatorConfig().socketAddress(addr);
-			secs1AdapterSocketAddress(addr);
+			secs1AdapterSocketAddress().set(addr);
 		}
 	}
 	
@@ -322,9 +286,9 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 			comm.getOrDefault("rebindIfPassive").optionalNubmer().map(Number::floatValue).ifPresent(this::rebindIfPassive);
 		}
 		
-		jh.getOrDefault("autoReply").optionalBoolean().ifPresent(this::autoReply);
-		jh.getOrDefault("autoReplyS9Fy").optionalBoolean().ifPresent(this::autoReplyS9Fy);
-		jh.getOrDefault("autoReplySxF0").optionalBoolean().ifPresent(this::autoReplySxF0);
+		jh.getOrDefault("autoReply").optionalBoolean().ifPresent(this.autoReply()::set);
+		jh.getOrDefault("autoReplyS9Fy").optionalBoolean().ifPresent(this.autoReplyS9Fy()::set);
+		jh.getOrDefault("autoReplySxF0").optionalBoolean().ifPresent(this.autoReplySxF0()::set);
 		
 		jh.getOrDefault("smlFiles").forEach(x -> {
 			x.optionalString().map(Paths::get).ifPresent(this::smlFile);
@@ -336,10 +300,11 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 		
 		jh.getOrDefault("logging").optionalString().map(Paths::get).ifPresent(this::logging);
 		jh.getOrDefault("macro").optionalString().map(Paths::get).ifPresent(this::macro);
-		jh.getOrDefault("autoOpen").optionalBoolean().ifPresent(this::autoOpen);
+		
+		jh.getOrDefault("autoOpen").optionalBoolean().ifPresent(this.autoOpen()::set);
 	}
 	
-	public static CliSecsSimulatorConfig get(String[] args) {
+	public static CliSecsSimulatorConfig get(String[] args) throws IOException {
 		
 		final CliSecsSimulatorConfig conf = new CliSecsSimulatorConfig();
 		
@@ -349,15 +314,8 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 			String value = args[i + 1];
 			
 			if ( sameKey(key, "--config") ) {
-				
-				try {
-					Path path = Paths.get(value);
-					conf.setByJson(path);
-				}
-				catch ( IOException e ) {
-					throw new IllegalArgumentException(e);
-				}
-				
+				Path path = Paths.get(value);
+				conf.setByJson(path);
 				continue;
 			}
 			
@@ -412,17 +370,17 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 			}
 			
 			if ( sameKey(key, "--auto-reply", "--autoreply") ) {
-				conf.autoReply(Boolean.parseBoolean(value));
+				conf.autoReply().set(Boolean.parseBoolean(value));
 				continue;
 			}
 			
 			if ( sameKey(key, "--auto-reply-s9fy", "--autoreplys9fy") ) {
-				conf.autoReplyS9Fy(Boolean.parseBoolean(value));
+				conf.autoReplyS9Fy().set(Boolean.parseBoolean(value));
 				continue;
 			}
 			
 			if ( sameKey(key, "--auto-reply-sxf0", "--autoreplysxf0") ) {
-				conf.autoReplySxF0(Boolean.parseBoolean(value));
+				conf.autoReplySxF0().set(Boolean.parseBoolean(value));
 				continue;
 			}
 			
@@ -436,7 +394,7 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 			}
 			
 			if ( sameKey(key, "--auto-open", "--autoopen") ) {
-				conf.autoOpen(Boolean.valueOf(value));
+				conf.autoOpen().set(Boolean.valueOf(value));
 				continue;
 			}
 		}

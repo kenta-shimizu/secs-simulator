@@ -5,16 +5,13 @@ import java.nio.channels.AsynchronousSocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.shimizukenta.secs.AbstractProperty;
 import com.shimizukenta.secs.AbstractSecsCommunicator;
+import com.shimizukenta.secs.ByteArrayProperty;
+import com.shimizukenta.secs.Property;
 import com.shimizukenta.secs.SecsException;
-import com.shimizukenta.secs.SecsLog;
 import com.shimizukenta.secs.SecsMessage;
 import com.shimizukenta.secs.SecsSendMessageException;
 import com.shimizukenta.secs.SecsWaitReplyMessageException;
@@ -22,15 +19,15 @@ import com.shimizukenta.secs.secs2.Secs2;
 
 public abstract class HsmsSsCommunicator extends AbstractSecsCommunicator {
 	
-	private final ExecutorService execServ = Executors.newCachedThreadPool(r -> {
-		Thread th = new Thread(r);
-		th.setDaemon(true);
-		return th;
-	});
-	
 	private final HsmsSsCommunicatorConfig hsmsSsConfig;
 	protected final HsmsSsSendReplyManager sendReplyManager;
-	private HsmsSsCommunicateState hsmsSsCommunicateState;
+	
+	private final ByteArrayProperty sessionIdBytes = new ByteArrayProperty(new byte[] {0, 0});
+	
+	private final Property<HsmsSsCommunicateState> hsmsSsCommStateProperty = new AbstractProperty<HsmsSsCommunicateState>(HsmsSsCommunicateState.NOT_CONNECTED) {
+		private static final long serialVersionUID = 2735232737920848138L;
+	};
+	
 	
 	protected HsmsSsCommunicator(HsmsSsCommunicatorConfig config) {
 		super(config);
@@ -38,15 +35,22 @@ public abstract class HsmsSsCommunicator extends AbstractSecsCommunicator {
 		this.hsmsSsConfig = config;
 		this.sendReplyManager = new HsmsSsSendReplyManager(this);
 		
-		this.notifyHsmsSsCommunicateStateChange(HsmsSsCommunicateState.NOT_CONNECTED);
+		this.hsmsSsConfig.sessionId().addChangeListener(i -> {
+			int v = i.intValue();
+			byte[] bs = new byte[] {
+					(byte)(v >> 8),
+					(byte)v
+			};
+			sessionIdBytes.set(bs);
+		});
 	}
 	
 	public static HsmsSsCommunicator newInstance(HsmsSsCommunicatorConfig config) {
 		
-		switch ( config.protocol() ) {
+		switch ( config.protocol().get() ) {
 		case PASSIVE: {
 			
-			if ( config.rebindIfPassive().isPresent() ) {
+			if ( config.rebindIfPassive().getMilliSeconds() >= 0L ) {
 				
 				return new HsmsSsRebindPassiveCommunicator(config);
 				
@@ -90,12 +94,7 @@ public abstract class HsmsSsCommunicator extends AbstractSecsCommunicator {
 	}
 	
 
-
-	protected ExecutorService executorService() {
-		return execServ;
-	}
-	
-	protected HsmsSsCommunicatorConfig hsmsSsConfig() {
+	protected final HsmsSsCommunicatorConfig hsmsSsConfig() {
 		return hsmsSsConfig;
 	}
 	
@@ -103,154 +102,26 @@ public abstract class HsmsSsCommunicator extends AbstractSecsCommunicator {
 	public void open() throws IOException {
 		super.open();
 		
-		execServ.execute(createRecvMsgTask());
-		execServ.execute(createNotifyLogTask());
-		execServ.execute(createTrySendMsgPassThroughQueueTask());
-		execServ.execute(createSendedMsgPassThroughQueueTask());
-		execServ.execute(createRecvMsgPassThroughQueueTask());
+		this.hsmsSsCommStateProperty.addChangeListener(state -> {
+			notifyLog("HsmsSs-Connect-state-chenged: " + state.toString());
+		});
+		
+		this.hsmsSsCommStateProperty.addChangeListener(state -> {
+			notifyCommunicatableStateChange(state.communicatable());
+		});
 	}
 	
 	@Override
 	public void close() throws IOException {
 		
-		IOException ioExcept = null;
-		
-		try {
-			synchronized ( this ) {
-				if ( isClosed() ) {
-					return;
-				}
-				
-				super.close();
+		synchronized ( this ) {
+			if ( isClosed() ) {
+				return;
 			}
 		}
-		catch ( IOException e ) {
-			ioExcept = e;
-		}
 		
-		try {
-			execServ.shutdown();
-			if ( ! execServ.awaitTermination(10L, TimeUnit.MILLISECONDS) ) {
-				execServ.shutdownNow();
-				if ( ! execServ.awaitTermination(5L, TimeUnit.SECONDS) ) {
-					ioExcept = new IOException("ExecutorService#shutdown failed");
-				}
-			}
-		}
-		catch ( InterruptedException giveup ) {
-		}
-		
-		if ( ioExcept != null ) {
-			throw ioExcept;
-		}
+		super.close();
 	}
-	
-	
-	/* Receive Message Queue */
-	private final BlockingQueue<HsmsSsMessage> recvDataMsgQueue = new LinkedBlockingQueue<>();
-	
-	protected void putReceiveDataMessage(HsmsSsMessage msg) throws InterruptedException {
-		recvDataMsgQueue.put(msg);
-	}
-	
-	@Override
-	protected void notifyReceiveMessage(SecsMessage msg) {
-		throw new UnsupportedOperationException("use #putReceiveMessage");
-	}
-	
-	private Runnable createRecvMsgTask() {
-		return createLoopTask(() -> {
-			super.notifyReceiveMessage(recvDataMsgQueue.take());
-		});
-	}
-	
-	
-	/* Log Queue */
-	private final BlockingQueue<SecsLog> logQueue = new LinkedBlockingQueue<>();
-	
-	@Override
-	protected void notifyLog(SecsLog log) {
-		logQueue.offer(log);
-	}
-	
-	private Runnable createNotifyLogTask() {
-		return createLoopTask(() -> {
-			super.notifyLog(logQueue.take());
-		});
-	}
-	
-	@Override
-	protected void notifyLog(CharSequence subject) {
-		super.notifyLog(subject);
-	}
-	
-	@Override
-	protected void notifyLog(CharSequence subject, Object value) {
-		super.notifyLog(subject, value);
-	}
-	
-	@Override
-	protected void notifyLog(Throwable t) {
-		super.notifyLog(t);
-	}
-	
-	
-	/* trySendMsgPassThroughQueue */
-	private final BlockingQueue<HsmsSsMessage> trySendMsgPassThroughQueue = new LinkedBlockingQueue<>();
-	
-	@Override
-	protected void notifyTrySendMessagePassThrough(SecsMessage msg) {
-		throw new UnsupportedOperationException("use #putTrySendMessagePassThrough");
-	}
-	
-	protected void putTrySendMessagePassThrough(HsmsSsMessage msg) throws InterruptedException {
-		trySendMsgPassThroughQueue.put(msg);
-	}
-	
-	private Runnable createTrySendMsgPassThroughQueueTask() {
-		return createLoopTask(() -> {
-			super.notifyTrySendMessagePassThrough(trySendMsgPassThroughQueue.take());
-		});
-	}
-	
-	
-	/* sendedPassThroughQueue */
-	private final BlockingQueue<HsmsSsMessage> sendedMsgPassThroughQueue = new LinkedBlockingQueue<>();
-	
-	@Override
-	protected void notifySendedMessagePassThrough(SecsMessage msg) {
-		throw new UnsupportedOperationException("use #putSendedMessagePassThrough");
-	}
-	
-	protected void putSendedMessagePassThrough(HsmsSsMessage msg) throws InterruptedException {
-		sendedMsgPassThroughQueue.put(msg);
-	}
-	
-	private Runnable createSendedMsgPassThroughQueueTask() {
-		return createLoopTask(() -> {
-			super.notifySendedMessagePassThrough(sendedMsgPassThroughQueue.take());
-		});
-	}
-	
-	
-	/* sendedPassThroughQueue */
-	private final BlockingQueue<HsmsSsMessage> recvMsgPassThroughQueue = new LinkedBlockingQueue<>();
-	
-	@Override
-	protected void notifyReceiveMessagePassThrough(SecsMessage msg) {
-		throw new UnsupportedOperationException("use #putReceiveMessagePassThrough");
-	}
-	
-	protected void putReceiveMessagePassThrough(HsmsSsMessage msg) throws InterruptedException {
-		recvMsgPassThroughQueue.put(msg);
-	}
-	
-	private Runnable createRecvMsgPassThroughQueueTask() {
-		return createLoopTask(() -> {
-			super.notifyReceiveMessagePassThrough(recvMsgPassThroughQueue.take());
-		});
-	}
-	
 	
 	/* channels */
 	private final Collection<AsynchronousSocketChannel> channels = new ArrayList<>();
@@ -279,26 +150,12 @@ public abstract class HsmsSsCommunicator extends AbstractSecsCommunicator {
 	
 	
 	/* HSMS Communicate State */
-	private final Object syncHsmsSsCommunicateState = new Object();
-	
 	protected HsmsSsCommunicateState hsmsSsCommunicateState() {
-		synchronized ( syncHsmsSsCommunicateState ) {
-			return hsmsSsCommunicateState;
-		}
+		return hsmsSsCommStateProperty.get();
 	}
 	
 	protected void notifyHsmsSsCommunicateStateChange(HsmsSsCommunicateState state) {
-		
-		synchronized ( syncHsmsSsCommunicateState ) {
-			
-			if ( this.hsmsSsCommunicateState != state ) {
-				
-				this.hsmsSsCommunicateState = state;
-				
-				notifyLog("HsmsSs-Connect-state-chenged: " + state.toString());
-				notifyCommunicatableStateChange(state.communicatable());
-			}
-		}
+		hsmsSsCommStateProperty.set(state);
 	}
 	
 	
@@ -329,12 +186,11 @@ public abstract class HsmsSsCommunicator extends AbstractSecsCommunicator {
 		
 		byte[] bs = new byte[4];
 		
-		if ( hsmsSsConfig().isEquip() ) {
+		if ( hsmsSsConfig().isEquip().booleanValue() ) {
 			
-			int sessionid = hsmsSsConfig().sessionId();
-			
-			bs[0] = (byte)(sessionid >> 8);
-			bs[1] = (byte)sessionid;
+			byte[] xs = sessionIdBytes.get();
+			bs[0] = xs[0];
+			bs[1] = xs[1];
 			
 		} else {
 			
@@ -351,15 +207,15 @@ public abstract class HsmsSsCommunicator extends AbstractSecsCommunicator {
 	}
 	
 	protected void send(AsynchronousSocketChannel channel, HsmsSsMessage msg)
-			throws SecsSendMessageException, SecsException
-			, InterruptedException {
+			throws SecsSendMessageException, SecsException,
+			InterruptedException {
 		
 		sendReplyManager.send(channel, msg);
 	}
 	
 	public Optional<HsmsSsMessage> send(HsmsSsMessage msg)
-			throws SecsSendMessageException, SecsWaitReplyMessageException, SecsException
-			, InterruptedException {
+			throws SecsSendMessageException, SecsWaitReplyMessageException, SecsException,
+			InterruptedException {
 		
 		try {
 			return sendReplyManager.send(msg);
@@ -376,20 +232,20 @@ public abstract class HsmsSsCommunicator extends AbstractSecsCommunicator {
 			, InterruptedException {
 		
 		HsmsSsMessageType mt = HsmsSsMessageType.DATA;
-		int sessionid = hsmsSsConfig().sessionId();
+		byte[] xs = sessionIdBytes.get();
 		byte[] sysbytes = systemBytes();
 		
 		byte[] head = new byte[] {
-				(byte)(sessionid >> 8)
-				, (byte)(sessionid)
-				, (byte)strm
-				, (byte)func
-				, mt.pType()
-				, mt.sType()
-				, sysbytes[0]
-				, sysbytes[1]
-				, sysbytes[2]
-				, sysbytes[3]
+				xs[0],
+				xs[1],
+				(byte)strm,
+				(byte)func,
+				mt.pType(),
+				mt.sType(),
+				sysbytes[0],
+				sysbytes[1],
+				sysbytes[2],
+				sysbytes[3]
 		};
 		
 		if ( wbit ) {
@@ -407,19 +263,19 @@ public abstract class HsmsSsCommunicator extends AbstractSecsCommunicator {
 		byte[] pri = primary.header10Bytes();
 		
 		HsmsSsMessageType mt = HsmsSsMessageType.DATA;
-		int sessionid = hsmsSsConfig().sessionId();
+		byte[] xs = sessionIdBytes.get();
 		
 		byte[] head = new byte[] {
-				(byte)(sessionid >> 8)
-				, (byte)(sessionid)
-				, (byte)strm
-				, (byte)func
-				, mt.pType()
-				, mt.sType()
-				, pri[6]
-				, pri[7]
-				, pri[8]
-				, pri[9]
+				xs[0],
+				xs[1],
+				(byte)strm,
+				(byte)func,
+				mt.pType(),
+				mt.sType(),
+				pri[6],
+				pri[7],
+				pri[8],
+				pri[9]
 		};
 		
 		if ( wbit ) {
@@ -447,16 +303,39 @@ public abstract class HsmsSsCommunicator extends AbstractSecsCommunicator {
 		byte[] pri = primary.header10Bytes();
 		
 		return createHsmsSsMessage(new byte[] {
-				pri[0]
-				, pri[1]
-				, (byte)0
-				, status.statusCode()
-				, mt.pType()
-				, mt.sType()
-				, pri[6]
-				, pri[7]
-				, pri[8]
-				, pri[9]
+				pri[0],
+				pri[1],
+				(byte)0,
+				status.statusCode(),
+				mt.pType(),
+				mt.sType(),
+				pri[6],
+				pri[7],
+				pri[8],
+				pri[9]
+		});
+	}
+	
+	public HsmsSsMessage createDeselectRequest() {
+		return createHsmsSsControlPrimaryMessage(HsmsSsMessageType.DESELECT_REQ);
+	}
+	
+	public HsmsSsMessage createDeselectResponse(HsmsSsMessage primary) {
+		
+		HsmsSsMessageType mt = HsmsSsMessageType.DESELECT_RSP;
+		byte[] pri = primary.header10Bytes();
+		
+		return createHsmsSsMessage(new byte[] {
+				pri[0],
+				pri[1],
+				(byte)0,
+				(byte)0,
+				mt.pType(),
+				mt.sType(),
+				pri[6],
+				pri[7],
+				pri[8],
+				pri[9]
 		});
 	}
 	
@@ -470,16 +349,16 @@ public abstract class HsmsSsCommunicator extends AbstractSecsCommunicator {
 		byte[] pri = primary.header10Bytes();
 		
 		return createHsmsSsMessage(new byte[] {
-				pri[0]
-				, pri[1]
-				, (byte)0
-				, (byte)0
-				, mt.pType()
-				, mt.sType()
-				, pri[6]
-				, pri[7]
-				, pri[8]
-				, pri[9]
+				pri[0],
+				pri[1],
+				(byte)0,
+				(byte)0,
+				mt.pType(),
+				mt.sType(),
+				pri[6],
+				pri[7],
+				pri[8],
+				pri[9]
 		});
 	}
 	
@@ -490,16 +369,16 @@ public abstract class HsmsSsCommunicator extends AbstractSecsCommunicator {
 		byte b = reason == HsmsSsMessageRejectReason.NOT_SUPPORT_TYPE_P ? bs[4] : bs[5];
 		
 		return createHsmsSsMessage(new byte[] {
-				bs[0]
-				, bs[1]
-				, b
-				, reason.reasonCode()
-				, mt.pType()
-				, mt.sType()
-				, bs[6]
-				, bs[7]
-				, bs[8]
-				, bs[9]
+				bs[0],
+				bs[1],
+				b,
+				reason.reasonCode(),
+				mt.pType(),
+				mt.sType(),
+				bs[6],
+				bs[7],
+				bs[8],
+				bs[9]
 		});
 	}
 	
@@ -512,16 +391,16 @@ public abstract class HsmsSsCommunicator extends AbstractSecsCommunicator {
 		byte[] sysbytes = systemBytes();
 		
 		return createHsmsSsMessage(new byte[] {
-				(byte)0xFF
-				, (byte)0xFF
-				, (byte)0
-				, (byte)0
-				, mt.pType()
-				, mt.sType()
-				, sysbytes[0]
-				, sysbytes[1]
-				, sysbytes[2]
-				, sysbytes[3]
+				(byte)0xFF,
+				(byte)0xFF,
+				(byte)0,
+				(byte)0,
+				mt.pType(),
+				mt.sType(),
+				sysbytes[0],
+				sysbytes[1],
+				sysbytes[2],
+				sysbytes[3]
 		});
 	}
 	

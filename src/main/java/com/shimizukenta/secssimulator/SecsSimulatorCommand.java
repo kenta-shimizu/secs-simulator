@@ -1,15 +1,18 @@
-package com.shimizukenta.secssimulator.gui.swing;
+package com.shimizukenta.secssimulator;
 
 import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public enum CliCommandManual {
+public enum SecsSimulatorCommand {
 	
 	MANUAL("Show Commands, Show Manual with option"),
+	
+	QUIT("Quit application"),
 	
 	OPEN("Open communicator",
 			"if already opened, close and reopen."),
 	CLOSE("Close communicator"),
-	QUIT("Quit application"),
 	
 	PWD("Present working directory"),
 	LS("List directory files"),
@@ -17,6 +20,19 @@ public enum CliCommandManual {
 			"option is destination directory"),
 	MKDIR("Make directory",
 			"option is new directory name"),
+	
+	SIMM_SHOW_STATUS("Show Simulator status"),
+	
+	SIMM_SET_PROTOCOL("Set/Change Protocol",
+			Stream.of(SecsSimulatorProtocol.values())
+			.map(p -> "\"" + p.optionName() + "\"")
+			.collect(Collectors.joining(", ")),
+			"if already opened, close and reopen as changed Prorotol"),
+	
+	SIMM_SET_IPADDRESS("Set/Change IP-Address",
+			"Set/Change Connect or Bind IP-Address",
+			"Pattern is \"aaa.bbb.ccc.ddd:nnnnn\"",
+			"if already opened, close and reopen as changed IP-Address"),
 	
 	SEND_SML("Send SML",
 			"option is Alias-Name of SML"),
@@ -43,6 +59,7 @@ public enum CliCommandManual {
 			"if has option (path/to/file.log), logging start.",
 			"if has no option, logging stop",
 			"if already started, stop and restart."),
+	
 	MACRO("Macro start/stop",
 			"if has option (path/to/file.macro), macro start.",
 			"if has not option, macro stop.",
@@ -63,7 +80,7 @@ public enum CliCommandManual {
 	private String description;
 	private String[] details;
 	
-	private CliCommandManual(String desc, String... lines) {
+	private SecsSimulatorCommand(String desc, String... lines) {
 		this.description = desc;
 		this.details = lines;
 	}

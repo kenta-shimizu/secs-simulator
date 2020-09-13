@@ -7,41 +7,56 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.shimizukenta.secs.SecsCommunicatableStateChangeListener;
+import com.shimizukenta.secs.SecsCommunicator;
 import com.shimizukenta.secs.SecsMessage;
 import com.shimizukenta.secs.sml.SmlMessage;
 import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.AbstractSecsSimulator;
+import com.shimizukenta.secssimulator.AbstractSecsSimulatorEngine;
+import com.shimizukenta.secssimulator.SecsSimulator;
 import com.shimizukenta.secssimulator.SecsSimulatorException;
 
-public class MacroExecutor {
+public class MacroExecutor extends AbstractSecsSimulatorEngine {
 	
 	public static final long defaultSleepMilliSec = 1000L;
 	
-	private final AbstractSecsSimulator parent;
 	private SecsMessage lastRecvMsg;
 	
-	public MacroExecutor(AbstractSecsSimulator parent) {
-		this.parent = parent;
+	protected MacroExecutor(AbstractSecsSimulator engine) {
+		super(engine);
 		this.lastRecvMsg = null;
 	}
 	
-	public void execute(MacroRequest request) throws InterruptedException, MacroException {
+	
+	private final Object waitMsgSyncObj = new Object();
+	
+	protected void receive(SecsMessage recvMsg) {
+		synchronized ( waitMsgSyncObj ) {
+			this.lastRecvMsg = recvMsg;
+			waitMsgSyncObj.notifyAll();
+		}
+	}
+	
+	
+	protected void execute(MacroRequest request) throws InterruptedException, MacroException {
 		
 		switch ( request.command() ) {
 		case OPEN: {
 			
 			try {
 				openCommunicator();
+				waitUntilCommunicatable();
 			}
 			catch ( IOException e ) {
 				throw new MacroException(e);
 			}
+			
 			break;
 		}
 		case CLOSE: {
 			
 			try {
-				parent.closeCommunicator();
+				closeCommunicator();
 			}
 			catch ( IOException e ) {
 				throw new MacroException(e);
@@ -66,7 +81,7 @@ public class MacroExecutor {
 		case SEND_DIRECT: {
 			
 			try {
-				SmlMessage sm = parent.parseSml(request.option(0).orElse(""));
+				SmlMessage sm = parseSml(request.option(0).orElse(""));
 				send(sm);
 			}
 			catch ( SmlParseException e ) {
@@ -101,14 +116,6 @@ public class MacroExecutor {
 		}
 	}
 	
-	private final Object waitMsgSyncObj = new Object();
-	
-	public void receive(SecsMessage recvMsg) {
-		synchronized ( waitMsgSyncObj ) {
-			this.lastRecvMsg = recvMsg;
-			waitMsgSyncObj.notifyAll();
-		}
-	}
 	
 	protected static final String GROUP_STREAM = "STREAM";
 	protected static final String GROUP_FUNCTION = "FUNCTION";
@@ -148,31 +155,6 @@ public class MacroExecutor {
 		}
 	}
 	
-	
-	private final Object commSyncObj = new Object();
-	
-	private void openCommunicator() throws InterruptedException, IOException {
-		
-		parent.openCommunicator();
-		
-		final SecsCommunicatableStateChangeListener lstnr = communicated -> {
-			synchronized ( commSyncObj ) {
-				if ( communicated ) {
-					commSyncObj.notifyAll();
-				}
-			}
-		};
-		
-		synchronized ( commSyncObj ) {
-			try {
-				parent.addSecsCommunicatableStateChangeListener(lstnr);
-				commSyncObj.wait();
-			}
-			finally {
-				parent.removeSecsCommunicatableStateChangeListener(lstnr);
-			}
-		}
-	}
 	
 	private Optional<SecsMessage> send(SmlMessage sm) throws InterruptedException, MacroException {
 		

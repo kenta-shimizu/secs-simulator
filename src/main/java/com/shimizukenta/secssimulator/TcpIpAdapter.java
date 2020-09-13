@@ -11,6 +11,7 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -31,11 +32,19 @@ public class TcpIpAdapter implements Closeable {
 	}
 	
 	public SocketAddress socketAddressA() throws IOException {
-		return this.a.server.getLocalAddress();
+		return getSocketAddress(a);
 	}
 	
 	public SocketAddress socketAddressB() throws IOException {
-		return this.b.server.getLocalAddress();
+		return getSocketAddress(b);
+	}
+	
+	private SocketAddress getSocketAddress(Inner i) throws IOException {
+		if ( i.server == null ) {
+			return i.addr;
+		} else {
+			return i.server.getLocalAddress();
+		}
 	}
 	
 	public void open() throws IOException {
@@ -89,6 +98,18 @@ public class TcpIpAdapter implements Closeable {
 		}
 	}
 	
+	public boolean addThrowableListener(ThrowableListener l) {
+		boolean aa = a.thLstnrs.add(l);
+		boolean bb = b.thLstnrs.add(l);
+		return aa && bb;
+	}
+	
+	public boolean removeThrowableListener(ThrowableListener l) {
+		boolean aa = a.thLstnrs.remove(l);
+		boolean bb = b.thLstnrs.remove(l);
+		return aa && bb;
+	}
+	
 	public static TcpIpAdapter open(SocketAddress a, SocketAddress b) throws IOException {
 		
 		final TcpIpAdapter inst = new TcpIpAdapter(a, b);
@@ -118,6 +139,11 @@ public class TcpIpAdapter implements Closeable {
 						parseSocketAddress(args[1]));
 				) {
 			
+			adapter.addThrowableListener((addr, t) -> {
+				System.out.println("Throw from SocketAddress: " + addr.toString());
+				t.printStackTrace();
+			});
+			
 			adapter.open();
 			
 			synchronized ( TcpIpAdapter.class ) {
@@ -131,15 +157,20 @@ public class TcpIpAdapter implements Closeable {
 		}
 	}
 	
-	private static SocketAddress parseSocketAddress(String s) {
-		String[] ss = s.split(":");
-		int port = Integer.parseInt(ss[1]);
-		return new InetSocketAddress(ss[0], port);
+	private static SocketAddress parseSocketAddress(CharSequence cs) {
+		String[] ss = Objects.requireNonNull(cs).toString().split(":", 2);
+		int port = Integer.parseInt(ss[1].trim());
+		return new InetSocketAddress(ss[0].trim(), port);
+	}
+	
+	public static interface ThrowableListener {
+		public void throwed(SocketAddress addr, Throwable t);
 	}
 	
 	private class Inner implements Closeable {
 		
 		private final SocketAddress addr;
+		
 		private AsynchronousServerSocketChannel server;
 		private final Collection<AsynchronousSocketChannel> channels = new CopyOnWriteArrayList<>();
 		
@@ -202,7 +233,7 @@ public class TcpIpAdapter implements Closeable {
 						synchronized ( this ) {
 							
 							if ( ! closed ) {
-								e.printStackTrace();
+								putThrowable(e.getCause());
 							}
 						}
 					}
@@ -220,7 +251,7 @@ public class TcpIpAdapter implements Closeable {
 					synchronized ( this ) {
 						
 						if ( ! closed ) {
-							t.printStackTrace();
+							putThrowable(t);
 						}
 					}
 				}
@@ -230,14 +261,19 @@ public class TcpIpAdapter implements Closeable {
 		public void close() throws IOException {
 			
 			synchronized ( this ) {
+				
+				if ( closed ) {
+					return ;
+				}
+				
 				closed = true;
 			}
-			
-			channels.forEach(this::closeChannel);
 			
 			if ( server != null ) {
 				server.close();
 			}
+			
+			channels.forEach(this::closeChannel);
 			
 		}
 		
@@ -283,9 +319,17 @@ public class TcpIpAdapter implements Closeable {
 					}
 				}
 				catch ( ExecutionException e ) {
-					e.printStackTrace();
+					putThrowable(e.getCause());
 				}
 			}
+		}
+		
+		private Collection<ThrowableListener> thLstnrs = new CopyOnWriteArrayList<>();
+		
+		private void putThrowable(Throwable t) {
+			thLstnrs.forEach(l -> {
+				l.throwed(addr, t);
+			});
 		}
 	}
 

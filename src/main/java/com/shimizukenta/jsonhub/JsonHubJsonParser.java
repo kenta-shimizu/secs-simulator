@@ -30,7 +30,14 @@ public class JsonHubJsonParser {
 	public AbstractJsonHub parse(CharSequence cs) {
 		
 		try {
-			return fromJson(cs.toString());
+			
+			String s = cs.toString();
+			
+			if ( s.trim().isEmpty() ) {
+				throw new JsonHubParseException("JSON is empty");
+			}
+			
+			return fromJson(s);
 		}
 		catch ( JsonHubIndexOutOfBoundsException | JsonHubNumberFormatException e ) {
 			throw new JsonHubParseException(e);
@@ -139,7 +146,14 @@ public class JsonHubJsonParser {
 		
 		if ( r.index < 0 ) {
 			
-			s = str.substring(fromIndex).trim();
+			if ( fromIndex >= 0 ) {
+				
+				s = str.substring(fromIndex).trim();
+			
+			} else {
+				
+				throw new JsonHubIndexOutOfBoundsException();
+			}
 			
 		} else {
 			
@@ -415,12 +429,15 @@ public class JsonHubJsonParser {
 	
 	private static SeekCharResult seekNextChar(String str, int fromIndex) {
 		
-		for (int i = fromIndex, len = str.length(); i < len; ++i) {
+		if ( fromIndex >= 0 ) {
 			
-			char c = str.charAt(i);
-			
-			if ( c > C_WS_MAX ) {
-				return new SeekCharResult(c, i);
+			for (int i = fromIndex, len = str.length(); i < len; ++i) {
+				
+				char c = str.charAt(i);
+				
+				if ( c > C_WS_MAX ) {
+					return new SeekCharResult(c, i);
+				}
 			}
 		}
 		
@@ -435,14 +452,17 @@ public class JsonHubJsonParser {
 	
 	private static SeekCharResult seekNextEndDelimiter(String str, int fromIndex) {
 		
-		for (int i = fromIndex, len = str.length(); i < len; ++i) {
+		if ( fromIndex >= 0 ) {
 			
-			char c = str.charAt(i);
-			
-			for (JsonStructuralChar d : delimiters ) {
+			for (int i = fromIndex, len = str.length(); i < len; ++i) {
 				
-				if ( d.match(c) ) {
-					return new SeekCharResult(c, i);
+				char c = str.charAt(i);
+				
+				for (JsonStructuralChar d : delimiters ) {
+					
+					if ( d.match(c) ) {
+						return new SeekCharResult(c, i);
+					}
 				}
 			}
 		}

@@ -20,7 +20,7 @@ public class SecsCommunicatorBuilder {
 	
 	public SecsCommunicator build(AbstractSecsSimulatorConfig config) {
 		
-		switch ( config.protocol() ) {
+		switch ( config.protocol().get() ) {
 		case HSMS_SS_PASSIVE:
 		case HSMS_SS_ACTIVE: {
 			

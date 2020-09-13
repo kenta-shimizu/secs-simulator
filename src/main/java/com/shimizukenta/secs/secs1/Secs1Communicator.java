@@ -1,26 +1,20 @@
 package com.shimizukenta.secs.secs1;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Optional;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.shimizukenta.secs.AbstractSecsCommunicator;
+import com.shimizukenta.secs.ByteArrayProperty;
+import com.shimizukenta.secs.InterruptableRunnable;
 import com.shimizukenta.secs.SecsException;
-import com.shimizukenta.secs.SecsLog;
 import com.shimizukenta.secs.SecsMessage;
 import com.shimizukenta.secs.SecsSendMessageException;
 import com.shimizukenta.secs.SecsWaitReplyMessageException;
+import com.shimizukenta.secs.TimeProperty;
 import com.shimizukenta.secs.secs2.Secs2;
 
 public abstract class Secs1Communicator extends AbstractSecsCommunicator {
@@ -31,203 +25,72 @@ public abstract class Secs1Communicator extends AbstractSecsCommunicator {
 	protected static final byte NAK = (byte)0x15;
 	
 	
-	private final ExecutorService execServ = Executors.newCachedThreadPool(r -> {
-		Thread th = new Thread(r);
-		th.setDaemon(true);
-		return th;
-	});
-	
 	private final Secs1CommunicatorConfig secs1Config;
 	private final Secs1SendReplyManager sendReplyManager;
+	private final ByteArrayProperty deviceIdBytes = new ByteArrayProperty(new byte[] {0, 0});
+	private final CircuitLoop circuit = new CircuitLoop();
 	
+	protected void circuitNotifyAll() {
+		synchronized ( circuit ) {
+			circuit.notifyAll();
+		}
+	}
 	
 	public Secs1Communicator(Secs1CommunicatorConfig config) {
 		super(config);
 		
 		this.secs1Config = config;
 		this.sendReplyManager = new Secs1SendReplyManager(this);
+		
+		this.secs1Config.deviceId().addChangeListener(i -> {
+			int v = i.intValue();
+			byte[] bs = new byte[] {
+					(byte)(v >> 8),
+					(byte)v
+			};
+			deviceIdBytes.set(bs);
+		});
 	}
 	
 	protected Secs1CommunicatorConfig secs1Config() {
 		return secs1Config;
 	}
 	
-	protected ExecutorService executorService() {
-		return execServ;
-	}
-	
 	@Override
 	public void open() throws IOException {
 		super.open();
 		
-		execServ.execute(createRecvMsgTask());
-		execServ.execute(createNotifyLogTask());
-		execServ.execute(createTrySendMsgPassThroughQueueTask());
-		execServ.execute(createSendedMsgPassThroughQueueTask());
-		execServ.execute(createRecvMsgPassThroughQueueTask());
-		
-		execServ.execute(new CircuitLoop());
+		executeLoopTask(circuit);
 	}
 
 	@Override
 	public void close() throws IOException {
 		
-		IOException ioExcept = null;
-		
-		try {
-			synchronized ( this ) {
-				if ( isClosed() ) {
-					return;
-				}
-				
-				super.close();
+		synchronized ( this ) {
+			if ( isClosed() ) {
+				return;
 			}
+			
+			super.close();
 		}
-		catch ( IOException e ) {
-			ioExcept = e;
-		}
-		
-		try {
-			execServ.shutdown();
-			if ( ! execServ.awaitTermination(10L, TimeUnit.MILLISECONDS) ) {
-				execServ.shutdownNow();
-				if ( ! execServ.awaitTermination(5L, TimeUnit.SECONDS) ) {
-					ioExcept = new IOException("ExecutorService#shutdown failed");
-				}
-			}
-		}
-		catch ( InterruptedException giveup ) {
-		}
-		
-		if ( ioExcept != null ) {
-			throw ioExcept;
-		}
-	}
-	
-	
-	/* Receive Message Queue */
-	private final BlockingQueue<Secs1Message> recvDataMsgQueue = new LinkedBlockingQueue<>();
-	
-	protected void putReceiveDataMessage(Secs1Message msg) throws InterruptedException {
-		recvDataMsgQueue.put(msg);
-	}
-	
-	@Override
-	protected void notifyReceiveMessage(SecsMessage msg) {
-		throw new UnsupportedOperationException("use #putReceiveDataMessage");
-	}
-	
-	private final Runnable createRecvMsgTask() {
-		return createLoopTask(() -> {
-			super.notifyReceiveMessage(recvDataMsgQueue.take());
-		});
-	}
-	
-	
-	/* Log Queue */
-	private final BlockingQueue<SecsLog> logQueue = new LinkedBlockingQueue<>();
-	
-	@Override
-	protected void notifyLog(SecsLog log) {
-		logQueue.offer(log);
-	}
-	
-	private Runnable createNotifyLogTask() {
-		return createLoopTask(() -> {
-			super.notifyLog(logQueue.take());
-		});
-	}
-	
-	@Override
-	protected void notifyLog(CharSequence subject) {
-		super.notifyLog(subject);
-	}
-	
-	@Override
-	protected void notifyLog(CharSequence subject, Object value) {
-		super.notifyLog(subject, value);
-	}
-	
-	@Override
-	protected void notifyLog(Throwable t) {
-		super.notifyLog(t);
-	}
-	
-	
-	/* trySendMsgPassThroughQueue */
-	private final BlockingQueue<Secs1Message> trySendMsgPassThroughQueue = new LinkedBlockingQueue<>();
-	
-	@Override
-	protected void notifyTrySendMessagePassThrough(SecsMessage msg) {
-		throw new UnsupportedOperationException("use #putTrySendMessagePassThrough");
-	}
-	
-	protected void putTrySendMessagePassThrough(Secs1Message msg) throws InterruptedException {
-		trySendMsgPassThroughQueue.put(msg);
-	}
-	
-	private final Runnable createTrySendMsgPassThroughQueueTask() {
-		return createLoopTask(() -> {
-			super.notifyTrySendMessagePassThrough(trySendMsgPassThroughQueue.take());
-		});
-	}
-	
-	/* sendedPassThroughQueue */
-	private final BlockingQueue<Secs1Message> sendedMsgPassThroughQueue = new LinkedBlockingQueue<>();
-	
-	@Override
-	protected void notifySendedMessagePassThrough(SecsMessage msg) {
-		throw new UnsupportedOperationException("use #putSendedMessagePassThrough");
-	}
-	
-	protected void putSendedMessagePassThrough(Secs1Message msg) throws InterruptedException {
-		sendedMsgPassThroughQueue.put(msg);
-	}
-	
-	private final Runnable createSendedMsgPassThroughQueueTask() {
-		return createLoopTask(() -> {
-			super.notifySendedMessagePassThrough(sendedMsgPassThroughQueue.take());
-		});
-	}
-	
-	/* sendedPassThroughQueue */
-	private final BlockingQueue<Secs1Message> recvMsgPassThroughQueue = new LinkedBlockingQueue<>();
-	
-	@Override
-	protected void notifyReceiveMessagePassThrough(SecsMessage msg) {
-		throw new UnsupportedOperationException("use #putReceiveMessagePassThrough");
-	}
-	
-	protected void putReceiveMessagePassThrough(Secs1Message msg) throws InterruptedException {
-		recvMsgPassThroughQueue.put(msg);
-	}
-	
-	private Runnable createRecvMsgPassThroughQueueTask() {
-		return createLoopTask(() -> {
-			super.notifyReceiveMessagePassThrough(recvMsgPassThroughQueue.take());
-		});
 	}
 	
 	
 	abstract protected Optional<Byte> pollByte();
-	abstract protected Optional<Byte> pollByte(long timeout, TimeUnit unit) throws InterruptedException;
 	abstract protected Optional<Byte> pollByte(byte[] request) throws InterruptedException;
-	abstract protected Optional<Byte> pollByte(byte[] request, long timeout, TimeUnit unit) throws InterruptedException;
-	
-	private Optional<Byte> pollByteTx(float timeout) throws InterruptedException {
-		return pollByte((long)(timeout * 1000.0F), TimeUnit.MILLISECONDS);
-	}
+	abstract protected Optional<Byte> pollByte(TimeProperty timeout) throws InterruptedException;
+	abstract protected Optional<Byte> pollByte(byte[] request, TimeProperty timeout) throws InterruptedException;
 	
 	private Optional<Byte> pollByteT1() throws InterruptedException {
-		return pollByteTx(secs1Config.timeout().t1());
+		return pollByte(secs1Config.timeout().t1());
 	}
 	
 	private Optional<Byte> pollByteT2() throws InterruptedException {
-		return pollByteTx(secs1Config.timeout().t2());
+		return pollByte(secs1Config.timeout().t2());
 	}
 	
 	private Optional<Byte> pollByteT4() throws InterruptedException {
-		return pollByteTx(secs1Config.timeout().t4());
+		return pollByte(secs1Config.timeout().t4());
 	}
 	
 	protected void pollByteUntilEmpty() {
@@ -272,27 +135,27 @@ public abstract class Secs1Communicator extends AbstractSecsCommunicator {
 			throws SecsSendMessageException, SecsWaitReplyMessageException, SecsException
 			, InterruptedException {
 		
-		int devid = secs1Config().deviceId();
-		boolean rbit = secs1Config().isEquip();
+		byte[] devids = deviceIdBytes.get();
+		boolean rbit = secs1Config().isEquip().booleanValue();
 		int num = autoNumber.incrementAndGet();
 		
 		byte[] head = new byte[] {
-				(byte)(devid >> 8)
-				, (byte)(devid)
-				, (byte)strm
-				, (byte)func
-				, (byte)0
-				, (byte)0
-				, (byte)0
-				, (byte)0
-				, (byte)(num >> 8)
-				, (byte)num
+				devids[0],
+				devids[1],
+				(byte)strm,
+				(byte)func,
+				(byte)0,
+				(byte)0,
+				(byte)0,
+				(byte)0,
+				(byte)(num >> 8),
+				(byte)num
 		};
 		
 		if ( rbit ) {
 			head[0] |= (byte)0x80;
-			head[6] = (byte)(devid >> 8);
-			head[7] = (byte)devid;
+			head[6] = devids[0];
+			head[7] = devids[1];
 		}
 		
 		if ( wbit ) {
@@ -309,20 +172,20 @@ public abstract class Secs1Communicator extends AbstractSecsCommunicator {
 		
 		byte[] priHead = primary.header10Bytes();
 		
-		int devid = this.secs1Config().deviceId();
-		boolean rbit = this.secs1Config().isEquip();
+		byte[] devids = deviceIdBytes.get();
+		boolean rbit = this.secs1Config().isEquip().booleanValue();
 		
 		byte[] head = new byte[] {
-				(byte)(devid >> 8)
-				, (byte)(devid)
-				, (byte)strm
-				, (byte)func
-				, (byte)0
-				, (byte)0
-				, priHead[6]
-				, priHead[7]
-				, priHead[8]
-				, priHead[9]
+				devids[0],
+				devids[1],
+				(byte)strm,
+				(byte)func,
+				(byte)0,
+				(byte)0,
+				priHead[6],
+				priHead[7],
+				priHead[8],
+				priHead[9]
 		};
 		
 		if ( rbit ) {
@@ -342,11 +205,14 @@ public abstract class Secs1Communicator extends AbstractSecsCommunicator {
 		RX,
 		TX,
 		RETRY,
+		
 		;
 	}
 	
-	private class CircuitLoop implements Runnable {
+	
+	private class CircuitLoop implements InterruptableRunnable {
 		
+		private final TimeProperty wdt = new TimeProperty(0.100F);
 		private Secs1MessageBlock presentBlock;
 		
 		public CircuitLoop() {
@@ -354,51 +220,40 @@ public abstract class Secs1Communicator extends AbstractSecsCommunicator {
 		}
 		
 		@Override
-		public void run() {
+		public void run() throws InterruptedException {
 			
 			try {
 				
-				for ( ;; ) {
+				if ( presentBlock == null ) {
+					presentBlock = sendReplyManager.pollBlock();
+				}
+				
+				if ( presentBlock == null ) {
 					
-					try {
-						if ( presentBlock == null ) {
-							presentBlock = sendReplyManager.pollBlock();
-						}
+					Byte b = pollByte().orElse(null);
+					
+					if ( b != null && b.byteValue() == ENQ ) {
 						
-						if ( presentBlock == null ) {
-							
-							Optional<Byte> op = pollByte(10L, TimeUnit.MILLISECONDS);
-							
-							if ( op.isPresent() ) {
-								
-								if ( op.get() == ENQ ) {
-
-									receiveBlock();
-								}
-							}
-							
-						} else {
-							
-							circuitControl();
-						}
+						receiveBlock();
+						
+					} else {
+						
+						wdt.wait(this);
 					}
-					catch ( InterruptedException e ) {
-						throw e;
-					}
-					catch ( SecsException e ) {
-						notifyLog(e);
-					}
-					catch ( Throwable t ) {
-						throw t;
-					}
+					
+				} else {
+					
+					circuitControl();
 				}
 			}
-			catch ( InterruptedException ignore ) {
+			catch ( InterruptedException e ) {
+				throw e;
 			}
-			catch ( RejectedExecutionException e ) {
-				if ( ! isClosed() ) {
-					throw e;
-				}
+			catch ( SecsException e ) {
+				notifyLog(e);
+			}
+			catch ( Throwable t ) {
+				throw t;
 			}
 		}
 		
@@ -406,35 +261,34 @@ public abstract class Secs1Communicator extends AbstractSecsCommunicator {
 		
 		private PollCircuitControl pollCircuitControl() throws InterruptedException {
 			
-			Collection<Callable<PollCircuitControl>> tasks = Arrays.asList(
-					() -> {
-						try {
-							for ( ;; ) {
-								Optional<Byte> op = pollByte(request);
-								
-								if ( op.isPresent() ) {
-									
-									byte b = op.get();
-									
-									if ( ! secs1Config().isMaster() && b == ENQ ) {
-										return PollCircuitControl.RX;
-									}
-									
-									if ( b == EOT ) {
-										return PollCircuitControl.TX;
-									}
-								}
+			Callable<PollCircuitControl> task = () -> {
+				
+				try {
+					for ( ;; ) {
+						Optional<Byte> op = pollByte(request);
+						
+						if ( op.isPresent() ) {
+							
+							byte b = op.get().byteValue();
+							
+							if ( ! secs1Config().isMaster().booleanValue() && b == ENQ ) {
+								return PollCircuitControl.RX;
+							}
+							
+							if ( b == EOT ) {
+								return PollCircuitControl.TX;
 							}
 						}
-						catch ( InterruptedException ignore ) {
-						}
-						
-						return PollCircuitControl.RETRY;
-					});
+					}
+				}
+				catch ( InterruptedException ignore ) {
+				}
+				
+				return PollCircuitControl.RETRY;
+			};
 			
 			try {
-				long t = (long)(secs1Config().timeout().t2() * 1000.0F);
-				return executorService().invokeAny(tasks, t, TimeUnit.MILLISECONDS);
+				return executeInvokeAny(task, secs1Config().timeout().t2());
 			}
 			catch ( TimeoutException giveup ) {
 			}
@@ -454,7 +308,7 @@ public abstract class Secs1Communicator extends AbstractSecsCommunicator {
 		
 		private void circuitControl() throws SecsException, InterruptedException {
 			
-			for ( int counter = 0 ; counter <= secs1Config.retry() ; ) {
+			for ( int counter = 0, m = secs1Config.retry().intValue(); counter <= m; ) {
 				
 				sendByte(ENQ);
 				

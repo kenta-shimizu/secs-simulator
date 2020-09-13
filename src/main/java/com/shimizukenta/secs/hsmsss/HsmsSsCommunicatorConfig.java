@@ -2,41 +2,36 @@ package com.shimizukenta.secs.hsmsss;
 
 import java.net.SocketAddress;
 import java.util.Objects;
-import java.util.Optional;
 
+import com.shimizukenta.secs.AbstractProperty;
 import com.shimizukenta.secs.AbstractSecsCommunicatorConfig;
+import com.shimizukenta.secs.IntegerProperty;
+import com.shimizukenta.secs.Property;
+import com.shimizukenta.secs.SocketAddressProperty;
+import com.shimizukenta.secs.TimeProperty;
 
 public class HsmsSsCommunicatorConfig extends AbstractSecsCommunicatorConfig {
 	
 	private static final long serialVersionUID = -5737187045438763249L;
 	
-	private HsmsSsProtocol protocol;
-	private SocketAddress sockAddr;
-	private float linktest;
-	private float rebindIfPassive;
+	private final Property<HsmsSsProtocol> protocol = new AbstractProperty<HsmsSsProtocol>(HsmsSsProtocol.PASSIVE) {
+		private static final long serialVersionUID = 3265234560589662064L;
+	};
+	
+	private final SocketAddressProperty sockAddr = new SocketAddressProperty(null);
+	private final TimeProperty linktest = new TimeProperty(-1.0F);
+	private final TimeProperty rebindIfPassive = new TimeProperty(-1.0F);
 	
 	public HsmsSsCommunicatorConfig() {
 		super();
-		
-		protocol = HsmsSsProtocol.PASSIVE;
-		sockAddr = null;
-		linktest = -1.0F;
-		rebindIfPassive = -1.0F;
 	}
 	
 	public void protocol(HsmsSsProtocol protocol) {
-		
-		Objects.requireNonNull(protocol);
-		
-		synchronized ( this ) {
-			this.protocol = Objects.requireNonNull(protocol);
-		}
+		this.protocol.set(Objects.requireNonNull(protocol));
 	}
 	
-	public HsmsSsProtocol protocol() {
-		synchronized ( this ) {
-			return protocol;
-		}
+	public Property<HsmsSsProtocol> protocol() {
+		return protocol;
 	}
 	
 	/**
@@ -44,25 +39,15 @@ public class HsmsSsCommunicatorConfig extends AbstractSecsCommunicatorConfig {
 	 * @param socketAddress of PASSIVE/ACTIVE
 	 */
 	public void socketAddress(SocketAddress socketAddress) {
-		
-		synchronized ( this ) {
-			this.sockAddr = Objects.requireNonNull(socketAddress);
-		}
+		this.sockAddr.set(Objects.requireNonNull(socketAddress));
 	}
 	
 	/**
 	 * 
 	 * @return socketAddress of PASSIVE/ACTIVE
 	 */
-	public SocketAddress socketAddress() {
-		synchronized ( this ) {
-			
-			if ( sockAddr == null ) {
-				throw new IllegalStateException("SocketAddress not setted");
-			}
-			
-			return sockAddr;
-		}
+	public SocketAddressProperty socketAddress() {
+		return sockAddr;
 	}
 	
 	/**
@@ -79,7 +64,7 @@ public class HsmsSsCommunicatorConfig extends AbstractSecsCommunicatorConfig {
 	 * 
 	 * @return session-id
 	 */
-	public int sessionId() {
+	public IntegerProperty sessionId() {
 		return deviceId();
 	}
 	
@@ -88,9 +73,7 @@ public class HsmsSsCommunicatorConfig extends AbstractSecsCommunicatorConfig {
 	 * 
 	 */
 	public void notLinktest() {
-		synchronized ( this ) {
-			this.linktest = -1.0F;
-		}
+		this.linktest.set(-1.0F);
 	}
 	
 	/**
@@ -98,24 +81,18 @@ public class HsmsSsCommunicatorConfig extends AbstractSecsCommunicatorConfig {
 	 * @param linktest-cycle-seconds. value >= 0
 	 */
 	public void linktest(float v) {
-		
-		synchronized ( this ) {
-			if ( v < 0.0F ) {
-				throw new IllegalArgumentException("linktest value is >= 0.0F");
-			}
-			
-			this.linktest = v;
+		if ( v < 0.0F ) {
+			throw new IllegalArgumentException("linktest value is >= 0.0F");
 		}
+		this.linktest.set(v);
 	}
 	
 	/**
 	 * 
 	 * @return seconds
 	 */
-	public Optional<Float> linktest() {
-		synchronized ( this ) {
-			return linktest >= 0.0F ? Optional.of(linktest) : Optional.empty();
-		}
+	public TimeProperty linktest() {
+		return linktest;
 	}
 	
 	/**
@@ -124,9 +101,7 @@ public class HsmsSsCommunicatorConfig extends AbstractSecsCommunicatorConfig {
 	 * 
 	 */
 	public void notRebindIfPassive() {
-		synchronized ( this ) {
-			this.rebindIfPassive = -1.0F;
-		}
+		this.rebindIfPassive.set(-1.0F);
 	}
 	
 	/**
@@ -134,24 +109,18 @@ public class HsmsSsCommunicatorConfig extends AbstractSecsCommunicatorConfig {
 	 * @param rebind after this time if Passive-protocol. value >= 0
 	 */
 	public void rebindIfPassive(float v) {
-		
-		synchronized ( this ) {
-			if ( v < 0.0F ) {
-				throw new IllegalArgumentException("rebindIfPassive value is >= 0.0F");
-			}
-			
-			this.rebindIfPassive = v;
+		if ( v < 0.0F ) {
+			throw new IllegalArgumentException("rebindIfPassive value is >= 0.0F");
 		}
+		this.rebindIfPassive.set(v);
 	}
 	
 	/**
 	 * 
 	 * @return seconds
 	 */
-	public Optional<Float> rebindIfPassive() {
-		synchronized ( this ) {
-			return rebindIfPassive >= 0 ? Optional.of(rebindIfPassive) : Optional.empty();
-		}
+	public TimeProperty rebindIfPassive() {
+		return rebindIfPassive;
 	}
 	
 }
