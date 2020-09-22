@@ -2,24 +2,32 @@ package com.shimizukenta.secs;
 
 import java.io.Serializable;
 
+/**
+ * Secs Timeout config.<br />
+ * T1-T8 setter and getter.
+ * 
+ * @author kenta-shimizu
+ *
+ */
 public class SecsTimeout implements Serializable {
 	
 	private static final long serialVersionUID = -3240180901934372535L;
 	
-	private final TimeProperty t1 = new TimeProperty( 1.0F);
-	private final TimeProperty t2 = new TimeProperty(15.0F);
-	private final TimeProperty t3 = new TimeProperty(45.0F);
-	private final TimeProperty t4 = new TimeProperty(45.0F);
-	private final TimeProperty t5 = new TimeProperty(10.0F);
-	private final TimeProperty t6 = new TimeProperty( 5.0F);
-	private final TimeProperty t7 = new TimeProperty(10.0F);
-	private final TimeProperty t8 = new TimeProperty( 6.0F);
+	private final TimeProperty t1 = TimeProperty.newInstance( 1.0F);
+	private final TimeProperty t2 = TimeProperty.newInstance(15.0F);
+	private final TimeProperty t3 = TimeProperty.newInstance(45.0F);
+	private final TimeProperty t4 = TimeProperty.newInstance(45.0F);
+	private final TimeProperty t5 = TimeProperty.newInstance(10.0F);
+	private final TimeProperty t6 = TimeProperty.newInstance( 5.0F);
+	private final TimeProperty t7 = TimeProperty.newInstance(10.0F);
+	private final TimeProperty t8 = TimeProperty.newInstance( 6.0F);
 	
 	protected SecsTimeout() {
 		/* Nothing */
 	}
 	
 	/**
+	 * T1-Timeout setter.
 	 * 
 	 * @param T1-timeout seconds
 	 */
@@ -31,14 +39,16 @@ public class SecsTimeout implements Serializable {
 	}
 	
 	/**
+	 * T1-Timeout getter
 	 * 
 	 * @return seconds
 	 */
-	public TimeProperty t1() {
+	public ReadOnlyTimeProperty t1() {
 		return t1;
 	}
 	
 	/**
+	 * T2-Timeout setter
 	 * 
 	 * @param T2-timeout seconds
 	 */
@@ -50,14 +60,16 @@ public class SecsTimeout implements Serializable {
 	}
 	
 	/**
+	 * T2-Timeout getter
 	 * 
 	 * @return seconds
 	 */
-	public TimeProperty t2() {
+	public ReadOnlyTimeProperty t2() {
 		return t2;
 	}
 	
 	/**
+	 * T3-Timeout setter
 	 * 
 	 * @param T3-timeout seconds
 	 */
@@ -69,14 +81,16 @@ public class SecsTimeout implements Serializable {
 	}
 	
 	/**
+	 * T3-Timeout getter
 	 * 
 	 * @return seconds
 	 */
-	public TimeProperty t3() {
+	public ReadOnlyTimeProperty t3() {
 		return t3;
 	}
 	
 	/**
+	 * T4-Timeout setter
 	 * 
 	 * @param T4-timeout seconds
 	 */
@@ -88,14 +102,16 @@ public class SecsTimeout implements Serializable {
 	}
 	
 	/**
+	 * T4-Timeout getter
 	 * 
 	 * @return seconds
 	 */
-	public TimeProperty t4() {
+	public ReadOnlyTimeProperty t4() {
 		return t4;
 	}
 	
 	/**
+	 * T5-Timeout setter
 	 * 
 	 * @param T5-timeout seconds
 	 */
@@ -107,14 +123,16 @@ public class SecsTimeout implements Serializable {
 	}
 	
 	/**
+	 * T5-Timeout getter
 	 * 
 	 * @return seconds
 	 */
-	public TimeProperty t5() {
+	public ReadOnlyTimeProperty t5() {
 		return t5;
 	}
 	
 	/**
+	 * T6-Timeout setter
 	 * 
 	 * @param T6-timeout seconds
 	 */
@@ -126,14 +144,16 @@ public class SecsTimeout implements Serializable {
 	}
 	
 	/**
+	 * T6-Timeout getter
 	 * 
 	 * @return seconds
 	 */
-	public TimeProperty t6() {
+	public ReadOnlyTimeProperty t6() {
 		return t6;
 	}
 	
 	/**
+	 * T7-Timeout setter
 	 * 
 	 * @param T7-timeout seconds
 	 */
@@ -145,14 +165,16 @@ public class SecsTimeout implements Serializable {
 	}
 	
 	/**
+	 * T7-Timeout getter
 	 * 
 	 * @return seconds
 	 */
-	public TimeProperty t7() {
+	public ReadOnlyTimeProperty t7() {
 		return t7;
 	}
 	
 	/**
+	 * T8-Timeout setter
 	 * 
 	 * @param T8-timeout seconds
 	 */
@@ -164,10 +186,11 @@ public class SecsTimeout implements Serializable {
 	}
 	
 	/**
+	 * T8-Timeout getter
 	 * 
 	 * @return seconds
 	 */
-	public TimeProperty t8() {
+	public ReadOnlyTimeProperty t8() {
 		return t8;
 	}
 	

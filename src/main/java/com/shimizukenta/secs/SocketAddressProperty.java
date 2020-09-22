@@ -2,21 +2,20 @@ package com.shimizukenta.secs;
 
 import java.net.SocketAddress;
 
-public class SocketAddressProperty extends AbstractProperty<SocketAddress> {
+/**
+ * SocketAddress value Getter, Setter, Value-Change-Observer<br />
+ * Setter is not accept null.
+ * 
+ * @author kenta-shimizu
+ *
+ */
+public interface SocketAddressProperty extends Property<SocketAddress>, ReadOnlySocketAddressProperty {
 	
-	private static final long serialVersionUID = -7242589411485478427L;
-	
-	public SocketAddressProperty(SocketAddress initial) {
-		super(initial);
+	public static SocketAddressProperty newInstance(SocketAddress initial) {
+		
+		return new AbstractSocketAddressProperty(initial) {
+			private static final long serialVersionUID = -460713208491670175L;
+		};
 	}
 	
-	public SocketAddress getSocketAddress() {
-		synchronized ( this ) {
-			SocketAddress a = get();
-			if ( a == null ) {
-				throw new IllegalStateException("SocketAddress not setted");
-			}
-			return a;
-		}
-	}
 }

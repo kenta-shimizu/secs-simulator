@@ -1,22 +1,20 @@
 package com.shimizukenta.secs;
 
-public class BooleanProperty extends AbstractProperty<Boolean> {
+/**
+ * Boolean value Getter, Setter, Value-Change-Observer<br />
+ * Not accept null.
+ * 
+ * @author kenta-shimizu
+ *
+ */
+public interface BooleanProperty extends Property<Boolean>, ReadOnlyBooleanProperty, WritableBooleanValue {
 	
-	private static final long serialVersionUID = 3179529862036582480L;
-	
-	public BooleanProperty(Boolean initial) {
-		super(Boolean.valueOf(initial));
+	public static BooleanProperty newInstance(boolean initial) {
+		
+		return new AbstractBooleanProperty(initial) {
+			private static final long serialVersionUID = 5083511805576401840L;
+			
+		};
 	}
 	
-	public boolean booleanValue() {
-		return get().booleanValue();
-	}
-	
-	public void waitUntilTrue() throws InterruptedException {
-		waitUntil(Boolean.TRUE);
-	}
-	
-	public void waitUntilFalse() throws InterruptedException {
-		waitUntil(Boolean.FALSE);
-	}
 }

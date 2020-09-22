@@ -1,24 +1,18 @@
 package com.shimizukenta.secs;
 
-import java.util.Objects;
-
-public class ByteArrayProperty extends AbstractProperty<byte[]> {
+/**
+ * Byte Array value Getter, Setter, Value-Change-Observer<br />
+ * Not accept null.
+ * 
+ * @author kenta-shimizu
+ *
+ */
+public interface ByteArrayProperty extends Property<byte[]> {
 	
-	private static final long serialVersionUID = -73558689082039418L;
-	
-	public ByteArrayProperty(byte[] initial) {
-		super(Objects.requireNonNull(initial));
+	public static ByteArrayProperty newInstance(byte[] initial) {
+		
+		return new AbstractByteArrayProperty(initial) {
+			private static final long serialVersionUID = -1499639983991564408L;
+		};
 	}
-	
-	@Override
-	public void set(byte[] v) {
-		super.set(Objects.requireNonNull(v));
-	}
-	
-	public byte get(int index) {
-		synchronized ( this ) {
-			return (get())[index];
-		}
-	}
-
 }

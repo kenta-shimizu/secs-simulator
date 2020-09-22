@@ -17,10 +17,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.shimizukenta.secs.gem.Gem;
-import com.shimizukenta.secs.gem.UsualGem;
 import com.shimizukenta.secs.secs2.Secs2;
 import com.shimizukenta.secs.sml.SmlMessage;
 
+/**
+ * This abstract class is implementation of SECS-communicate.
+ * 
+ * @author kenta-shimizu
+ *
+ */
 public abstract class AbstractSecsCommunicator implements SecsCommunicator {
 	
 	private final ExecutorService execServ = Executors.newCachedThreadPool(r -> {
@@ -72,12 +77,12 @@ public abstract class AbstractSecsCommunicator implements SecsCommunicator {
 		return execServ.invokeAny(Arrays.asList(task1, task2, task3));
 	}
 	
-	protected <T> T executeInvokeAny(Collection<? extends Callable<T>> tasks, TimeProperty timeout)
+	protected <T> T executeInvokeAny(Collection<? extends Callable<T>> tasks, ReadOnlyTimeProperty timeout)
 			throws InterruptedException, ExecutionException, TimeoutException {
 		return execServ.invokeAny(tasks, timeout.getMilliSeconds(), TimeUnit.MILLISECONDS);
 	}
 	
-	protected <T> T executeInvokeAny(Callable<T> task, TimeProperty timeout)
+	protected <T> T executeInvokeAny(Callable<T> task, ReadOnlyTimeProperty timeout)
 			throws InterruptedException, ExecutionException, TimeoutException {
 		return execServ.invokeAny(
 				Collections.singleton(task),
@@ -85,7 +90,7 @@ public abstract class AbstractSecsCommunicator implements SecsCommunicator {
 				TimeUnit.MILLISECONDS);
 	}
 	
-	protected <T> T executeInvokeAny(Callable<T> task1, Callable<T> task2, TimeProperty timeout)
+	protected <T> T executeInvokeAny(Callable<T> task1, Callable<T> task2, ReadOnlyTimeProperty timeout)
 			throws InterruptedException, ExecutionException, TimeoutException {
 		return execServ.invokeAny(
 				Arrays.asList(task1, task2),
@@ -93,7 +98,7 @@ public abstract class AbstractSecsCommunicator implements SecsCommunicator {
 				TimeUnit.MILLISECONDS);
 	}
 	
-	protected <T> T executeInvokeAny(Callable<T> task1, Callable<T> task2, Callable<T> task3, TimeProperty timeout)
+	protected <T> T executeInvokeAny(Callable<T> task1, Callable<T> task2, Callable<T> task3, ReadOnlyTimeProperty timeout)
 			throws InterruptedException, ExecutionException, TimeoutException {
 		return execServ.invokeAny(
 				Arrays.asList(task1, task2, task3),
@@ -111,7 +116,7 @@ public abstract class AbstractSecsCommunicator implements SecsCommunicator {
 	public AbstractSecsCommunicator(AbstractSecsCommunicatorConfig config) {
 		
 		this.config = config;
-		this.gem = new UsualGem(this, config.gem());
+		this.gem = Gem.newInstance(this, config.gem());
 		
 		opened = false;
 		closed = false;
@@ -180,17 +185,17 @@ public abstract class AbstractSecsCommunicator implements SecsCommunicator {
 	}
 	
 	@Override
-	public final Gem gem() {
+	public Gem gem() {
 		return gem;
 	}
 	
 	@Override
-	public final int deviceId() {
+	public int deviceId() {
 		return config.deviceId().intValue();
 	}
 	
 	@Override
-	public final boolean isEquip() {
+	public boolean isEquip() {
 		return config.isEquip().booleanValue();
 	}
 	
@@ -329,7 +334,7 @@ public abstract class AbstractSecsCommunicator implements SecsCommunicator {
 	
 	
 	/* Secs-Communicatable-State-Changed-Listener */
-	private final BooleanProperty communicatable = new BooleanProperty(false);
+	private final BooleanProperty communicatable = BooleanProperty.newInstance(false);
 	
 	@Override
 	public boolean addSecsCommunicatableStateChangeListener(SecsCommunicatableStateChangeListener l) {

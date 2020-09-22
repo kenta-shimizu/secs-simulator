@@ -159,7 +159,7 @@ public class MacroExecutor extends AbstractSecsSimulatorEngine {
 	private Optional<SecsMessage> send(SmlMessage sm) throws InterruptedException, MacroException {
 		
 		try {
-			return parent.send(sm);
+			return engine().send(sm);
 		}
 		catch ( SecsSimulatorException e ) {
 			Throwable t = e.getCause();

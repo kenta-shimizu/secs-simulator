@@ -22,7 +22,18 @@ public interface SecsSimulator extends Closeable {
 	
 	public void open() throws IOException;
 	
+	/**
+	 * is open.
+	 * 
+	 * @return true if open.
+	 */
 	public boolean isOpen();
+	
+	/**
+	 * is closed.
+	 * 
+	 * @return true if closed.
+	 */
 	public boolean isClosed();
 	
 	public SecsCommunicator openCommunicator() throws IOException;
