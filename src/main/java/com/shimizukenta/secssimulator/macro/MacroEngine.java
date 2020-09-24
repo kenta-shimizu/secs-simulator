@@ -8,13 +8,14 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 
+import com.shimizukenta.secs.BooleanProperty;
+import com.shimizukenta.secs.ReadOnlyBooleanProperty;
 import com.shimizukenta.secssimulator.AbstractSecsSimulator;
 import com.shimizukenta.secssimulator.AbstractSecsSimulatorEngine;
-import com.shimizukenta.secssimulator.BooleanProperty;
 
 public class MacroEngine extends AbstractSecsSimulatorEngine {
 	
-	private final BooleanProperty processing = new BooleanProperty(false);
+	private final BooleanProperty processing = BooleanProperty.newInstance(false);
 	
 	private final MacroExecutor executor;
 	
@@ -27,10 +28,11 @@ public class MacroEngine extends AbstractSecsSimulatorEngine {
 	
 	public void start(Path path) {
 		
+		stop();
+		
 		executorService().execute(() -> {
 			
 			try {
-				stop();
 				processing.waitUntilFalse();
 				
 				final Callable<Void> abortTask = () -> {
@@ -87,6 +89,8 @@ public class MacroEngine extends AbstractSecsSimulatorEngine {
 				if ( t instanceof Error ) {
 					throw (Error)t;
 				}
+				
+				notifyLog(t);
 			}
 			finally {
 				processing.set(false);
@@ -100,7 +104,7 @@ public class MacroEngine extends AbstractSecsSimulatorEngine {
 		}
 	}
 	
-	public BooleanProperty processing() {
+	public ReadOnlyBooleanProperty processing() {
 		return processing;
 	}
 	

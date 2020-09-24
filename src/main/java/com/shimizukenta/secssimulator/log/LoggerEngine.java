@@ -1,6 +1,7 @@
 package com.shimizukenta.secssimulator.log;
 
 import java.io.BufferedWriter;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,20 +13,21 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.shimizukenta.secs.BooleanProperty;
+import com.shimizukenta.secs.ReadOnlyBooleanProperty;
 import com.shimizukenta.secssimulator.AbstractSecsSimulator;
 import com.shimizukenta.secssimulator.AbstractSecsSimulatorEngine;
-import com.shimizukenta.secssimulator.BooleanProperty;
 
 public class LoggerEngine extends AbstractSecsSimulatorEngine {
 	
 	
-	private final BooleanProperty logging = new BooleanProperty(false);
+	private final BooleanProperty logging = BooleanProperty.newInstance(false);
 	
 	public LoggerEngine(AbstractSecsSimulator engine) {
 		super(engine);
 	}
 	
-	public BooleanProperty logging() {
+	public ReadOnlyBooleanProperty logging() {
 		return logging;
 	}
 	
@@ -42,6 +44,8 @@ public class LoggerEngine extends AbstractSecsSimulatorEngine {
 	public void start(Path path) {
 		synchronized ( this ) {
 			stop();
+			
+			logging.waitUntilFalse();
 			
 			executorService().execute(() -> {
 				
@@ -68,13 +72,20 @@ public class LoggerEngine extends AbstractSecsSimulatorEngine {
 												StandardOpenOption.APPEND);
 										) {
 									
-									Object o = queue.take();
+									logging.set(true);
 									
-									bw.write(o.toString());
-									bw.newLine();
-									bw.newLine();
-									
-									bw.flush();
+									for ( ;; ) {
+										Object o = queue.take();
+										
+										bw.write(o.toString());
+										bw.newLine();
+										bw.newLine();
+										
+										bw.flush();
+									}
+								}
+								catch ( IOException e ) {
+									notifyLog(e);
 								}
 							}
 							catch ( InterruptedException ignore ) {
@@ -85,11 +96,22 @@ public class LoggerEngine extends AbstractSecsSimulatorEngine {
 				
 				try {
 					queue.clear();
-					logging.set(true);
+					
 					executorService().invokeAny(tasks);
 				}
 				catch ( ExecutionException e ) {
-					notifyLog(e.getCause());
+					
+					Throwable t = e.getCause();
+					
+					if ( t instanceof RuntimeException ) {
+						throw (RuntimeException)t;
+					}
+					
+					if ( t instanceof Error ) {
+						throw (Error)t;
+					}
+					
+					notifyLog(t);
 				}
 				catch ( InterruptedException ignore ) {
 				}

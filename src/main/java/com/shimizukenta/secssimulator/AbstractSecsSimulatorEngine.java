@@ -7,6 +7,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
+import com.shimizukenta.secs.InterruptableRunnable;
 import com.shimizukenta.secs.SecsCommunicator;
 import com.shimizukenta.secs.SecsLog;
 import com.shimizukenta.secs.sml.SmlMessage;

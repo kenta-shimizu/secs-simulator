@@ -21,6 +21,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.shimizukenta.secs.BooleanProperty;
+import com.shimizukenta.secs.InterruptableRunnable;
+import com.shimizukenta.secs.ReadOnlyBooleanProperty;
 import com.shimizukenta.secs.SecsCommunicatableStateChangeListener;
 import com.shimizukenta.secs.SecsCommunicator;
 import com.shimizukenta.secs.SecsException;
@@ -201,16 +204,15 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		}
 	}
 	
-	
 	/* state-changed-listener */
-	private final BooleanProperty communicateState = new BooleanProperty(false);
+	private final BooleanProperty communicateState = BooleanProperty.newInstance(false);
 	
 	protected boolean addSecsCommunicatableStateChangeListener(SecsCommunicatableStateChangeListener lstnr) {
-		return communicateState.addChangedListener(lstnr::changed);
+		return communicateState.addChangeListener(lstnr::changed);
 	}
 	
 	protected boolean removeSecsCommunicatableStateChangeListener(SecsCommunicatableStateChangeListener lstnr) {
-		return communicateState.removeChangedListener(lstnr::changed);
+		return communicateState.removeChangeListener(lstnr::changed);
 	}
 	
 	protected void waitUntilCommunicatable() throws InterruptedException {
@@ -712,7 +714,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		this.logger.putLog(o);
 	}
 	
-	protected BooleanProperty logging() {
+	protected ReadOnlyBooleanProperty logging() {
 		return this.logger.logging();
 	}
 	

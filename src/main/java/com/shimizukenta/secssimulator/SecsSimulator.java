@@ -16,7 +16,6 @@ import com.shimizukenta.secs.SecsCommunicator;
 import com.shimizukenta.secs.SecsMessage;
 import com.shimizukenta.secs.sml.SmlMessage;
 import com.shimizukenta.secs.sml.SmlParseException;
-import com.shimizukenta.secssimulator.extendsml.ExtendSmlMessageParser;
 
 public interface SecsSimulator extends Closeable {
 	
