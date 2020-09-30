@@ -24,7 +24,7 @@ public class LoggerEngine extends AbstractSecsSimulatorEngine {
 	private final BooleanProperty logging = BooleanProperty.newInstance(false);
 	
 	public LoggerEngine(AbstractSecsSimulator engine) {
-		super(engine);
+		super();
 	}
 	
 	public ReadOnlyBooleanProperty logging() {
@@ -39,65 +39,51 @@ public class LoggerEngine extends AbstractSecsSimulatorEngine {
 		}
 	}
 	
-	private final Object syncLogging = new Object();
-	
 	public void start(Path path) {
 		synchronized ( this ) {
 			stop();
 			
-			logging.waitUntilFalse();
-			
 			executorService().execute(() -> {
 				
-				Collection<Callable<Void>> tasks = Arrays.asList(
-						() -> {
-							try {
-								synchronized ( syncLogging ) {
-									syncLogging.wait();
-								}
-							}
-							catch ( InterruptedException ignore ) {
-							}
+				Callable<Void> task = () -> {
+					try {
+						try (
+								BufferedWriter bw = Files.newBufferedWriter(
+										path,
+										StandardCharsets.UTF_8,
+										StandardOpenOption.WRITE,
+										StandardOpenOption.CREATE,
+										StandardOpenOption.APPEND);
+								) {
 							
-							return null;
-						},
-						() -> {
-							try {
-								try (
-										BufferedWriter bw = Files.newBufferedWriter(
-												path,
-												StandardCharsets.UTF_8,
-												StandardOpenOption.WRITE,
-												StandardOpenOption.CREATE,
-												StandardOpenOption.APPEND);
-										) {
-									
-									logging.set(true);
-									
-									for ( ;; ) {
-										Object o = queue.take();
-										
-										bw.write(o.toString());
-										bw.newLine();
-										bw.newLine();
-										
-										bw.flush();
-									}
-								}
-								catch ( IOException e ) {
-									notifyLog(e);
-								}
-							}
-							catch ( InterruptedException ignore ) {
-							}
+							logging.set(true);
 							
-							return null;
-						});
+							for ( ;; ) {
+								Object o = queue.take();
+								
+								bw.write(o.toString());
+								bw.newLine();
+								bw.newLine();
+								
+								bw.flush();
+							}
+						}
+						catch ( IOException e ) {
+							notifyLog(e);
+						}
+					}
+					catch ( InterruptedException ignore ) {
+					}
+					
+					return null;
+				};
 				
 				try {
+					logging.waitUntilFalse();
+					
 					queue.clear();
 					
-					executorService().invokeAny(tasks);
+					executeInvokeAny(task, createAbortTask());
 				}
 				catch ( ExecutionException e ) {
 					
@@ -122,10 +108,27 @@ public class LoggerEngine extends AbstractSecsSimulatorEngine {
 		}
 	}
 	
+	private final Object syncLogging = new Object();
+	
 	public void stop() {
 		synchronized ( syncLogging ) {
 			syncLogging.notifyAll();
 		}
 	}
 	
+	private Callable<Void> createAbortTask() {
+		return new Callable<Void>() {
+			@Override
+			public Void call() throws Exception {
+				try {
+					synchronized ( syncLogging ) {
+						syncLogging.wait();
+					}
+				}
+				catch ( InterruptedException ignore ) {
+				}
+				return null;
+			}
+		};
+	}
 }

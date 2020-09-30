@@ -1,28 +1,20 @@
 package com.shimizukenta.secssimulator;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.shimizukenta.secs.BooleanProperty;
-import com.shimizukenta.secs.InterruptableRunnable;
+import com.shimizukenta.secs.CollectionProperty;
 import com.shimizukenta.secs.ReadOnlyBooleanProperty;
 import com.shimizukenta.secs.SecsCommunicatableStateChangeListener;
 import com.shimizukenta.secs.SecsCommunicator;
@@ -43,57 +35,7 @@ import com.shimizukenta.secssimulator.macro.MacroReportListener;
 
 public abstract class AbstractSecsSimulator implements SecsSimulator {
 	
-	private final ExecutorService execServ = Executors.newCachedThreadPool(r -> {
-		Thread th = new Thread(r);
-		th.setDaemon(true);
-		return th;
-	});
-	
-	protected ExecutorService executorService() {
-		return this.execServ;
-	}
-	
-	protected static Runnable createLoopTask(InterruptableRunnable r) {
-		return new Runnable() {
-			@Override
-			public void run() {
-				try {
-					for ( ;; ) {
-						r.run();
-					}
-				}
-				catch ( InterruptedException ignore ) {
-				}
-			}
-		};
-	}
-	
-	protected void executeLoopTask(InterruptableRunnable r) {
-		this.execServ.execute(createLoopTask(r));
-	}
-	
-	protected <T> T executeInvokeAny(Collection<? extends Callable<T>> tasks)
-			throws InterruptedException, ExecutionException {
-		return execServ.invokeAny(tasks);
-	}
-	
-	protected <T> T executeInvokeAny(Callable<T> task)
-			throws InterruptedException, ExecutionException {
-		return execServ.invokeAny(Collections.singleton(task));
-	}
-	
-	protected <T> T executeInvokeAny(Callable<T> task1, Callable<T> task2)
-			throws InterruptedException, ExecutionException {
-		return execServ.invokeAny(Arrays.asList(task1, task2));
-	}
-	
-	protected <T> T executeInvokeAny(Callable<T> task1, Callable<T> task2, Callable<T> task3)
-			throws InterruptedException, ExecutionException {
-		return execServ.invokeAny(Arrays.asList(task1, task2, task3));
-	}
-	
-	
-	private final Collection<Closeable> closeables = new ArrayList<>();
+	private final CollectionProperty<SmlAlias> smlxs = CollectionProperty.newSet();
 	
 	private final LoggerEngine logger;
 	private final MacroEngine macro;
@@ -110,91 +52,6 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	public AbstractSecsSimulator(AbstractSecsSimulatorConfig config) {
 		this.config = config;
 		
-		this.logger = new LoggerEngine(this);
-		this.closeables.add(this.logger);
-		
-		this.macro = new MacroEngine(this);
-		this.closeables.add(this.macro);
-		
-		this.secsComm = null;
-		this.tcpipAdapter = null;
-		
-		this.opened = false;
-		this.closed = false;
-		
-	}
-	
-	@Override
-	public void open() throws IOException {
-		
-		synchronized ( this ) {
-			
-			if ( this.closed ) {
-				throw new IOException("Already closed");
-			}
-			
-			if ( this.opened ) {
-				throw new IOException("Already opened");
-			}
-			
-			this.opened = true;
-		}
-		
-		logger.open();
-		macro.open();
-	}
-	
-	@Override
-	public void close() throws IOException {
-		
-		synchronized ( this ) {
-			
-			if ( this.closed ) {
-				return;
-			}
-			
-			this.closed = true;
-		}
-		
-		IOException ioExcept = null;
-		
-		try {
-			execServ.shutdown();
-			if ( ! execServ.awaitTermination(1L, TimeUnit.MILLISECONDS) ) {
-				execServ.shutdownNow();
-				if ( ! execServ.awaitTermination(5L, TimeUnit.SECONDS) ) {
-					ioExcept = new IOException("ExecutorService#shutdown failed");
-				}
-			}
-		}
-		catch ( InterruptedException giveup ) {
-		}
-		
-		for ( Closeable c : closeables ) {
-			try {
-				c.close();
-			}
-			catch ( IOException e ) {
-				ioExcept = e;
-			}
-		}
-		
-		if ( ioExcept != null ) {
-			throw ioExcept;
-		}
-	}
-	
-	@Override
-	public boolean isOpen() {
-		synchronized ( this ) {
-			return this.opened && ! this.closed;
-		}
-	}
-	
-	public boolean isClosed() {
-		synchronized ( this ) {
-			return this.closed;
-		}
 	}
 	
 	
@@ -520,14 +377,6 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	@Override
 	public Set<String> smlAliases() {
 		return smls.stream().map(x -> x.alias()).collect(Collectors.toSet());
-	}
-	
-	@Override
-	public List<String> sortedSmlAliases() {
-		return smls.stream()
-				.sorted()
-				.map(s -> s.alias())
-				.collect(Collectors.toList());
 	}
 	
 	@Override
