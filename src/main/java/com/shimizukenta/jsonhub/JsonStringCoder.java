@@ -4,6 +4,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * This class is JSON-String to escape or unescape.
+ * 
+ * @author kenta-shimizu
+ *
+ */
 public class JsonStringCoder {
 
 	private JsonStringCoder() {
@@ -14,6 +20,15 @@ public class JsonStringCoder {
 		private static final JsonStringCoder inst = new JsonStringCoder();
 	}
 	
+	/**
+	 * Returns coder instance.
+	 * 
+	 * <p>
+	 * This class is Singleton-pattern.
+	 * </p>
+	 * 
+	 * @return coder instance
+	 */
 	public static JsonStringCoder getInstance() {
 		return SingletonHolder.inst;
 	}
@@ -65,6 +80,16 @@ public class JsonStringCoder {
 		}
 	}
 	
+	/**
+	 * Retruns escaped JSON-String.
+	 * 
+	 * <p>
+	 * Not Accept {@code null}.<br />
+	 * </p>
+	 * 
+	 * @param cs unescaped-JSON-Stirng
+	 * @return escaped-JSON-String
+	 */
 	public String escape(CharSequence cs) {
 		
 		String v = cs.toString();
@@ -97,6 +122,16 @@ public class JsonStringCoder {
 		}
 	}
 	
+	/**
+	 * Returns unescaped JSON-String.
+	 * 
+	 * <p>
+	 * Not Accept {@code null}.<br />
+	 * </p>
+	 * 
+	 * @param cs escaped-JSON-String
+	 * @return unescaped-JSON-String
+	 */
 	public String unescape(CharSequence cs) {
 		
 		String v = cs.toString();

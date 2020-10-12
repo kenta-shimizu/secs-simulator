@@ -4,7 +4,14 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Collection;
 
-public class JsonHubCompactPrettyPrinter extends JsonHubPrettyPrinter {
+
+/**
+ * This class provides Compact-JSON-pretty-printer, no line-separate and no space.
+ * 
+ * @author kenta-shimizu
+ *
+ */
+public class JsonHubCompactPrettyPrinter extends AbstractJsonHubPrettyPrinter {
 	
 	protected JsonHubCompactPrettyPrinter() {
 		super(JsonHubPrettyPrinterConfig.defaultConfig());
@@ -14,6 +21,15 @@ public class JsonHubCompactPrettyPrinter extends JsonHubPrettyPrinter {
 		private static final JsonHubCompactPrettyPrinter inst = new JsonHubCompactPrettyPrinter();
 	}
 	
+	/**
+	 * Returns Compact-JSON-pretty-printer instance.
+	 * 
+	 * <p>
+	 * This class is Singleton-pattern.<br />
+	 * </p>
+	 * 
+	 * @return Compact-JSON-pretty-printer instance
+	 */
 	public static JsonHubCompactPrettyPrinter getInstance() {
 		return SingletonHolder.inst;
 	}

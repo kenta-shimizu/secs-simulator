@@ -1,257 +1,103 @@
 package com.shimizukenta.jsonhub;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.stream.Collectors;
 
-public class JsonHubPrettyPrinter {
-	
-	private JsonHubPrettyPrinterConfig config;
-	
-	public JsonHubPrettyPrinter(JsonHubPrettyPrinterConfig config) {
-		this.config = config;
-	}
-	
-	private JsonHubPrettyPrinterConfig config() {
-		return config;
-	}
-	
-	private static class SingletonHolder {
-		private static final JsonHubPrettyPrinter defaultPrinter = new JsonHubPrettyPrinter(JsonHubPrettyPrinterConfig.defaultConfig());
-	}
-	
-	/**
-	 * Singleton-JsonHubPrettyPrinter
-	 * 
-	 * @return default-JsonHubPrettyPrinter
-	 */
-	public static JsonHubPrettyPrinter getDefaultPrinter() {
-		return SingletonHolder.defaultPrinter;
-	}
+/**
+ * This interface is implements of pretty-printing JSON.
+ * 
+ * <p>
+ * To get default-printer, {@link #getDefaultPrinter()}.<br />
+ * To get compact-printer, {@link #getCompactPrinter()}.<br />
+ * To get compact-and-exclude-null-value-in-object-printer, {@link #getNoneNullValueInObjectCompactPrinter()}.<br />
+ * To get custom-printer, {@link #newPrinter(JsonHubPrettyPrinterConfig)}.<br />
+ * </p>
+ * <p>
+ * To get Pretty-JSON-String, {@link #print(JsonHub)}.<br />
+ * To print to writer, {@link #print(JsonHub, Writer)}.<br />
+ * To print to file, {@link #print(JsonHub, Path)}.<br />
+ * To print to file with options, {@link #print(JsonHub, Path, OpenOption...)}.<br />
+ * </p>
+ * 
+ * @author kenta-shimizu
+ *
+ */
+public interface JsonHubPrettyPrinter {
 	
 	/**
-	 * Pretty-Print-JSON
+	 * Write to writer
 	 * 
 	 * @param v
 	 * @param writer
 	 * @throws IOException
 	 */
-	public void print(JsonHub v, Writer writer) throws IOException {
-		print(v, writer, 0);
-	}
+	public void print(JsonHub v, Writer writer) throws IOException;
 	
 	/**
-	 * write to File
+	 * Write to File.
 	 * 
 	 * @param v
 	 * @param path
 	 * @throws IOException
 	 */
-	public void print(JsonHub v, Path path) throws IOException {
-		
-		try (
-				BufferedWriter bw = Files.newBufferedWriter(path, StandardCharsets.UTF_8);
-				) {
-			
-			print(v, bw);
-		}
-	}
+	public void print(JsonHub v, Path path) throws IOException;
 	
 	/**
-	 * write to File
+	 * Write to File with options.
 	 * 
 	 * @param v
 	 * @param path
 	 * @param options
 	 * @throws IOException
 	 */
-	public void print(JsonHub v, Path path, OpenOption... options) throws IOException {
-		
-		try (
-				BufferedWriter bw = Files.newBufferedWriter(path, StandardCharsets.UTF_8, options);
-				) {
-			
-			print(v, bw);
-		}
+	public void print(JsonHub v, Path path, OpenOption... options) throws IOException;
+	
+	/**
+	 * Returns Pritty-JSON-String.
+	 * 
+	 * @param v
+	 * @return Pretty-JSON-String
+	 */
+	public String print(JsonHub v);
+	
+	
+	/**
+	 * Returns Default-pretty-printer instance
+	 * 
+	 * @return Default-pretty-printer instance
+	 */
+	public static JsonHubPrettyPrinter getDefaultPrinter() {
+		return AbstractJsonHubPrettyPrinter.getDefaultPrinter();
 	}
 	
 	/**
+	 * Returns Customized-pretty-printer instance.
 	 * 
-	 * @param v
-	 * @return Pretty-Print-JSON
+	 * @param config
+	 * @return Customized-pretty-printer instance
 	 */
-	public String print(JsonHub v) {
-		
-		synchronized ( this ) {
-			
-			try (
-					StringWriter sw = new StringWriter();
-					) {
-				
-				print(v, sw);
-				return sw.toString();
-			}
-			catch ( IOException notHappen ) {
-				throw new RuntimeException(notHappen);
-			}
-		}
+	public static JsonHubPrettyPrinter newPrinter(JsonHubPrettyPrinterConfig config) {
+		return AbstractJsonHubPrettyPrinter.newPrinter(config);
 	}
 	
-	private void print(JsonHub v, Writer writer, int level) throws IOException {
-		
-		switch ( v.type() ) {
-		case NULL:
-		case TRUE:
-		case FALSE:
-		case STRING:
-		case NUMBER: {
-			
-			v.toJson(writer);
-			break;
-		}
-		case ARRAY: {
-			
-			writer.write(JsonStructuralChar.ARRAY_BIGIN.str());
-			
-			if ( v.isEmpty() ) {
-				
-				writeLineSeparatorIfBlank(writer, level);
-				
-			} else {
-				
-				int deepLevel = level + 1;
-				
-				writeLineSeparator(writer);
-				writeIndent(writer, deepLevel);
-				
-				boolean f = false;
-				
-				for (JsonHub jh : v.values()) {
-					
-					if ( f ) {
-						writeValueSeparator(writer, deepLevel);
-					} else {
-						f = true;
-					}
-					
-					print(jh, writer, deepLevel);
-				}
-				
-				writeLineSeparator(writer);
-				writeIndent(writer, level);
-			}
-			
-			writer.write(JsonStructuralChar.ARRAY_END.str());
-			
-			break;
-		}
-		case OBJECT: {
-			
-			writer.write(JsonStructuralChar.OBJECT_BIGIN.str());
-			
-			final List<JsonObjectPair> pairs;
-			
-			if ( config.noneNullValueInObject() ) {
-				
-				pairs = ((ObjectJsonHub)v).objectPairs().stream()
-						.filter(p -> p.value().nonNull())
-						.collect(Collectors.toList());
-				
-			} else {
-				
-				pairs = ((ObjectJsonHub)v).objectPairs().stream()
-						.collect(Collectors.toList());
-			}
-			
-			if ( pairs.isEmpty() ) {
-				
-				writeLineSeparatorIfBlank(writer, level);
-				
-			} else {
-				
-				int deepLevel = level + 1;
-				
-				writeLineSeparator(writer);
-				writeIndent(writer, deepLevel);
-				
-				boolean f = false;
-				
-				for ( JsonObjectPair pair : pairs ) {
-					
-					if ( f ) {
-						writeValueSeparator(writer, deepLevel);
-					} else {
-						f = true;
-					}
-					
-					writeObjectName(writer, pair);
-					writeNameSeparator(writer);
-					
-					print(pair.value(), writer, deepLevel);
-				}
-				
-				writeLineSeparator(writer);
-				writeIndent(writer, level);
-			}
-			
-			writer.write(JsonStructuralChar.OBJECT_END.str());
-			
-			break;
-		}
-		}
+	/**
+	 * Returns Compact-pretty-printer instance.
+	 * 
+	 * @return Compact-JSON-pretty-printer instance
+	 */
+	public static JsonHubPrettyPrinter getCompactPrinter() {
+		return JsonHubCompactPrettyPrinter.getInstance();
 	}
 	
-	private void writeIndent(Writer writer, int level) throws IOException {
-		for (int i = 0; i < level; ++i) {
-			writer.write(config().indent());
-		}
-	}
-	
-	private void writeLineSeparator(Writer writer) throws IOException {
-		writer.write(config().lineSeparator());
-	}
-	
-	private void writeLineSeparatorIfBlank(Writer writer, int level) throws IOException {
-		if ( config().lineSeparateIfBlank() ) {
-			writeLineSeparator(writer);
-			writeIndent(writer, level);
-		}
-	}
-	
-	private void writeValueSeparator(Writer writer, int level) throws IOException {
-		
-		if ( config().lineSeparateBeforeValueSeparator() ) {
-			writeLineSeparator(writer);
-			writeIndent(writer, level);
-		}
-		
-		writer.write(config().prefixValueSeparator());
-		writer.write(JsonStructuralChar.SEPARATOR_VALUE.str());
-		writer.write(config().suffixValueSeparator());
-		
-		if ( config().lineSeparateAfterValueSeparator() ) {
-			writeLineSeparator(writer);
-			writeIndent(writer, level);
-		}
-	}
-	
-	private void writeNameSeparator(Writer writer) throws IOException {
-		writer.write(config().prefixNameSeparator());
-		writer.write(JsonStructuralChar.SEPARATOR_NAME.str());
-		writer.write(config().suffixNameSeparator());
-	}
-	
-	private void writeObjectName(Writer writer, JsonObjectPair pair) throws IOException {
-		writer.write(JsonStructuralChar.QUOT.str());
-		writer.write(pair.name().escaped());
-		writer.write(JsonStructuralChar.QUOT.str());
+	/**
+	 * Returns Compact-and-exclude-null-value-in-object-pretty-printer instance.
+	 * 
+	 * @return Compact-and-exclude-null-value-in-object-pretty-printer instance
+	 */
+	public static JsonHubPrettyPrinter getNoneNullValueInObjectCompactPrinter() {
+		return JsonHubNoneNullValueInObjectCompactPrettyPrinter.getInstance();
 	}
 	
 }

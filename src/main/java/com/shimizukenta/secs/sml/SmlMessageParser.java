@@ -5,9 +5,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * This class is implementation of SML-Parse<br />
+ * This class is implementation of SML-Parse.
+ * 
+ * <p>
  * To get parser instance, {@link #getInstance()}<br />
- * To parse SML, {@link #parse(CharSequence)}
+ * To parse SML, {@link #parse(CharSequence)}<br />
+ * </p>
  * 
  * @author kenta-shimizu
  *
@@ -22,6 +25,15 @@ public class SmlMessageParser {
 		private static final SmlMessageParser inst = new SmlMessageParser();
 	}
 	
+	/**
+	 * Returns parser instance.
+	 * 
+	 * <p>
+	 * This instance is Singleton-pattern.
+	 * </p>
+	 * 
+	 * @return parser instance
+	 */
 	public static SmlMessageParser getInstance() {
 		return SingletonHolder.inst;
 	}
@@ -44,9 +56,9 @@ public class SmlMessageParser {
 	protected static final Pattern ptnMessage = Pattern.compile("^" + pregMessage + "$");
 
 	/**
-	 * parse to SML-Message
+	 * parse to SML-Message.
 	 * 
-	 * @param SML-Format-Character
+	 * @param cs SML-Format-Character
 	 * @return SmlMessage
 	 * @throws SmlParseException
 	 */

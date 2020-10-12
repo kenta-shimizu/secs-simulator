@@ -8,6 +8,16 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 
+/**
+ * This class is implements of JSON value NUMBER.
+ * 
+ * <p>
+ * Instances of this class are immutable.
+ * </p>
+ * 
+ * @author kenta-shimizu
+ *
+ */
 public class NumberJsonHub extends AbstractJsonHub {
 	
 	private static final long serialVersionUID = -2924637446448005150L;

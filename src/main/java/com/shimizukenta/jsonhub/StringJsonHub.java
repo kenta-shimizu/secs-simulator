@@ -5,6 +5,16 @@ import java.io.Writer;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * This class is implements of JSON value STRING.
+ * 
+ * <p>
+ * Instances of this class are immutable.
+ * </p>
+ * 
+ * @author kenta-shimizu
+ *
+ */
 public class StringJsonHub extends AbstractJsonHub {
 	
 	private static final long serialVersionUID = -873784938882289245L;

@@ -8,6 +8,26 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * This class is parser, from JsonHub instance to POJO(Plain-Old-Java-Object).
+ * 
+ * <p>
+ * To get parser instance, {@link #getInstance()}.<br />
+ * To parse, {@link #parse(JsonHub, Class)}.<br />
+ * </p>
+ * <p>
+ * To POJO Conditions.<br />
+ * <ul>
+ * <li>Class has {@code public new()} (arguments is 0)</li>
+ * <li>Field is {@code public}</li>
+ * <li>Field is <i>not</i> {@code static}</li>
+ * <li>Field is <i>not</i> {@code final}</li>
+ * </ul>
+ * </p>
+ * 
+ * @author kenta-shimizu
+ *
+ */
 public class JsonHubToPojoParser {
 	
 	protected JsonHubToPojoParser() {
@@ -18,11 +38,39 @@ public class JsonHubToPojoParser {
 		private static final JsonHubToPojoParser inst = new JsonHubToPojoParser();
 	}
 	
+	/**
+	 * Returns parser instance.
+	 * 
+	 * <p>
+	 * This class is Singleton-pattern.<br />
+	 * </p>
+	 * 
+	 * @return JsonHubToPojoParser instance
+	 */
 	public static JsonHubToPojoParser getInstance() {
 		return SingletonHolder.inst;
 	}
 	
-	public <T> T toPojo(JsonHub jh, Class<T> classOfT) {
+	/**
+	 * Returns parsed POJO of classOfT from JsonHub instance.
+	 * 
+	 * <p>
+	 * To POJO Conditions.<br />
+	 * <ul>
+	 * <li>Class has {@code public new()} (arguments is 0)</li>
+	 * <li>Field is {@code public}</li>
+	 * <li>Field is <i>not</i> {@code static}</li>
+	 * <li>Field is <i>not</i> {@code final}</li>
+	 * </ul>
+	 * </p>
+	 * 
+	 * @param <T>
+	 * @param jh JsonHub instance
+	 * @param classOfT
+	 * @return parsed POJO
+	 * @throws JsonHubParseException if parse failed
+	 */
+	public <T> T parse(JsonHub jh, Class<T> classOfT) {
 		
 		try {
 			return toTopLevelPojo(jh, classOfT);

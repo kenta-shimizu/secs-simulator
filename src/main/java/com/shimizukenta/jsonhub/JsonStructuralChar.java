@@ -2,6 +2,12 @@ package com.shimizukenta.jsonhub;
 
 import java.util.Objects;
 
+/**
+ * JSON structural characters.
+ * 
+ * @author kenta-shimizu
+ *
+ */
 public enum JsonStructuralChar {
 	
 	ESCAPE("\\"),

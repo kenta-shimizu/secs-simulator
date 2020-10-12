@@ -3,7 +3,7 @@ package com.shimizukenta.secs;
 import java.net.SocketAddress;
 
 /**
- * SocketAddress Getter
+ * SocketAddress Getter.
  * 
  * @author kenta-shimizu
  *
@@ -11,11 +11,14 @@ import java.net.SocketAddress;
 public interface ReadOnlySocketAddressProperty extends ReadOnlyProperty<SocketAddress> {
 	
 	/**
-	 * SocketAddress getter<br />
-	 * if set null, throw IllegalStateException.
+	 * SocketAddress getter.
 	 * 
-	 * @throws IllegalStateException
+	 * <p>
+	 * if set {@code null}, throw IllegalStateException.<br />
+	 * </p>
+	 * 
 	 * @return SocketAddress
+	 * @throws IllegalStateException
 	 */
 	public SocketAddress getSocketAddress();
 	

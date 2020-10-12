@@ -23,303 +23,458 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+/**
+ * This interface is implements of JSON(RFC 8259) converter, parser, builder, prettyPrint.
+ * 
+ * <p>
+ * To convert from JSON-String to JsonHub instance, {@link #fromJson(CharSequence)} or {@link #fromJson(Reader)}.<br />
+ * To convert from JSON-File to JsonHub instance, {@link #fromFile(Path)}.<br />
+ * To convert from JSON-bytes to JsonHub instance, {@link #fromBytes(byte[])} or {@link #fromBytes(InputStream)}.<br />
+ * To convert from POJO(Plain-Old-Java-Object) to JsonHub instance, {@link #fromPojo(Object)}.<br />
+ * To get JSON-String from JsonHub instance, {@link #toJson()}.<br />
+ * To write JSON-File from JsonHub instance, {@link #writeFile(Path)} or {@link #writeFile(Path, OpenOption...)}.<br />
+ * To get JSON-String-UTF8-bytes from JsonHub instance, {@link #getBytes()}.<br />
+ * To convert from JsonHub instance to POJO, {@link #toPojo(Class)}.<br />
+ * </p>
+ * <p>
+ * To parse JsonHub,<br />
+ * Methods for seek value in OBJECT or ARRAY,
+ * {@link #get(CharSequence)}, {@link #get(String...)}, {@link #get(int)},
+ * {@link #iterator()}, {@link #stream()}, {@link #forEach(Consumer)}, {@link #forEach(BiConsumer)},
+ * {@link #values()}, {@link #keySet()}, {@link #containsKey(CharSequence)},
+ * {@link #getOrDefault(CharSequence)}, {@link #getOrDefault(CharSequence, JsonHub)}.<br />
+ * Methods for get value,
+ * {@link #intValue()}, {@link #longValue()}, {@link #doubleValue()}, {@link #booleanValue()},
+ * {@link #optionalInt()}, {@link #optionalLong()}, {@link #optionalDouble()}, {@link #optionalNubmer()},
+ * {@link #optionalBoolean()}, {@link #optionalString()},
+ * {@link #length()}, {@link #isEmpty()}, {@link #toString()}.<br />
+ * Methods for check value,
+ * {@link #type()}, {@link #isNull()}, {@link #nonNull()}, {@link #isTrue()}, {@link #isFalse()},
+ * {@link #isNumber()}, {@link #isString()}, {@link #isArray()}, {@link #isObject()}<br />
+ * </p>
+ * <p>
+ * To build JsonHub instance, {@link #getBuilder()} and build.<br />
+ * </p>
+ * <p>
+ * To get Pretty-Printing JSON-String, {@link #prettyPrint()}, {@link #prettyPrint(JsonHubPrettyPrinterConfig)}.<br />
+ * To write Pretty-Print JSON-File, {@link #prettyPrint(Path)}, {@link #prettyPrint(Path, OpenOption...)},
+ * {@link #prettyPrint(Path, JsonHubPrettyPrinterConfig)}, {@link #prettyPrint(Path, JsonHubPrettyPrinterConfig, OpenOption...)}.<br />
+ * </p>
+ * <p>
+ * To get compact JSON-String, {@link #toJson()}.<br />
+ * To get compact and exclude null-value-pair in Object JSON-String, {@link #toJsonExcludedNullValueInObject()}.<br />
+ * </p>
+ * 
+ * @author kenta-shimizu
+ *
+ */
 public interface JsonHub extends Iterable<JsonHub> {
 	
 	/**
-	 * available if type is ARRAY or OBJECT
-	 * if type is OBJECT, value is JsonHub.
+	 * Returns iterator if type is OBJECT or ARRAY.
 	 * 
-	 * @throws JsonHubUnsupportedOperationException
+	 * <p>
+	 * Available if type is ARRAY or OBJECT.<br />
+	 * If type is OBJECT, values is JsonHub.<br />
+	 * </p>
+	 * 
+	 * @throws JsonHubUnsupportedOperationException if type is <i>not</i> (OBJECT or ARRAY)
 	 */
 	@Override
 	public Iterator<JsonHub> iterator();
 	
 	/**
-	 * available if type is ARRAY or OBJECT
-	 * if type is OBJECT, value is JsonHub.
+	 * Returns spliterator if type is OBJECT or ARRAY.
 	 * 
-	 * @throws JsonHubUnsupportedOperationException
+	 * <p>
+	 * Available if type is ARRAY or OBJECT.<br />
+	 * If type is OBJECT, value is JsonHub.<br />
+	 * </p>
+	 * 
+	 * @throws JsonHubUnsupportedOperationException if type is <i>not</i> (OBJECT or ARRAY)
 	 */
 	@Override
 	public Spliterator<JsonHub> spliterator();
 	
 	/**
-	 * available if type is OBJECT or ARRAY.<br />
-	 * if type is OBJECT, value is JsonHub.
+	 * forEach operation if type is OBJECT or ARRAY.
 	 * 
-	 * @param Consumer<JsonHub>
-	 * @throws JsonHubUnsupportedOperationException
+	 * <p>
+	 * Available if type is OBJECT or ARRAY.<br />
+	 * If type is OBJECT, value is JsonHub.<bt />
+	 * </p>
+	 * 
+	 * @param action Consumer<JsonHub>
+	 * @throws JsonHubUnsupportedOperationException if type is <i>not</i> (OBJECT or ARRAY)
 	 */
 	@Override
 	public void forEach(Consumer<? super JsonHub> action);
 	
 	/**
-	 * available if type is OBJECT or ARRAY.<br />
-	 * if type is ARRAY, NAME is null.
+	 * forEach operation if type is OBJECT or ARRAY.
 	 * 
-	 * @param BiConsumer<JsonString, JsonHub>
-	 * @throws JsonHubUnsupportedOperationException
+	 * <p>
+	 * Available if type is OBJECT or ARRAY.<br />
+	 * If type is ARRAY, NAME is null.<br />
+	 * </p>
+	 * 
+	 * @param action BiConsumer<JsonString, JsonHub>
+	 * @throws JsonHubUnsupportedOperationException if type is <i>not</i> (OBJECT or ARRAY)
 	 */
 	public void forEach(BiConsumer<? super JsonString, ? super JsonHub> action);
 	
 	
 	/**
+	 * Returns type, type is NULL, TRUE, FALSE, NUMBER, STRING, ARRAY or OBJECT.
 	 * 
 	 * @return JsonHubType
 	 */
 	public JsonHubType type();
 	
 	/**
-	 * available if type is OBJECT or ARRAY.<br />
-	 * if type is OBJECT, value is JsonHub.
+	 * Returns java.util.stream.Stream if type is OBJECT or ARRAY.
+	 * 
+	 * <p>
+	 * Available if type is OBJECT or ARRAY.<br />
+	 * If type is OBJECT, value is JsonHub.<br />
+	 * </p>
 	 * 
 	 * @return Array values stream
-	 * @throws JsonHubUnsupportedOperationException
+	 * @throws JsonHubUnsupportedOperationException if type is <i>not</i> (OBJECT or ARRAY)
 	 */
 	public Stream<JsonHub> stream();
 	
 	/**
-	 * available if type is OBJECT
+	 * Returns set of Object names.
 	 * 
-	 * @return names
-	 * @throws JsonHubUnsupportedOperationException
+	 * <p>
+	 * Available if type is OBJECT.<br />
+	 * </p>
+	 * 
+	 * @return set of Object names
+	 * @throws JsonHubUnsupportedOperationException if type is <i>not</i> OBJECT
 	 */
 	public Set<JsonString> keySet();
 	
 	/**
-	 * available if type is OBJECT or ARRAY
+	 * Returns list of values.
 	 * 
-	 * @return values
-	 * @throws JsonHubUnsupportedOperationException
+	 * <p>
+	 * Available if type is OBJECT or ARRAY.<bt />
+	 * </p>
+	 * 
+	 * @return list of values
+	 * @throws JsonHubUnsupportedOperationException if type is <i>not</i> (OBJECT or ARRAY)
 	 */
 	public List<JsonHub> values();
 	
 	/**
-	 * available if type is ARRAY
+	 * Returns value in Array by index.
+	 * 
+	 * <p>
+	 * Available if type is ARRAY.<br />
+	 * </p>
 	 *  
 	 * @param index
 	 * @return value
-	 * @throws JsonHubUnsupportedOperationException
+	 * @throws JsonHubUnsupportedOperationException if type is <i>not</i> ARRAY
 	 */
 	public JsonHub get(int index);
 	
 	/**
-	 * available if type is OBJECT
+	 * Returns true if contains name in Object.
+	 * 
+	 * <p>
+	 * Available if type is OBJECT.<br />
+	 * Not accept {@code null}.<br />
+	 * </p>
 	 * 
 	 * @param name
-	 * @return true if has name
-	 * @throws JsonHubUnsupportedOperationException
+	 * @return true if contains name in Object
+	 * @throws JsonHubUnsupportedOperationException if type is <i>not</i> OBJECT
 	 */
 	public boolean containsKey(CharSequence name);
 	
 	/**
-	 * available if type is OBJECT
+	 * Returns JsonHub OBJECT-value instance if Object has same-name, and null otherwise.
+	 * 
+	 * <p>
+	 * Available if type is OBJECT.<br />
+	 * Not accept {@code null}.<br />
+	 * </p>
 	 * 
 	 * @param name
-	 * @return value. null if not has name.
-	 * @throws JsonHubUnsupportedOperationException
+	 * @return JsonHub value. null if has <i>no</i> same name.
+	 * @throws JsonHubUnsupportedOperationException if type is <i>not</i> OBJECT
 	 */
 	public JsonHub get(CharSequence name);
 	
 	/**
-	 * available if type is OBJECT
+	 * Returns JsonHub instance, seek in Object name, if not exist, return empty-ObjectJsonHub.
+	 * 
+	 * <p>
+	 * Available if type is OBJECT
+	 * </p>
 	 * 
 	 * @param name
-	 * @return emptyObject() if not exist
-	 * @throws JsonHubUnsupportedOperationException
+	 * @return value, Empty-ObjectJsonHub instance if not exist
+	 * @throws JsonHubUnsupportedOperationException if type is <i>not</i> OBJECT
 	 */
 	public JsonHub getOrDefault(CharSequence name);
 	
 	/**
-	 * available if type is OBJECT
+	 * Returns JsonHub instance, seek in Object name, if not exist, return {@code defaultValue}.
+	 * 
+	 * <p>
+	 * Available if type is OBJECT
+	 * </p>
 	 * 
 	 * @param name
 	 * @param defaultValue
-	 * @return defaultValue if not exist
-	 * @throws JsonHubUnsupportedOperationException
+	 * @return value, defaultValue if <i>not</i> exist
+	 * @throws JsonHubUnsupportedOperationException if type is <i>not</i> OBJECT
 	 */
 	public JsonHub getOrDefault(CharSequence name, JsonHub defaultValue);
 	
 	/**
-	 * available if type is OBJECT-chains
+	 * Returns JsonHub instance, seek chains in Object by names, If seek failed, return {@code null}.
+	 * 
+	 * <p>
+	 * Available if type is OBJECT-chains
+	 * </p>
 	 * 
 	 * @param names
-	 * @return value
-	 * @throws JsonHubUnsupportedOperationException
+	 * @return value if exist and null otherwise
+	 * @throws JsonHubUnsupportedOperationException if type is <i>not</i> OBJECT
 	 */
 	public JsonHub get(String... names);
 	
 	/**
-	 * available if STRING or ARRAY or OBJECT
+	 * Returns length if type is STRING or OBJECT or ARRAY.
+	 * 
+	 * <p>
+	 * Available if type is STRING or ARRAY or OBJECT
+	 * </p>
+	 * <p>
+	 * If type is STRING return length of String.<br />
+	 * If type is ARRAY, return size of values.<br />
+	 * If type is OBJECT, return size of name-value-pairs.<br />
+	 * </p>
 	 * 
 	 * @return length
-	 * @throws JsonHubUnsupportedOperationException
+	 * @throws JsonHubUnsupportedOperationException if <i>not</i> (STRING or ARRAY or OBJECT)
 	 */
 	public int length();
 	
 	/**
-	 * available if STRING or ARRAY or OBJECT
+	 * Returns {@code true} if empty.
 	 * 
-	 * @return true if empty
-	 * @throws JsonHubUnsupportedOperationException
+	 * <p>
+	 * Available if type is STRING or ARRAY or OBJECT.<br />
+	 * <p>
+	 * <p>
+	 * If type is STRING, return {@code true} if length is 0.<br />
+	 * If type is ARRAY, return {@code true} if Array is empty.<br />
+	 * If type is OBJECT, return {@code true} if Object-pairs is empty.<Br />
+	 * </p>
+	 * 
+	 * @return {@code true} if empty
+	 * @throws JsonHubUnsupportedOperationException if <i>not</i> (STRING or ARRAY or OBJECT)
 	 */
 	public boolean isEmpty();
 	
 	/**
+	 * Returns {@code true} if type is NULL.
 	 * 
-	 * @return true if type is NULL
+	 * @return {@code true} if type is NULL
 	 */
 	public boolean isNull();
 	
 	/**
+	 * Returns {@code true} if type is not null.
 	 * 
-	 * @return true if type is not NULL
+	 * @return {@code true} if type is <i>not</i> NULL
 	 */
 	public boolean nonNull();
 	
 	/**
+	 * Returns {@code true} if type is TRUE.
 	 * 
-	 * @return true if type is TRUE
+	 * @return {@code true} if type is TRUE
 	 */
 	public boolean isTrue();
 	
 	/**
+	 * Returns {@code true} if type is FALSE.
 	 * 
-	 * @return true if type is FALSE
+	 * @return {@code true} if type is FALSE
 	 */
 	public boolean isFalse();
 	
 	/**
+	 * Returns {@code true} if type is STRING.
 	 * 
-	 * @return true is type is STRING
+	 * @return {@code true} is type is STRING
 	 */
 	public boolean isString();
 	
 	/**
+	 * Returns {@code true} if type is NUMBER.
 	 * 
-	 * @return true if type is NUMBER
+	 * @return {@code true} if type is NUMBER
 	 */
 	public boolean isNumber();
 	
 	/**
+	 * Returns {@code true} if type is ARRAY.
 	 * 
-	 * @return true if type is ARRAY
+	 * @return {@code true} if type is ARRAY
 	 */
 	public boolean isArray();
 	
 	/**
+	 * Returns {@code true} if type is OBJECT.
 	 * 
-	 * @return true if type is OBJECT
+	 * @return {@code true} if type is OBJECT
 	 */
 	public boolean isObject();
 	
 	/**
+	 * Returns Optional, Optional has value if type is TRUE or FALSE, and {@code Optional.empty()} otherwise.
 	 * 
-	 * @return Optional has value if type is TRUE or FALSE
+	 * @return Optional has value if type is TRUE or FALSE, and {@code Optional.empty()} otherwise
 	 */
 	public Optional<Boolean> optionalBoolean();
 	
 	/**
+	 * Returns OptionalInt, OptionalInt has value if type is NUMBER, and {@code OptionalInt.empty()} otherwise.
 	 * 
-	 * @return Optional has value if type is NUMBER
+	 * @return OptionalInt has value if type is NUMBER, and {@code OptionalInt.empty()} otherwise
 	 */
 	public OptionalInt optionalInt();
 	
 	/**
+	 * Returns OptionalLong, OptionalLong has value if type is NUMBER, and {@code OptionalLong.empty()} otherwise.
 	 * 
-	 * @return Optional has value if type is NUMBER
+	 * @return OptionalLong has value if type is NUMBER, and {@code OptionalLong.empty()} otherwise
 	 */
 	public OptionalLong optionalLong();
 	
 	/**
+	 * Returns OptionalDouble, OptionalDouble has value if type is NUMBER, and {@code OptionalDouble.empty()} otherwise.
 	 * 
-	 * @return Optional has value if type is NUMBER
+	 * @return OptionalDouble has value if type is NUMBER, and {@code OptionalDouble.empty()} otherwise
 	 */
 	public OptionalDouble optionalDouble();
 	
 	/**
+	 * Returns Optional, Optional has value if type is STRING, and {@code Optional.empty()} otherwise.
 	 * 
-	 * @return Optional has value if type is STRING
+	 * @return Optional has value if type is STRING, and {@code Optional.empty()} otherwise
 	 */
 	public Optional<String> optionalString();
 	
 	/**
+	 * Returns Optional, Optional has value if type is NUMBER, and {@code Optional.empty()} otherwise.
 	 * 
-	 * @return Optional has value if type is NUMBER
+	 * @return Optional has value if type is NUMBER, and {@code Optional.empty()} otherwise
 	 */
 	public Optional<Number> optionalNubmer();
 	
 	/**
-	 * available if type is TRUE or FALSE
+	 * Returns boolean value if type is TRUE or FALSE.
 	 * 
-	 * @return boolean
-	 * @throws JsonHubUnsupportedOperationException
+	 * <p>
+	 * Available if type is TRUE or FALSE<br />
+	 * </p>
+	 * 
+	 * @return booleanValue
+	 * @throws JsonHubUnsupportedOperationException if type is <i>not</i> (TRUE or FALSE)
 	 */
 	public boolean booleanValue();
 	
 	/**
-	 * available if type is NUMBER
+	 * Returns int value if type is NUMBER.
 	 * 
-	 * @return value
-	 * @throws JsonHubUnsupportedOperationException
+	 * <p>
+	 * Available if type is NUMBER.<br />
+	 * </p>
+	 * 
+	 * @return intValue
+	 * @throws JsonHubUnsupportedOperationException if type is <i>not</i> NUMBER
 	 */
 	public int intValue();
 	
 	/**
-	 * available if type is NUMBER
+	 * Returns long value if type is NUMBER.
 	 * 
-	 * @return value
-	 * @throws JsonHubUnsupportedOperationException
+	 * <p>
+	 * Available if type is NUMBER.<br />
+	 * </p>
+	 * 
+	 * @return longValue
+	 * @throws JsonHubUnsupportedOperationException if type is <i>not</i> NUMBER
 	 */
 	public long longValue();
 	
 	/**
-	 * available if type is NUMBER
+	 * Returns double value if type is NUMBER.
 	 * 
-	 * @return value
-	 * @throws JsonHubUnsupportedOperationException
+	 * <p>
+	 * Available if type is NUMBER.<br />
+	 * </p>
+	 * 
+	 * @return doubleValue
+	 * @throws JsonHubUnsupportedOperationException if type is <i>not</i> NUMBER
 	 */
 	public double doubleValue();
 	
 	
-	/* builders */
-	
+	/**
+	 * Returns JsonHubBuilder.
+	 * 
+	 * @return JsonHubBuilder instance
+	 */
 	public static JsonHubBuilder getBuilder() {
 		return JsonHubBuilder.getInstance();
 	}
 	
 	/**
-	 * parse to JsonHub
+	 * Returns JsonHub instance parsing from JSON-String.
+	 * 
+	 * <p>
+	 * Not accept {@code null}.<br />
+	 * </p>
 	 * 
 	 * @param json
-	 * @return JsonHub
-	 * @throws JsonHubParseException
+	 * @return parsed JsonHub instance
+	 * @throws JsonHubParseException if parse failed
 	 */
 	public static JsonHub fromJson(CharSequence json) {
 		return JsonHubJsonParser.getInstance().parse(json);
 	}
 	
 	/**
-	 * parse to JaonHub
+	 * Returns parsed JaonHub from Reader.
 	 * 
 	 * @param reader
-	 * @return JsonHub
+	 * @return parsed JsonHub instance
 	 * @throws IOException
-	 * @throws JsonHubParseException
+	 * @throws JsonHubParseException if parse failed
 	 */
 	public static JsonHub fromJson(Reader reader) throws IOException {
 		return JsonHubJsonParser.getInstance().parse(reader);
 	}
 	
 	/**
-	 * parse to compact-JSON-String
+	 * Returns parsed compact-JSON-String
 	 * 
 	 * @return json
 	 */
 	public String toJson();
 	
 	/**
-	 * compact-JSON-String to writer
+	 * Write compact-JSON-String to Writer
 	 * 
 	 * @param writer
 	 * @throws IOException
@@ -327,14 +482,14 @@ public interface JsonHub extends Iterable<JsonHub> {
 	public void toJson(Writer writer) throws IOException;
 	
 	/**
-	 * parse to compact-JSON-String exclued null value in Object;
+	 * Returns parsed compact-JSON-String exclude null value pair in Object;
 	 * 
-	 * @return json of excluded null value in Object.
+	 * @return json of excluded null value pair in Object.
 	 */
 	public String toJsonExcludedNullValueInObject();
 	
 	/**
-	 * parse to compact-JSON-String exclued null value in Object;
+	 * Returns parsed compact-JSON-String exclude null value pair in Object;
 	 * 
 	 * @param writer
 	 * @throws IOException
@@ -342,10 +497,10 @@ public interface JsonHub extends Iterable<JsonHub> {
 	public void toJsonExcludedNullValueInObject(Writer writer) throws IOException;
 	
 	/**
-	 * read JSON file and parse to JsonHub
+	 * Returns parsed JsonHub instance from read file.
 	 * 
 	 * @param JSON-file-path
-	 * @return JsonHub
+	 * @return parsed JsonHub instance
 	 * @throws IOException
 	 * @throws JsonHubParseException
 	 */
@@ -360,17 +515,17 @@ public interface JsonHub extends Iterable<JsonHub> {
 	}
 	
 	/**
-	 * write to file
+	 * Write to file.
 	 * 
-	 * @param file-path
+	 * @param path File-path
 	 * @throws IOException
 	 */
 	public void writeFile(Path path) throws IOException;
 	
 	/**
-	 * write to file
+	 * Write to file with options.
 	 * 
-	 * @param path
+	 * @param path File-path
 	 * @param options
 	 * @throws IOException
 	 */
@@ -378,12 +533,14 @@ public interface JsonHub extends Iterable<JsonHub> {
 	
 	
 	/**
+	 * Returns default format Pretty-Print-JSON.
 	 * 
-	 * @return Pretty-Print-JSON
+	 * @return default format Pretty-Print-JSON
 	 */
 	public String prettyPrint();
 	
 	/**
+	 * Returns Pretty-Print-JSON with config format.
 	 * 
 	 * @param config
 	 * @return Pretty-Print-JSON with config format
@@ -391,7 +548,7 @@ public interface JsonHub extends Iterable<JsonHub> {
 	public String prettyPrint(JsonHubPrettyPrinterConfig config);
 	
 	/**
-	 * write Pretty-Print-JSON to writer
+	 * Write default format Pretty-Print-JSON to writer
 	 * 
 	 * @param writer
 	 * @throws IOException
@@ -399,7 +556,7 @@ public interface JsonHub extends Iterable<JsonHub> {
 	public void prettyPrint(Writer writer) throws IOException;
 	
 	/**
-	 * write Pretty-Print-JSON to writer with config format
+	 * Write Pretty-Print-JSON to writer with config format
 	 * 
 	 * @param writer
 	 * @param config
@@ -408,35 +565,35 @@ public interface JsonHub extends Iterable<JsonHub> {
 	public void prettyPrint(Writer writer, JsonHubPrettyPrinterConfig config) throws IOException;
 	
 	/**
-	 * write Pretty-Print-JSON to File
+	 * Write default format Pretty-Print-JSON to File
 	 * 
-	 * @param path
+	 * @param path File-Path
 	 * @throws IOException
 	 */
 	public void prettyPrint(Path path) throws IOException;
 	
 	/**
-	 * write Pretty-Print-JSON to File
+	 * Write default format Pretty-Print-JSON to File
 	 * 
-	 * @param path
+	 * @param path File-Path
 	 * @param options
 	 * @throws IOException
 	 */
 	public void prettyPrint(Path path, OpenOption... options) throws IOException;
 	
 	/**
-	 * write Pretty-Print-JSON to File with config format
+	 * Write Pretty-Print-JSON to File with config format
 	 * 
-	 * @param path
+	 * @param path File-Path
 	 * @param config
 	 * @throws IOException
 	 */
 	public void prettyPrint(Path path, JsonHubPrettyPrinterConfig config) throws IOException;
 	
 	/**
-	 * write Pretty-Print-JSON to File with config format
+	 * Write Pretty-Print-JSON to File with config format
 	 * 
-	 * @param path
+	 * @param path File-Path
 	 * @param config
 	 * @param options
 	 * @throws IOException
@@ -445,68 +602,74 @@ public interface JsonHub extends Iterable<JsonHub> {
 	
 	
 	/**
+	 * Returns JsonHub instance parsing from POJO (Plain-Old-Java-Object).
 	 * 
-	 * @param pojo
-	 * @return
-	 * @throws JsonHubParseException
+	 * @param pojo (Plain-Old-Java-Object)
+	 * @return parsed JsonHub instance
+	 * @throws JsonHubParseException if parse failed
 	 */
 	public static JsonHub fromPojo(Object pojo) {
-		return JsonHubFromPojoParser.getInstance().fromPojo(pojo);
+		return JsonHubFromPojoParser.getInstance().parse(pojo);
 	}
 	
 	/**
+	 * Returns parsed instance of ClassOtT.
 	 * 
 	 * @param <T>
 	 * @param classOfT
-	 * @return Pojo
-	 * @throws JsonHubParseException
+	 * @return parsed POJO instance
+	 * @throws JsonHubParseException if parse failed
 	 */
 	public <T> T toPojo(Class<T> classOfT);
 	
 	/**
+	 * Returns UTF-8 encorded bytes.
 	 * 
 	 * @return UTF-8 encorded bytes
 	 */
 	public byte[] getBytes();
 	
 	/**
-	 * write UTF-8 encorded bytes to OutputStream
+	 * Write UTF-8 encorded bytes to OutputStream
 	 * 
-	 * @param OutputSteam
+	 * @param strm OutputStream
 	 * @throws IOException
 	 */
 	public void writeBytes(OutputStream strm) throws IOException;
 	
 	/**
+	 * Returns UTF-8 encorded bytes excluded null value in Object.
 	 * 
-	 * @return UTF-8 encorded bytes excluded null value in Object.
+	 * @return UTF-8 encorded bytes excluded null value in Object
 	 */
 	public byte[] getBytesExcludedNullValueInObject();
 	
 	/**
-	 * write UTF-8 encorded bytes exclued null value in Object to OutputStream
+	 * Write UTF-8 encorded bytes exclued null value in Object to OutputStream
 	 * 
-	 * @param strm
+	 * @param strm OutputStream
 	 * @throws IOException
 	 */
 	public void writeBytesExcludedNullValueInObject(OutputStream strm) throws IOException;
 	
 	/**
+	 * Returns parsed JsonHub instance from JSON-UTF8-bytes-array.
 	 * 
-	 * @param bytes
-	 * @return JsonHub
-	 * @throws JsonHubParseException
+	 * @param bs JSON-UTF8-bytes-array
+	 * @return parsed JsonHub instance
+	 * @throws JsonHubParseException if parse failed
 	 */
 	public static JsonHub fromBytes(byte[] bs) {
 		return fromJson(new String(bs, StandardCharsets.UTF_8));
 	}
 	
 	/**
+	 * Returns parsed JsonHub instance from JSON-UTF8-bytes-stream.
 	 * 
-	 * @param strm
-	 * @return JsonHub
+	 * @param strm JSON-UTF8-bytes-stream
+	 * @return parsed JsonHub instance
 	 * @throws IOException
-	 * @throws JsonHubParseException
+	 * @throws JsonHubParseException if parse failed
 	 */
 	public static JsonHub fromBytes(InputStream strm) throws IOException {
 		
@@ -528,5 +691,5 @@ public interface JsonHub extends Iterable<JsonHub> {
 			return fromBytes(os.toByteArray());
 		}
 	}
-
+	
 }

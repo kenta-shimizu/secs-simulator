@@ -4,6 +4,16 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Optional;
 
+/**
+ * This class is implements of JSON literal FALSE.
+ * 
+ * <p>
+ * Instances of this class are immutable.
+ * </p>
+ * 
+ * @author kenta-shimizu
+ *
+ */
 public class FalseJsonHub extends AbstractJsonHub {
 
 	private static final long serialVersionUID = 3644504159696333609L;

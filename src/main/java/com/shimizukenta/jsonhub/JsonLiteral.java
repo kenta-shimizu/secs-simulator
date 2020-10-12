@@ -2,6 +2,12 @@ package com.shimizukenta.jsonhub;
 
 import java.util.Objects;
 
+/**
+ * JSON Literals.
+ * 
+ * @author kenta-shimizu
+ *
+ */
 public enum JsonLiteral {
 	
 	NULL("null"),

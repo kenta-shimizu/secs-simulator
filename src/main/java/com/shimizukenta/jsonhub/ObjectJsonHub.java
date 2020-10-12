@@ -17,6 +17,16 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * This class is implements of JSON value OBJECT.
+ * 
+ * <p>
+ * Instances of this class are immutable.
+ * </p>
+ * 
+ * @author kenta-shimizu
+ *
+ */
 public class ObjectJsonHub extends AbstractJsonHub {
 	
 	private static final long serialVersionUID = 6707336078321312442L;

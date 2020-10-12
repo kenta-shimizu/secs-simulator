@@ -12,6 +12,16 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+/**
+ * This class is implements of JSON value ARRAY.
+ * 
+ * <p>
+ * Instances of this class are immutable.
+ * </p>
+ * 
+ * @author kenta-shimizu
+ *
+ */
 public class ArrayJsonHub extends AbstractJsonHub {
 	
 	private static final long serialVersionUID = -2012262422136607091L;
@@ -116,7 +126,7 @@ public class ArrayJsonHub extends AbstractJsonHub {
 		}
 	}
 	
-	public String toJsonExcludedNullValueInObjectCache() {
+	private String toJsonExcludedNullValueInObjectCache() {
 		synchronized ( this ) {
 			if ( toJsonExcludedNullValueInObjectCache == null ) {
 				toJsonExcludedNullValueInObjectCache = super.toJsonExcludedNullValueInObject();

@@ -1,16 +1,17 @@
 package com.shimizukenta.secs;
 
 /**
- * Getter, Value-Change-Observer
+ * Getter, Value-Change-Observer.
  * 
  * @author kenta-shimizu
  *
  * @param <T>
  */
 public interface ReadOnlyProperty<T> {
-
+	
 	/**
-	 * value getter
+	 * value getter.
+	 * 
 	 * @return value
 	 */
 	public T get();
@@ -24,7 +25,7 @@ public interface ReadOnlyProperty<T> {
 	public boolean addChangeListener(PropertyChangeListener<? super T> listener);
 	
 	/**
-	 * Remove Value-Change-Listener
+	 * Remove Value-Change-Listener.
 	 * 
 	 * @param listener
 	 * @return true if success
@@ -32,8 +33,12 @@ public interface ReadOnlyProperty<T> {
 	public boolean removeChangeListener(PropertyChangeListener<? super T> listener);
 	
 	/**
+	 * Wait until {@code (Objects.equals(changedValue, v) == true)}.
+	 * 
+	 * <p>
 	 * Blocking-method.<br />
-	 * Blocking until (Objects.equals(changedValue, v) == true).
+	 * Blocking until {@code (Objects.equals(changedValue, v) == true)}
+	 * </p>
 	 * 
 	 * @param v
 	 * @throws InterruptedException
@@ -41,8 +46,10 @@ public interface ReadOnlyProperty<T> {
 	public void waitUntil(T v) throws InterruptedException;
 	
 	/**
+	 * Wait until {@code (Objects.equals(changedValue, v) == false)}.
+	 * 
 	 * Blocking-method.<br />
-	 * Blocking until (Objects.equals(changedValue, v) == false).
+	 * Blocking until {@code (Objects.equals(changedValue, v) == false)}
 	 * 
 	 * @param v
 	 * @throws InterruptedException

@@ -5,10 +5,15 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * This interface is implementation of SECS-II (SEMI-E5)<br />
+ * This interface is implementation of SECS-II (SEMI-E5).
+ * 
+ * <p>
  * Used for build and parse SECS-II data.<br />
  * Support item-type: L, B, BOOLEAN, A, I1, I2, I4, I8, U1, U2, U4, U8, F4, F8<br />
- * Instances of this class are immutable.
+ * </p>
+ * <p>
+ * Instances of this class are immutable.<br />
+ * </p>
  * 
  * @author kenta-shimizu
  *
@@ -16,21 +21,38 @@ import java.util.stream.Stream;
 public interface Secs2 extends Iterable<Secs2> {
 	
 	/**
+	 * Returns is-empty.
 	 * 
 	 * @return true if 0 bytes body.
 	 */
 	public boolean isEmpty();
 	
+	/**
+	 * Returns java.util.stream.Stream.
+	 * 
+	 * @return Stream
+	 */
 	public Stream<Secs2> stream();
 	
 	/**
+	 * Returns item-count size.
 	 * 
 	 * @return item-count size. -1 if Secs2 is empty.
 	 */
 	public int size();
 	
+	/**
+	 * Returns SECS-II-Item-type.
+	 * 
+	 * @return Secs2Item
+	 */
 	public Secs2Item secs2Item();
 	
+	/**
+	 * Returns parsed JSON-String.
+	 * 
+	 * @return json-string
+	 */
 	public String toJson();
 	
 	/**
@@ -41,99 +63,101 @@ public interface Secs2 extends Iterable<Secs2> {
 	public Secs2 get();
 	
 	/**
-	 * get nested Secs2 by indices
+	 * Returns nested Secs2 by indices,
+	 * Available if type is "A".
 	 * 
 	 * @param indices
 	 * @return Secs2
-	 * @throws Secs2Exception
+	 * @throws Secs2Exception if parse failed
 	 */
 	public Secs2 get(int... indices) throws Secs2Exception;
 	
 	/**
-	 * get nested String by indices.<br />
-	 * get if type is "A".
+	 * Returns nested String by indices,
+	 * Available if type is "A".
 	 * 
 	 * @param indices
 	 * @return ASCII-String
-	 * @throws Secs2Exception
+	 * @throws Secs2Exception if parse failed
 	 */
 	public String getAscii(int... indices) throws Secs2Exception;
 	
 	/**
-	 * get String if type is "A".
+	 * Returns String,
+	 * Available String if type is "A".
 	 * 
 	 * @return ASCII-String
-	 * @throws Secs2Exception
+	 * @throws Secs2Exception if parse failed
 	 */
 	public String getAscii() throws Secs2Exception;
 	
 	/**
-	 * get nested byte-value by indices.<br />
-	 * get if type is "B".
+	 * Returns nested byte-value by indices,
+	 * Available if type is "B".
 	 * 
 	 * @param indices
 	 * @return byte-value
-	 * @throws Secs2Exception
+	 * @throws Secs2Exception if parse failed
 	 */
 	public byte getByte( int... indices ) throws Secs2Exception;
 	
 	/**
-	 * get nested boolean-value by indices.<br />
-	 * get if type is "BOOLEAN".
+	 * Returns nested boolean-value by indices,
+	 * Available if type is "BOOLEAN".
 	 * 
 	 * @param indices
 	 * @return boolean-value
-	 * @throws Secs2Exception
+	 * @throws Secs2Exception if parse failed
 	 */
 	public boolean getBoolean( int... indices ) throws Secs2Exception;
 	
 	/**
-	 * get nested Numeric-value by indices.<br />
-	 * get if type is "I1","I2","I4","I8","F4","F8","U1","U2","U4","U8"
+	 * Returns nested Numeric-value by indices,
+	 * Available if type is "I1","I2","I4","I8","F4","F8","U1","U2","U4","U8"
 	 * 
 	 * @param indices
 	 * @return (int)value
-	 * @throws Secs2Exception
+	 * @throws Secs2Exception if parse failed
 	 */
 	public int getInt( int... indices ) throws Secs2Exception;
 	
 	/**
-	 * get nested Numeric-value by indices.<br />
-	 * get if type is "I1","I2","I4","I8","F4","F8","U1","U2","U4","U8"
+	 * Returns nested Numeric-value by indices,
+	 * Available if type is "I1","I2","I4","I8","F4","F8","U1","U2","U4","U8"
 	 * 
 	 * @param indices
 	 * @return (long)value
-	 * @throws Secs2Exception
+	 * @throws Secs2Exception if parse failed
 	 */
 	public long getLong( int... indices ) throws Secs2Exception;
 	
 	/**
-	 * get nested Numeric-value by indices.<br />
-	 * get if type is "I1","I2","I4","I8","F4","F8","U1","U2","U4","U8"
+	 * Returns nested Numeric-value by indices,
+	 * Available if type is "I1","I2","I4","I8","F4","F8","U1","U2","U4","U8"
 	 * 
 	 * @param indices
 	 * @return BigInteger.valueOf(value)
-	 * @throws Secs2Exception
+	 * @throws Secs2Exception if parse failed
 	 */
 	public BigInteger getBigInteger( int... indices ) throws Secs2Exception;
 	
 	/**
-	 * get nested Numeric-value by indices.<br />
-	 * get if type is "I1","I2","I4","I8","F4","F8","U1","U2","U4","U8"
+	 * Returns nested Numeric-value by indices,
+	 * Available if type is "I1","I2","I4","I8","F4","F8","U1","U2","U4","U8"
 	 * 
 	 * @param indices
 	 * @return (float)value
-	 * @throws Secs2Exception
+	 * @throws Secs2Exception if parse failed
 	 */
 	public float getFloat( int... indices ) throws Secs2Exception;
 	
 	/**
-	 * get nested Numeric-value by indices.<br />
-	 * get if type is "I1","I2","I4","I8","F4","F8","U1","U2","U4","U8"
+	 * Returns nested Numeric-value by indices,
+	 * Available if type is "I1","I2","I4","I8","F4","F8","U1","U2","U4","U8"
 	 * 
 	 * @param indices
 	 * @return (double)value
-	 * @throws Secs2Exception
+	 * @throws Secs2Exception if parse failed
 	 */
 	public double getDouble( int... indices1 ) throws Secs2Exception;
 
@@ -141,6 +165,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	/* builder */
 	
 	/**
+	 * Returns builder instance.
 	 * 
 	 * @return Secs2Builder.getInstance()
 	 */
@@ -149,6 +174,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Returns SECS-II-0-bytes.
 	 * 
 	 * @return Empty-Secs2
 	 */
@@ -157,15 +183,17 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().raw(bs)}.
 	 * 
 	 * @param bs
-	 * @return Secs2RawBytes build from Raw-bytes
+	 * @return Secs2RawBytes
 	 */
 	public static Secs2RawBytes raw(byte[] bs) {
 		return getBuilder().raw(bs);
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().list()}.
 	 * 
 	 * @return &lt;L[0] &gt;
 	 */
@@ -174,6 +202,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().list(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;L[n] values&gt;
@@ -183,6 +212,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().list(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;L[n] values&gt;
@@ -192,6 +222,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().ascii(ascii)}.
 	 * 
 	 * @param ascii
 	 * @return &lt;A[n] "ascii"&gt;
@@ -201,6 +232,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().binary()}.
 	 * 
 	 * @return &lt;B[0] &gt;
 	 */
@@ -209,6 +241,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().binary(bs)}.
 	 * 
 	 * @param bs
 	 * @return &lt;B[n] bs&gt;
@@ -218,6 +251,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().binary(bs)}.
 	 * 
 	 * @param bs
 	 * @return &lt;B[n] bs&gt;
@@ -227,6 +261,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().bool()}.
 	 * 
 	 * @return &lt;BOOLEAN[0] &gt;
 	 */
@@ -235,6 +270,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().bool(bools)}.
 	 * 
 	 * @param bools
 	 * @return &lt;BOOLEAN[n] bools&gt;
@@ -244,6 +280,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().bool(bools)}.
 	 * 
 	 * @param bools
 	 * @return &lt;BOOLEAN[n] bools&gt;
@@ -253,6 +290,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int1()}.
 	 * 
 	 * @return &lt;I1[0] &gt;
 	 */
@@ -261,6 +299,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int1(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;I1[n] values&gt;
@@ -270,6 +309,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int1(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;I1[n] values&gt;
@@ -279,6 +319,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int1(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;I1[n] values&gt;
@@ -288,6 +329,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int1(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;I1[n] values&gt;
@@ -297,6 +339,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int2()}.
 	 * 
 	 * @return &lt;I2[0] &gt;
 	 */
@@ -305,6 +348,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int2(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;I2[n] values&gt;
@@ -314,6 +358,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int2(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;I2[n] values&gt;
@@ -323,6 +368,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int2(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;I2[n] values&gt;
@@ -332,6 +378,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int2(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;I2[n] values&gt;
@@ -341,6 +388,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int4()}.
 	 * 
 	 * @return &lt;I4[0] &gt;
 	 */
@@ -349,6 +397,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int4(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;I4[n] values&gt;
@@ -358,6 +407,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int4(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;I4[n] values&gt;
@@ -367,6 +417,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int4(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;I4[n] values&gt;
@@ -376,6 +427,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int4(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;I4[n] values&gt;
@@ -385,6 +437,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int8()}.
 	 * 
 	 * @return &lt;I8[0] &gt;
 	 */
@@ -393,6 +446,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int8(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;I8[n] values&gt;
@@ -402,6 +456,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int8(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;I8[n] values&gt;
@@ -411,6 +466,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int8(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;I8[n] values&gt;
@@ -420,6 +476,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().int8(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;I8[n] values&gt;
@@ -429,6 +486,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint1()}.
 	 * 
 	 * @return &lt;U1[0] &gt;
 	 */
@@ -437,6 +495,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint1(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;U1[n] values&gt;
@@ -446,6 +505,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint1(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;U1[n] values&gt;
@@ -455,6 +515,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint1(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;U1[n] values&gt;
@@ -464,6 +525,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint1(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;U1[n] values&gt;
@@ -473,6 +535,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint2()}.
 	 * 
 	 * @return &lt;U2[0] &gt;
 	 */
@@ -481,6 +544,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint2(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;U2[n] values&gt;
@@ -490,6 +554,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint2(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;U2[n] values&gt;
@@ -499,6 +564,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint2(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;U2[n] values&gt;
@@ -508,6 +574,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint2(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;U2[n] values&gt;
@@ -517,6 +584,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint4()}.
 	 * 
 	 * @return &lt;U4[0] &gt;
 	 */
@@ -525,6 +593,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint4(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;U4[n] values&gt;
@@ -534,6 +603,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint4(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;U4[n] values&gt;
@@ -543,6 +613,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint4(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;U4[n] values&gt;
@@ -552,6 +623,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint4(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;U4[n] values&gt;
@@ -561,6 +633,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint8()}.
 	 * 
 	 * @return &lt;U8[0] &gt;
 	 */
@@ -569,6 +642,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint8(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;U8[n] values&gt;
@@ -578,6 +652,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint8(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;U8[n] values&gt;
@@ -587,6 +662,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint8(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;U8[n] values&gt;
@@ -596,6 +672,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().uint8(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;U8[n] values&gt;
@@ -605,6 +682,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().float4()}.
 	 * 
 	 * @return &lt;F4[0] &gt;
 	 */
@@ -613,6 +691,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().float4(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;F4[n] values&gt;
@@ -622,6 +701,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().float4(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;F4[n] values&gt;
@@ -631,6 +711,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().float8()}.
 	 * 
 	 * @return &lt;F8[0] &gt;
 	 */
@@ -639,6 +720,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().float8(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;F8[n] values&gt;
@@ -648,6 +730,7 @@ public interface Secs2 extends Iterable<Secs2> {
 	}
 	
 	/**
+	 * Equivalent to {@code getBuilder().float8(values)}.
 	 * 
 	 * @param values
 	 * @return &lt;F8[n] values&gt;

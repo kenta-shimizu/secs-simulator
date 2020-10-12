@@ -3,6 +3,12 @@ package com.shimizukenta.jsonhub;
 import java.io.Serializable;
 import java.util.Objects;
 
+/**
+ * This class is implements of name and value pair in JSON-OBJECT.
+ * 
+ * @author kenta-shimizu
+ *
+ */
 public class JsonObjectPair implements Serializable {
 	
 	private static final long serialVersionUID = 5500254554321018084L;
@@ -15,10 +21,20 @@ public class JsonObjectPair implements Serializable {
 		this.v = Objects.requireNonNull(v, "JsonObjectPair nonNull \"value\"");
 	}
 	
+	/**
+	 * Returns name of pair.
+	 * 
+	 * @return name
+	 */
 	public JsonString name() {
 		return name;
 	}
 	
+	/**
+	 * Returns value of pair.
+	 * 
+	 * @return value
+	 */
 	public JsonHub value() {
 		return v;
 	}

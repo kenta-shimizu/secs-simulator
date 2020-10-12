@@ -3,6 +3,16 @@ package com.shimizukenta.jsonhub;
 import java.io.IOException;
 import java.io.Writer;
 
+/**
+ * This class is implements of JSON literal null.
+ * 
+ * <p>
+ * Instances of this class are immutable.
+ * </p>
+ * 
+ * @author kenta-shimizu
+ *
+ */
 public class NullJsonHub extends AbstractJsonHub {
 
 	private static final long serialVersionUID = 4404413772323952148L;

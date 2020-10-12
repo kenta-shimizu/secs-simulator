@@ -4,6 +4,16 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Optional;
 
+/**
+ * This class is implements of JSON literal TRUE.
+ * 
+ * <p>
+ * Instances of this class are immutable.
+ * </p>
+ * 
+ * @author kenta-shimizu
+ *
+ */
 public class TrueJsonHub extends AbstractJsonHub {
 	
 	private static final long serialVersionUID = -788713372914256563L;

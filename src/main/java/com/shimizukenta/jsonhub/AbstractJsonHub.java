@@ -23,8 +23,10 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /**
- * Immutable Object
- *
+ * This abstract class is implementation of JsonHub.
+ * 
+ * @author kenta-shimizu
+ * 
  */
 abstract public class AbstractJsonHub implements JsonHub, Serializable {
 	
@@ -229,22 +231,22 @@ abstract public class AbstractJsonHub implements JsonHub, Serializable {
 	
 	@Override
 	public String toJson() {
-		return JsonHubCompactPrettyPrinter.getInstance().print(this);
+		return JsonHubPrettyPrinter.getCompactPrinter().print(this);
 	}
 	
 	@Override
 	public void toJson(Writer writer) throws IOException {
-		JsonHubCompactPrettyPrinter.getInstance().print(this, writer);
+		JsonHubPrettyPrinter.getCompactPrinter().print(this, writer);
 	}
 	
 	@Override
 	public String toJsonExcludedNullValueInObject() {
-		return JsonHubNoneNullValueInObjectCompactPrettyPrinter.getInstance().print(this);
+		return JsonHubPrettyPrinter.getNoneNullValueInObjectCompactPrinter().print(this);
 	}
 	
 	@Override
 	public void toJsonExcludedNullValueInObject(Writer writer) throws IOException {
-		JsonHubNoneNullValueInObjectCompactPrettyPrinter.getInstance().print(this, writer);
+		JsonHubPrettyPrinter.getNoneNullValueInObjectCompactPrinter().print(this, writer);
 	}
 	
 	@Override
@@ -276,7 +278,7 @@ abstract public class AbstractJsonHub implements JsonHub, Serializable {
 	
 	@Override
 	public String prettyPrint(JsonHubPrettyPrinterConfig config) {
-		return new JsonHubPrettyPrinter(config).print(this);
+		return JsonHubPrettyPrinter.newPrinter(config).print(this);
 	}
 	
 	@Override
@@ -286,7 +288,7 @@ abstract public class AbstractJsonHub implements JsonHub, Serializable {
 	
 	@Override
 	public void prettyPrint(Writer writer, JsonHubPrettyPrinterConfig config) throws IOException {
-		new JsonHubPrettyPrinter(config).print(this, writer);
+		JsonHubPrettyPrinter.newPrinter(config).print(this, writer);
 	}
 	
 	@Override
@@ -301,17 +303,17 @@ abstract public class AbstractJsonHub implements JsonHub, Serializable {
 	
 	@Override
 	public void prettyPrint(Path path, JsonHubPrettyPrinterConfig config) throws IOException {
-		new JsonHubPrettyPrinter(config).print(this, path);
+		JsonHubPrettyPrinter.newPrinter(config).print(this, path);
 	}
 	
 	@Override
 	public void prettyPrint(Path path, JsonHubPrettyPrinterConfig config, OpenOption... options) throws IOException {
-		new JsonHubPrettyPrinter(config).print(this, path, options);
+		JsonHubPrettyPrinter.newPrinter(config).print(this, path, options);
 	}
 	
 	@Override
 	public <T> T toPojo(Class<T> classOfT) {
-		return JsonHubToPojoParser.getInstance().toPojo(this, classOfT);
+		return JsonHubToPojoParser.getInstance().parse(this, classOfT);
 	}
 	
 	@Override

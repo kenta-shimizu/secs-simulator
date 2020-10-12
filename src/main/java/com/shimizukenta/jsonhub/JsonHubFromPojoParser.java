@@ -7,6 +7,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * This class is parser, from POJO (Plain-Old-Java-Object) to JsonHub instance.
+ * 
+ * <p>
+ * To get parser instance, {@link #getInstance()}.<br />
+ * To parse, {@link #parse(Object)}.<br />
+ * </p>
+ * <p>
+ * From POJO Conditions.<br />
+ * <ul>
+ * <li>Field is {@code public}</li>
+ * <li>Field is <i>not</i> {@code static}</li>
+ * </ul>
+ * </p>
+ * 
+ * @author kenta-shimizu
+ *
+ */
 public class JsonHubFromPojoParser {
 	
 	protected final JsonHubBuilder jhb = JsonHubBuilder.getInstance();
@@ -19,11 +37,38 @@ public class JsonHubFromPojoParser {
 		private static final JsonHubFromPojoParser inst = new JsonHubFromPojoParser();
 	}
 	
+	/**
+	 * Returns parser instance.
+	 * 
+	 * <p>
+	 * This class is Singleton-pattern.
+	 * </p>
+	 * 
+	 * @return JsonHubFromPojoParser instance
+	 */
 	public static JsonHubFromPojoParser getInstance() {
 		return SingletonHolder.inst;
 	}
 	
-	public AbstractJsonHub fromPojo(Object pojo) {
+	/**
+	 * Parse from POJO to JsonHub instance.
+	 * 
+	 * <p>
+	 * From POJO Conditions.<br />
+	 * <ul>
+	 * <li>Field is {@code public}</li>
+	 * <li>Field is <i>not</i> {@code static}</li>
+	 * </ul>
+	 * </p>
+	 * <p>
+	 * Not accept {@code null}.<br />
+	 * </p>
+	 * 
+	 * @param pojo (Plain-Old-Java-Object)
+	 * @return AbstractJsonHub instance
+	 * @throws JsonHubParseException if parse failed
+	 */
+	public AbstractJsonHub parse(Object pojo) {
 		try {
 			return fromObjectPojo(pojo);
 		}
@@ -32,6 +77,15 @@ public class JsonHubFromPojoParser {
 		}
 	}
 	
+	/**
+	 * Parse from POJO to JsonHub instance.
+	 * 
+	 * @param pojo (Plain-Old-Java-Object)
+	 * @return AbstractJsonHub instance
+	 * @throws IllegalArgumentException
+	 * @throws IllegalAccessException
+	 * @throws ClassCastException
+	 */
 	protected AbstractJsonHub fromObjectPojo(Object pojo)
 			throws IllegalArgumentException, IllegalAccessException, ClassCastException {
 		

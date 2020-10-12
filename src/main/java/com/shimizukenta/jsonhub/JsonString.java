@@ -3,6 +3,12 @@ package com.shimizukenta.jsonhub;
 import java.io.Serializable;
 import java.util.Objects;
 
+/**
+ * This class is implements of escape/unescape JSON-String.
+ * 
+ * @author kenta-shimizu
+ *
+ */
 public class JsonString implements Serializable {
 	
 	private static final long serialVersionUID = -2222040816285239082L;
@@ -15,18 +21,43 @@ public class JsonString implements Serializable {
 		unescaped = null;
 	}
 	
+	/**
+	 * Returns JsonString instance from escaped-String.
+	 * 
+	 * <p>
+	 * Not accept {@code null}.<br />
+	 * </p>
+	 * 
+	 * @param escaped String
+	 * @return JsonString instance
+	 */
 	public static JsonString escaped(CharSequence escaped) {
 		JsonString inst = new JsonString();
 		inst.escaped = Objects.requireNonNull(escaped, "JsonString nonNull \"escaped\"").toString();
 		return inst;
 	}
 	
+	/**
+	 * Returns JsonString instance from unescaped-String.
+	 * 
+	 * <p>
+	 * Not accept {@code null}.<br />
+	 * </p>
+	 * 
+	 * @param unescaped String
+	 * @return JsonString instance
+	 */
 	public static JsonString unescaped(CharSequence unescaped) {
 		JsonString inst = new JsonString();
 		inst.unescaped = Objects.requireNonNull(unescaped, "JsonString nonNull \"unescaped\"").toString();
 		return inst;
 	}
 	
+	/**
+	 * Returns escaped-String.
+	 * 
+	 * @return escaped-String
+	 */
 	public String escaped() {
 		
 		synchronized ( this ) {
@@ -39,6 +70,11 @@ public class JsonString implements Serializable {
 		}
 	}
 	
+	/**
+	 * Returns unescaped String.
+	 * 
+	 * @return unescaped-String
+	 */
 	public String unescaped() {
 		
 		synchronized ( this ) {
@@ -52,23 +88,26 @@ public class JsonString implements Serializable {
 	}
 	
 	/**
+	 * Returns {@code unescaped().length()}.
 	 * 
-	 * @return unescaped().length()
+	 * @return {@code unescaped().length()}
 	 */
 	public int length() {
 		return unescaped().length();
 	}
 	
 	/**
+	 * Returns {@code unescaped().isEmpty()}.
 	 * 
-	 * @retur nunescaped().isEmpty()
+	 * @return {@code unescaped().isEmpty()}
 	 */
 	public boolean isEmpty() {
 		return unescaped().isEmpty();
 	}
 	
 	/**
-	 *  alias of unescaped()
+	 * Return {@code unescaped()}.
+	 * 
 	 */
 	@Override
 	public String toString() {
