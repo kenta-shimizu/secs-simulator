@@ -19,11 +19,6 @@ public class ExtendSmlDataItemParser extends SmlDataItemParser {
 	
 	private static final String itemNow = "NOW";
 	
-	private static final String itemU4Auto = "U4AUTO";
-	private static final String itemU8Auto = "U8AUTO";
-	private static final String itemI4Auto = "I4AUTO";
-	private static final String itemI8Auto = "I8AUTO";
-	
 	@Override
 	protected SeekValueResult parseExtend(String str, int fromIndex, String secs2ItemString, int size)
 			throws SmlParseException {
@@ -38,11 +33,17 @@ public class ExtendSmlDataItemParser extends SmlDataItemParser {
 		throw new SmlParseException("UNKNOWN SECS2ITEM type: " + secs2ItemString);
 	}
 	
-	private SeekValueResult parseNow(String str, int fromIndex, int size)
+	private SeekValueResult parseNow(String str, int fromIndex, int size )
 		throws SmlParseException {
 		
-		SeekCharResult r = this.seekAngleBranketEnd(str, fromIndex);
-		return seekValueResult(Secs2Now.now(size), r.index + 1);
+		if ( size == 12 || size == 16 ) {
+			
+			SeekCharResult r = this.seekAngleBranketEnd(str, fromIndex);
+			
+			return seekValueResult(new Secs2Now(size), r.index + 1);
+		}
+		
+		throw new SmlParseException("NOW is only [12 or 16]");
 	}
 	
 }

@@ -1,13 +1,13 @@
 package com.shimizukenta.secssimulator.extendsml;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
-import com.shimizukenta.secs.gem.Clock;
 import com.shimizukenta.secs.secs2.Secs2Ascii;
 import com.shimizukenta.secs.secs2.Secs2BuildException;
 import com.shimizukenta.secs.secs2.Secs2ByteBuffersBuilder;
 import com.shimizukenta.secs.secs2.Secs2Exception;
-import com.shimizukenta.secs.sml.SmlParseException;
 
 public class Secs2Now extends Secs2Ascii {
 
@@ -19,35 +19,24 @@ public class Secs2Now extends Secs2Ascii {
 		super("");
 		this.size = size;
 	}
-	
-	protected static Secs2Now now(int size) throws SmlParseException {
-		
-		if ( size == 12 || size == 16 ) {
-			return new Secs2Now(size);
-		}
-		
-		throw new SmlParseException("NOW is only [12 or 16]");
-	}
 
-	
 	@Override
 	public int size() {
 		return size;
 	}
 	
+	private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
+	
 	private String now() {
-		try {
-			Clock c = Clock.now();
-			if ( size == 12 ) {
-				return c.toAscii12().getAscii();
-			} else if ( size == 16 ) {
-				return c.toAscii16().getAscii();
-			}
-		}
-		catch ( Secs2Exception nothappen ) {
-		}
+		String s = LocalDateTime.now().format(dtf);
 		
-		return "";
+		if ( size == 12 ) {
+			return s.substring(2, 14);
+		} else if ( size == 16 ){
+			return s.substring(0, 16);
+		} else {
+			return "";
+		}
 	}
 	
 	@Override
