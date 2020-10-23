@@ -1,7 +1,5 @@
 package com.shimizukenta.secs;
 
-import com.shimizukenta.secs.SecsCommunicator;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serializable;
@@ -20,7 +18,7 @@ import java.util.Optional;
  * <p>
  * To get subject, {@link #subject()}<br />
  * To get {@link LocalDateTime} timestamp, {@link #timestamp()}<br />
- * To get defail-information, {@link #value()}<br />
+ * To get detail-information, {@link #value()}<br />
  * </p>
  * <p>
  * {@link #toString()} is overrided to pretty-printing.<br />
