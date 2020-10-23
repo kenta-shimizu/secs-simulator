@@ -32,17 +32,63 @@ public class ExtendSmlDataItemParser extends SmlDataItemParser {
 			return parseNow(str, fromIndex, size);
 		}
 		
-		//HOOK
-		//others
+		if ( secs2ItemString.equals(itemU4Auto) ) {
+			return parseU4Auto(str, fromIndex, size);
+		}
+		
+		if ( secs2ItemString.equals(itemU8Auto) ) {
+			return parseU8Auto(str, fromIndex, size);
+		}
+		
+		if ( secs2ItemString.equals(itemI4Auto) ) {
+			return parseI4Auto(str, fromIndex, size);
+		}
+		
+		if ( secs2ItemString.equals(itemI8Auto) ) {
+			return parseI8Auto(str, fromIndex, size);
+		}
+		
+		
+		/* HOOK   */
+		/* Others */
+		
 		
 		throw new SmlParseException("UNKNOWN SECS2ITEM type: " + secs2ItemString);
 	}
 	
 	private SeekValueResult parseNow(String str, int fromIndex, int size)
-		throws SmlParseException {
+			throws SmlParseException {
 		
 		SeekCharResult r = this.seekAngleBranketEnd(str, fromIndex);
 		return seekValueResult(Secs2Now.now(size), r.index + 1);
+	}
+	
+	private SeekValueResult parseU4Auto(String str, int fromIndex, int size)
+			throws SmlParseException {
+		
+		SeekCharResult r = this.seekAngleBranketEnd(str, fromIndex);
+		return seekValueResult(new Secs2Uint4AutoNumber(), r.index + 1);
+	}
+	
+	private SeekValueResult parseU8Auto(String str, int fromIndex, int size)
+			throws SmlParseException {
+		
+		SeekCharResult r = this.seekAngleBranketEnd(str, fromIndex);
+		return seekValueResult(new Secs2Uint8AutoNumber(), r.index + 1);
+	}
+	
+	private SeekValueResult parseI4Auto(String str, int fromIndex, int size)
+			throws SmlParseException {
+		
+		SeekCharResult r = this.seekAngleBranketEnd(str, fromIndex);
+		return seekValueResult(new Secs2Int4AutoNumber(), r.index + 1);
+	}
+	
+	private SeekValueResult parseI8Auto(String str, int fromIndex, int size)
+			throws SmlParseException {
+		
+		SeekCharResult r = this.seekAngleBranketEnd(str, fromIndex);
+		return seekValueResult(new Secs2Int8AutoNumber(), r.index + 1);
 	}
 	
 }

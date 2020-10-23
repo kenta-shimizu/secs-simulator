@@ -3,20 +3,23 @@ package com.shimizukenta.secssimulator.extendsml;
 import java.nio.charset.StandardCharsets;
 
 import com.shimizukenta.secs.gem.Clock;
-import com.shimizukenta.secs.secs2.Secs2Ascii;
+import com.shimizukenta.secs.secs2.AbstractSecs2;
 import com.shimizukenta.secs.secs2.Secs2BuildException;
 import com.shimizukenta.secs.secs2.Secs2ByteBuffersBuilder;
 import com.shimizukenta.secs.secs2.Secs2Exception;
+import com.shimizukenta.secs.secs2.Secs2Item;
 import com.shimizukenta.secs.sml.SmlParseException;
 
-public class Secs2Now extends Secs2Ascii {
+public class Secs2Now extends AbstractSecs2 {
 
 	private static final long serialVersionUID = 9064194857259167313L;
+	
+	private final Secs2Item secs2Item = Secs2Item.ASCII;
 	
 	private final int size;
 	
 	protected Secs2Now(int size) {
-		super("");
+		super();
 		this.size = size;
 	}
 	
@@ -33,6 +36,11 @@ public class Secs2Now extends Secs2Ascii {
 	@Override
 	public int size() {
 		return size;
+	}
+	
+	@Override
+	public Secs2Item secs2Item() {
+		return secs2Item;
 	}
 	
 	private String now() {
