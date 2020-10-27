@@ -12,7 +12,7 @@ import com.shimizukenta.secs.sml.SmlMessage;
 public interface SecsSimulator {
 	
 	/**
-	 * Open communicator
+	 * Open communicator.
 	 * 
 	 * @return opened-communicator
 	 * @throws IOException
@@ -20,71 +20,88 @@ public interface SecsSimulator {
 	public SecsCommunicator openCommunicator() throws IOException;
 	
 	/**
-	 * Close communicator
+	 * Close communicator.
 	 * 
 	 * @throws IOException
 	 */
 	public void closeCommunicator() throws IOException;
 	
 	/**
-	 * Quit program
+	 * Quit application.
+	 * 
 	 */
 	public void quitApplication();
 	
 	/**
-	 * Communicator protocol setter
+	 * Communicator protocol setter.
+	 * 
+	 * <p>
+	 * Not accept {@code null}
+	 * </p>
 	 * 
 	 * @param protocol
 	 */
 	public void protocol(SecsSimulatorProtocol protocol);
 	
 	/**
-	 * communicator protocol getter
+	 * Returns communicator protocol.
 	 * 
 	 * @return communicator-protocol
 	 */
 	public SecsSimulatorProtocol protocol();
 	
 	/**
-	 * Blocking-mechod<br />
-	 * wait until reply-message if exist
+	 * Send SML-Message and receive Reply Message.
+	 * 
+	 * <p>
+	 * Blocking-method<br />
+	 * wait until received reply-message if exist
+	 * </p>
 	 * 
 	 * @param sml
-	 * @return 
+	 * @return Reply-Message if exist
 	 * @throws SecsSimulatorException
 	 * @throws InterruptedException
 	 */
 	public Optional<SecsMessage> send(SmlMessage sml) throws SecsSimulatorException, InterruptedException;
 	
 	/**
+	 * Send Reply-Message.
+	 * 
+	 * <p>
 	 * Blocking-method<br />
+	 * </p>
 	 * 
 	 * @param primaryMsg
 	 * @param replySml
-	 * @return Optional.empty()
+	 * @return {@code Optional.empty()}
 	 * @throws SecsSimulatorException
 	 * @throws InterruptedException
 	 */
 	public Optional<SecsMessage> send(SecsMessage primaryMsg, SmlMessage replySml) throws SecsSimulatorException, InterruptedException;
 	
 	/**
+	 * Link-test.
+	 * 
+	 * <p>
 	 * Blocking-method<br />
 	 * wait until linktest.rsp
+	 * </p>
 	 * 
-	 * @return true if success
+	 * @return true if link-test success
 	 * @throws InterruptedException
 	 */
 	public boolean linktest() throws InterruptedException;
 	
 	/**
-	 * Sml-Aliases getter
+	 * Return SML-Aliases set.
 	 * 
-	 * @return sml-aliases-set
+	 * @return SML-Aliases set
 	 */
 	public Set<String> smlAliases();
 	
 	/**
-	 * Sml  getter
+	 * Returns SML if exist, {@code Optional.empty()} otherwise.
 	 * 
 	 * @param alias
 	 * @return SmlMessage if exist
@@ -92,18 +109,18 @@ public interface SecsSimulator {
 	public Optional<SmlMessage> sml(CharSequence alias);
 	
 	/**
-	 * Add Sml
+	 * Add SML
 	 * 
-	 * @param alias
+	 * @param alias of SML
 	 * @param sml
 	 * @return true if add success
 	 */
 	public boolean addSml(CharSequence alias, SmlMessage sml);
 	
 	/**
-	 * Remove Sml
+	 * Remove SML
 	 * 
-	 * @param alias
+	 * @param alias of SML
 	 * @return true if remove success
 	 */
 	public boolean removeSml(CharSequence alias);
@@ -121,65 +138,18 @@ public interface SecsSimulator {
 	 */
 	public void stopLogging();
 	
-	/**
-	 * Start Macro.
-	 * 
-	 * @param path
-	 */
-	public void startMacro(Path path);
 	
-	/**
-	 * Stop Macro.
-	 */
-	public void stopMacro();
-	
-	
-//	public static final String SmlExtension = "sml";
+//	/**
+//	 * Start Macro.
+//	 * 
+//	 * @param path
+//	 */
+//	public void startMacro(Path path);
 //	
-//	default public boolean addSmlFile(Path path) throws IOException, SmlParseException {
-//		
-//		try (
-//				Stream<String> lines = Files.lines(path, StandardCharsets.US_ASCII);
-//				) {
-//			
-//			String sml = lines.collect(Collectors.joining(" "));
-//			SmlMessage sm = parseSml(sml);
-//			
-//			String alias = path.getFileName().toString();
-//			
-//			String ext = "." + SmlExtension;
-//			
-//			if ( alias.toLowerCase().endsWith(ext) ) {
-//				alias = alias.substring(0, alias.length() - ext.length());
-//			}
-//			
-//			return addSml(alias, sm);
-//		}
-//		catch ( SmlParseException e ) {
-//			throw new SmlParseException(path.getFileName().toString(), e);
-//		}
-//		
-//	}
-//	
-//	default public boolean addSmlFiles(Path directory) throws IOException, SmlParseException {
-//		
-//		try (
-//				DirectoryStream<Path> paths = Files.newDirectoryStream(
-//						directory
-//						, path -> {
-//							return path.toString().toLowerCase().endsWith("." + SmlExtension);
-//						});
-//				) {
-//			
-//			for ( Path path : paths ) {
-//				if ( ! addSmlFile(path) ) {
-//					return false;
-//				}
-//			}
-//			
-//			return true;
-//		}
-//	}
+//	/**
+//	 * Stop Macro.
+//	 */
+//	public void stopMacro();
 	
 	
 	
