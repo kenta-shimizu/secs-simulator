@@ -10,7 +10,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * SecsLog contains subject, timestamp, defail-information.
+ * SecsLog contains subject, timestamp, detail-information.
  * 
  * <p>
  * This instance is received from {@link SecsCommunicator#addSecsLogListener(SecsLogListener)}<br />

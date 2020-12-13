@@ -1,27 +1,47 @@
 package com.shimizukenta.secssimulator;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 
+import com.shimizukenta.jsonhub.JsonHub;
+import com.shimizukenta.jsonhub.JsonHubBuilder;
+import com.shimizukenta.jsonhub.JsonObjectPair;
 import com.shimizukenta.secs.BooleanProperty;
 import com.shimizukenta.secs.Property;
+import com.shimizukenta.secs.SecsTimeout;
 import com.shimizukenta.secs.hsmsss.HsmsSsCommunicatorConfig;
+import com.shimizukenta.secs.hsmsss.HsmsSsProtocol;
 import com.shimizukenta.secs.secs1ontcpip.Secs1OnTcpIpCommunicatorConfig;
+import com.shimizukenta.secs.sml.SmlParseException;
 
 public abstract class AbstractSecsSimulatorConfig implements Serializable {
 	
 	private static final long serialVersionUID = 7451456701694504127L;
 	
-	private final BooleanProperty autoReply = BooleanProperty.newInstance(false);
+	private final BooleanProperty autoReply = BooleanProperty.newInstance(true);
 	private final BooleanProperty autoReplySxF0 = BooleanProperty.newInstance(false);
 	private final BooleanProperty autoReplyS9Fy = BooleanProperty.newInstance(false);
-	private final Property<SecsSimulatorProtocol> protocol = Property.newInstance(SecsSimulatorProtocol.HSMS_SS_PASSIVE);
 	private final BooleanProperty autoOpen = BooleanProperty.newInstance(false);
+	
+	private final Property<SecsSimulatorProtocol> protocol = Property.newInstance(SecsSimulatorProtocol.HSMS_SS_PASSIVE);
 	
 	private final HsmsSsCommunicatorConfig hsmsSsCommConfig = new HsmsSsCommunicatorConfig();
 	private final Secs1OnTcpIpCommunicatorConfig secs1OnTcpIpCommConfig = new Secs1OnTcpIpCommunicatorConfig();
 	private final Secs1OnTcpIpCommunicatorConfig secs1OnTcpIpRecvCommConfig = new Secs1OnTcpIpCommunicatorConfig();
 	private final Property<SocketAddress> secs1AdapterSocketAddress = Property.newInstance(null);
+	
+	private final SmlAliasPairPool smlPool = new SmlAliasPairPool();
+	
 	
 	public AbstractSecsSimulatorConfig() {
 		/* Nothing */
@@ -39,13 +59,10 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 		return autoReplyS9Fy;
 	}
 	
-	public Property<SecsSimulatorProtocol> protocol() {
-		return protocol;
-	}
-	
 	public BooleanProperty autoOpen() {
 		return autoOpen;
 	}
+	
 	
 	public HsmsSsCommunicatorConfig hsmsSsCommunicatorConfig() {
 		return hsmsSsCommConfig;
@@ -63,4 +80,375 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 		return secs1AdapterSocketAddress;
 	}
 	
+	
+	public Property<SecsSimulatorProtocol> protocol() {
+		return protocol;
+	}
+	
+	public void protocol(SecsSimulatorProtocol protocol) {
+		synchronized ( this ) {
+			this.protocol.set(protocol);
+			if ( protocol == SecsSimulatorProtocol.HSMS_SS_PASSIVE ) {
+				this.hsmsSsCommunicatorConfig().protocol(HsmsSsProtocol.PASSIVE);
+			} else if ( protocol == SecsSimulatorProtocol.HSMS_SS_ACTIVE ) { 
+				this.hsmsSsCommunicatorConfig().protocol(HsmsSsProtocol.ACTIVE);
+			}
+		}
+	}
+	
+	
+	public void deviceId(int id) {
+		synchronized ( this ) {
+			this.hsmsSsCommConfig.deviceId(id);
+			this.secs1OnTcpIpCommConfig.deviceId(id);
+			this.secs1OnTcpIpRecvCommConfig.deviceId(id);
+		}
+	}
+	
+	public void socketAddress(CharSequence socketAddressString) {
+		socketAddress(parseSocketAddress(socketAddressString));
+	}
+	
+	public void socketAddress(SocketAddress socketAddress) {
+		synchronized ( this ) {
+			this.hsmsSsCommConfig.socketAddress(socketAddress);
+			this.secs1OnTcpIpCommConfig.socketAddress(socketAddress);
+			this.secs1AdapterSocketAddress.set(socketAddress);
+		}
+	}
+	
+	public void isEquip(boolean f) {
+		synchronized ( this ) {
+			this.hsmsSsCommConfig.isEquip(f);
+			this.secs1OnTcpIpCommConfig.isEquip(f);
+			this.secs1OnTcpIpRecvCommConfig.isEquip(f);
+		}
+	}
+	
+	public void isMaster(boolean f) {
+		synchronized ( this ) {
+			this.secs1OnTcpIpCommConfig.isMaster(f);
+			this.secs1OnTcpIpRecvCommConfig.isMaster(f);
+		}
+	}
+	
+	public void timeoutT1(float v) {
+		synchronized ( this ) {
+			this.hsmsSsCommConfig.timeout().t1(v);
+			this.secs1OnTcpIpCommConfig.timeout().t1(v);
+			this.secs1OnTcpIpRecvCommConfig.timeout().t1(v);
+		}
+	}
+	
+	public void timeoutT2(float v) {
+		synchronized ( this ) {
+			this.hsmsSsCommConfig.timeout().t2(v);
+			this.secs1OnTcpIpCommConfig.timeout().t2(v);
+			this.secs1OnTcpIpRecvCommConfig.timeout().t2(v);
+		}
+	}
+	
+	public void timeoutT3(float v) {
+		synchronized ( this ) {
+			this.hsmsSsCommConfig.timeout().t3(v);
+			this.secs1OnTcpIpCommConfig.timeout().t3(v);
+			this.secs1OnTcpIpRecvCommConfig.timeout().t3(v);
+		}
+	}
+	
+	public void timeoutT4(float v) {
+		synchronized ( this ) {
+			this.hsmsSsCommConfig.timeout().t4(v);
+			this.secs1OnTcpIpCommConfig.timeout().t4(v);
+			this.secs1OnTcpIpRecvCommConfig.timeout().t4(v);
+		}
+	}
+	
+	public void timeoutT5(float v) {
+		synchronized ( this ) {
+			this.hsmsSsCommConfig.timeout().t5(v);
+			this.secs1OnTcpIpCommConfig.timeout().t5(v);
+			this.secs1OnTcpIpRecvCommConfig.timeout().t5(v);
+		}
+	}
+	
+	public void timeoutT6(float v) {
+		synchronized ( this ) {
+			this.hsmsSsCommConfig.timeout().t6(v);
+			this.secs1OnTcpIpCommConfig.timeout().t6(v);
+			this.secs1OnTcpIpRecvCommConfig.timeout().t6(v);
+		}
+	}
+	
+	public void timeoutT7(float v) {
+		synchronized ( this ) {
+			this.hsmsSsCommConfig.timeout().t7(v);
+			this.secs1OnTcpIpCommConfig.timeout().t7(v);
+			this.secs1OnTcpIpRecvCommConfig.timeout().t7(v);
+		}
+	}
+	
+	public void timeoutT8(float v) {
+		synchronized ( this ) {
+			this.hsmsSsCommConfig.timeout().t8(v);
+			this.secs1OnTcpIpCommConfig.timeout().t8(v);
+			this.secs1OnTcpIpRecvCommConfig.timeout().t8(v);
+		}
+	}
+	
+	public void retry(int retryCount) {
+		synchronized ( this ) {
+			this.secs1OnTcpIpCommConfig.retry(retryCount);
+			this.secs1OnTcpIpRecvCommConfig.retry(retryCount);
+		}
+	}
+	
+	public void linktest(float v) {
+		synchronized ( this ) {
+			this.hsmsSsCommConfig.linktest(v);
+		}
+	}
+	
+	public void notLinktest() {
+		synchronized ( this ) {
+			this.hsmsSsCommConfig.notLinktest();
+		}
+	}
+	
+	public SmlAliasPairPool smlAliasPairPool() {
+		return smlPool;
+	}
+	
+	/**
+	 * Save config to path-file.
+	 * 
+	 * @param path
+	 * @throws IOException
+	 */
+	public boolean save(Path path) throws IOException {
+		synchronized ( this ) {
+			getJsonHub().writeFile(path);
+			return false;
+		}
+	}
+	
+	/**
+	 * Load config from path-file.
+	 * 
+	 * @param path
+	 * @throws IOException
+	 */
+	public boolean load(Path path) throws IOException {
+		synchronized ( this ) {
+			try {
+				this.setByJson(JsonHub.fromFile(path));
+			}
+			catch ( SmlParseException e ) {
+				throw new IOException(e);
+			}
+			return true;
+		}
+	}
+	
+	/*
+	 * {
+	 *   "communicator": {
+	 *     "protocol": "protocol-name",
+	 *     "socketAddress": "aaa.bbb.ccc.ddd:n",
+	 *     "deviceId": 10,
+	 *     "isEquip": true,
+	 *     "isMaster": true,
+	 *     "timeout": {
+	 *       "t1":  1.0F,
+	 *       "t2": 15.0F,
+	 *       "t3": 45.0F,
+	 *       "t4": 45.0F,
+	 *       "t5": 10.0F,
+	 *       "t6":  5.0F,
+	 *       "t7": 10.0F,
+	 *       "t8":  6.0F
+	 *     }
+	 *     "retry": 3,
+	 *     "linktest": 120.0F
+	 *   },
+	 *   
+	 *   "autoReply": true,
+	 *   "autoReplyS9Fy": false,
+	 *   "autoReplySxF0": false,
+	 *   
+	 *   "smlFiles": [
+	 *     {
+	 *       "path": "/path/to/file.sml",
+	 *       "alias": "alias-of-file"
+	 *     },
+	 *     ...
+	 *   ],
+	 *   
+	 *   "autoOpen": false
+	 * }
+	 */
+	
+	protected JsonHub getJsonHub() {
+		
+		final JsonHubBuilder jhb = JsonHub.getBuilder();
+		
+		return jhb.object(
+				jhb.pair("communicator", getCommunicatorJsonHub()),
+				jhb.pair("autoReply", this.autoReply().booleanValue()),
+				jhb.pair("autoReplyS9Fy", this.autoReplyS9Fy().booleanValue()),
+				jhb.pair("autoReplySxF0", this.autoReplySxF0().booleanValue()),
+				jhb.pair("smlFiles", this.smlAliasPairPool().getJsonHub()),
+				jhb.pair("autoOpen", this.autoOpen().booleanValue())
+				);
+	}
+	
+	protected JsonHub getCommunicatorJsonHub() {
+		
+		final JsonHubBuilder jhb = JsonHub.getBuilder();
+		
+		final List<JsonObjectPair> pairs = new ArrayList<>();
+		
+		pairs.add(jhb.pair("protocol", protocol().get().optionName()));
+		
+		{
+			SocketAddress addr = this.hsmsSsCommunicatorConfig().socketAddress().get();
+			if ( addr instanceof InetSocketAddress ) {
+				InetSocketAddress iaddr = (InetSocketAddress)addr;
+				int port = iaddr.getPort();
+				String v = iaddr.getAddress().toString() + ":" + port;
+				pairs.add(jhb.pair("socketAddress", v));
+			}
+		}
+		
+		pairs.add(jhb.pair("deviceId", this.hsmsSsCommunicatorConfig().deviceId().intValue()));
+		pairs.add(jhb.pair("isEquip", this.hsmsSsCommunicatorConfig().isEquip().booleanValue()));
+		pairs.add(jhb.pair("isMaster", this.secs1OnTcpIpCommunicatorConfig().isMaster().booleanValue()));
+		
+		{
+			SecsTimeout timeout = this.hsmsSsCommunicatorConfig().timeout();
+			
+			JsonHub jht = jhb.object(
+					jhb.pair("t1", timeout.t1().floatValue()),
+					jhb.pair("t2", timeout.t2().floatValue()),
+					jhb.pair("t3", timeout.t3().floatValue()),
+					jhb.pair("t4", timeout.t4().floatValue()),
+					jhb.pair("t5", timeout.t5().floatValue()),
+					jhb.pair("t6", timeout.t6().floatValue()),
+					jhb.pair("t7", timeout.t7().floatValue()),
+					jhb.pair("t8", timeout.t8().floatValue())
+					);
+			
+			pairs.add(jhb.pair("timeout", jht));
+		}
+		
+		pairs.add(jhb.pair("retry", this.secs1OnTcpIpCommunicatorConfig().retry().intValue()));
+		pairs.add(jhb.pair("linktest", this.hsmsSsCommunicatorConfig().linktest().floatValue()));
+		
+		return jhb.object(pairs);
+	}
+	
+	protected void setByJson(JsonHub jh) throws SmlParseException, IOException {
+		
+		setCommunicatorByJson(jh.getOrDefault("communicator"));
+		
+		jh.getOrDefault("autoReply").optionalBoolean().ifPresent(this.autoReply::set);
+		jh.getOrDefault("autoReplyS9Fy").optionalBoolean().ifPresent(this.autoReplyS9Fy::set);
+		jh.getOrDefault("autoReplySxF0").optionalBoolean().ifPresent(this.autoReplySxF0::set);
+		
+		setSmlAliasPairs(jh.getOrDefault("smlFiles"));
+		
+		jh.getOrDefault("autoOpen").optionalBoolean().ifPresent(this.autoOpen::set);
+	}
+	
+	protected void setCommunicatorByJson(JsonHub jh) {
+		
+		jh.getOrDefault("protocol").optionalString()
+		.map(SecsSimulatorProtocol::get)
+		.ifPresent(this::protocol);
+		
+		jh.getOrDefault("socketAddress").optionalString()
+		.ifPresent(this::socketAddress);
+		
+		jh.getOrDefault("deviceId").optionalInt()
+		.ifPresent(this::deviceId);
+		
+		jh.getOrDefault("isEquip").optionalBoolean()
+		.ifPresent(this::isEquip);
+		
+		jh.getOrDefault("isMaster").optionalBoolean()
+		.ifPresent(this::isMaster);
+		
+		{
+			JsonHub jht = jh.getOrDefault("timeout");
+			
+			jht.getOrDefault("t1").optionalNubmer().map(Number::floatValue).ifPresent(this::timeoutT1);
+			jht.getOrDefault("t2").optionalNubmer().map(Number::floatValue).ifPresent(this::timeoutT2);
+			jht.getOrDefault("t3").optionalNubmer().map(Number::floatValue).ifPresent(this::timeoutT3);
+			jht.getOrDefault("t4").optionalNubmer().map(Number::floatValue).ifPresent(this::timeoutT4);
+			jht.getOrDefault("t5").optionalNubmer().map(Number::floatValue).ifPresent(this::timeoutT5);
+			jht.getOrDefault("t6").optionalNubmer().map(Number::floatValue).ifPresent(this::timeoutT6);
+			jht.getOrDefault("t7").optionalNubmer().map(Number::floatValue).ifPresent(this::timeoutT7);
+			jht.getOrDefault("t8").optionalNubmer().map(Number::floatValue).ifPresent(this::timeoutT8);
+		}
+		
+		jh.getOrDefault("retry").optionalInt()
+		.ifPresent(this::retry);
+		
+		{
+			float v = jh.getOrDefault("linktest").optionalNubmer()
+					.map(Number::floatValue)
+					.orElse(-1.0F);
+			
+			if ( v > 0.0F ) {
+				this.linktest(v);
+			} else {
+				this.notLinktest();
+			}
+		}
+	}
+	
+	protected void setSmlAliasPairs(JsonHub jh) throws SmlParseException, IOException {
+		
+		Collection<SmlAliasPair> pairs = new HashSet<>();
+		
+		for ( JsonHub jhp : jh) {
+			
+			Path path = jhp.getOrDefault("path").optionalString().map(Paths::get).get();
+			
+			if ( Files.isDirectory(path) ) {
+				
+				try (
+						DirectoryStream<Path> smlPaths = Files.newDirectoryStream(path, "*.sml");
+						) {
+					
+					for ( Path smlPath : smlPaths ) {
+						
+						if ( ! Files.isDirectory(smlPath) ) {
+							
+							pairs.add(SmlAliasPair.fromFile(smlPath));
+						}
+					}
+				}
+				
+			} else {
+				
+				String alias = jhp.getOrDefault("alias").optionalString().orElse(null);
+				
+				if ( alias == null ) {
+					
+					pairs.add(SmlAliasPair.fromFile(path));
+					
+				} else {
+					
+					pairs.add(SmlAliasPair.fromFile(alias, path));
+				}
+			}
+		}
+	}
+	
+	protected static SocketAddress parseSocketAddress(CharSequence cs) {
+		String[] ss = cs.toString().split(":", 2);
+		int port = Integer.parseInt(ss[1]);
+		return new InetSocketAddress(ss[0], port);
+	}
 }

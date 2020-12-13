@@ -8,13 +8,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.stream.Collectors;
 
 import com.shimizukenta.secs.BooleanProperty;
-import com.shimizukenta.secs.CollectionProperty;
+import com.shimizukenta.secs.PropertyChangeListener;
 import com.shimizukenta.secs.ReadOnlyBooleanProperty;
 import com.shimizukenta.secs.SecsCommunicatableStateChangeListener;
 import com.shimizukenta.secs.SecsCommunicator;
@@ -29,31 +26,30 @@ import com.shimizukenta.secs.secs2.Secs2;
 import com.shimizukenta.secs.sml.SmlMessage;
 import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.extendsml.ExtendSmlMessageParser;
-import com.shimizukenta.secssimulator.log.LoggerEngine;
-import com.shimizukenta.secssimulator.macro.MacroEngine;
 import com.shimizukenta.secssimulator.macro.MacroReportListener;
 
 public abstract class AbstractSecsSimulator implements SecsSimulator {
-	
-	private final CollectionProperty<SmlAlias> smlxs = CollectionProperty.newSet();
-	
-	private final LoggerEngine logger;
-	private final MacroEngine macro;
 	
 	private final AbstractSecsSimulatorConfig config;
 	
 	private SecsCommunicator secsComm;
 	private TcpIpAdapter tcpipAdapter;
 	
-	private boolean opened;
-	private boolean closed;
-	
-	
 	public AbstractSecsSimulator(AbstractSecsSimulatorConfig config) {
 		this.config = config;
-		
+		this.secsComm = null;
+		this.tcpipAdapter = null;
 	}
 	
+	@Override
+	public boolean saveConfig(Path path) throws IOException {
+		return config.save(path);
+	}
+	
+	@Override
+	public boolean loadConfig(Path path) throws IOException {
+		return config.load(path);
+	}
 	
 	private Optional<SecsCommunicator> getCommunicator() {
 		synchronized ( this ) {
@@ -100,6 +96,12 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return logListeners.remove(lstnr);
 	}
 	
+	protected void notifyLog(SecsLog log) {
+		logListeners.forEach(l -> {
+			l.received(log);
+		});
+	}
+	
 	
 	private final Collection<SecsMessage> waitPrimaryMsgs = new ArrayList<>();
 	
@@ -116,9 +118,12 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			
 			comm.addSecsMessageReceiveListener(primaryMsg -> {
 				
+				int strm = primaryMsg.getStream();
+				int func = primaryMsg.getFunction();
+				
 				if ( config.autoReply().get() ) {
 					
-					final SmlMessage sml = autoReply(primaryMsg).orElse(null);
+					final SmlMessage sml = smlPool.optionalOnlyOneStreamFunction(strm, func).orElse(null);
 					
 					if ( sml != null ) {
 						
@@ -216,6 +221,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 				}
 				finally {
 					secsComm = null;
+					notifyLog(new SecsLog("Communicator closed"));
 				}
 			}
 			
@@ -367,112 +373,47 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return false;
 	}
 	
-	
-	private final Set<SmlAlias> smls = new CopyOnWriteArraySet<>();
-	
-	protected Set<SmlAlias> smls() {
-		return smls;
-	}
-	
-	@Override
-	public Set<String> smlAliases() {
-		return smls.stream().map(x -> x.alias()).collect(Collectors.toSet());
-	}
-	
-	@Override
-	public Optional<SmlMessage> sml(CharSequence alias) {
-		if ( alias == null ) {
-			return Optional.empty();
-		} else {
-			String s = alias.toString();
-			return smls.stream().filter(x -> x.alias().equals(s)).map(x -> x.smlMessage()).findFirst();
-		}
-	}
-	
 	protected SmlMessage parseSml(CharSequence sml) throws SmlParseException {
 		return ExtendSmlMessageParser.getInstance().parse(sml);
 	}
-
 	
-	private final Collection<SmlAliasListChangeListener> smlAliasListChangedListeners = new ArrayList<>();
+	private final SmlAliasPairPool smlPool = new SmlAliasPairPool();
 	
 	@Override
 	public boolean addSml(CharSequence alias, SmlMessage sml) {
-		synchronized ( smlAliasListChangedListeners ) {
-			boolean f = smls.add(new SmlAlias(alias, sml));
-			if ( f ) {
-				smlAliasListChangedListeners.forEach(l -> {l.changed(sortedSmlAliases());});
-			}
-			return f;
-		}
+		return smlPool.add(alias, sml);
 	}
-
+	
 	@Override
 	public boolean removeSml(CharSequence alias) {
-		synchronized ( smlAliasListChangedListeners ) {
-			boolean f = smls.removeIf(s -> alias.toString().equals(s.alias()));
-			if ( f ) {
-				smlAliasListChangedListeners.forEach(l -> {l.changed(sortedSmlAliases());});
-			}
-			return f;
-		}
+		return smlPool.remove(alias);
 	}
 	
-	public boolean addSmlAliasListChangedListener(SmlAliasListChangeListener l) {
-		synchronized ( smlAliasListChangedListeners ) {
-			l.changed(sortedSmlAliases());
-			return smlAliasListChangedListeners.add(l);
-		}
+	protected boolean addSmlPairs(Collection<? extends SmlAliasPair> pairs) {
+		return smlPool.addAll(pairs);
 	}
 	
-	public boolean removeSmlAliasListChangedListener(SmlAliasListChangeListener l) {
-		synchronized ( smlAliasListChangedListeners ) {
-			return smlAliasListChangedListeners.remove(l);
-		}
-	}
-
-	
-	private Optional<SmlMessage> autoReply(SecsMessage primaryMsg) {
-		return autoReply(primaryMsg.getStream(), primaryMsg.getFunction(), primaryMsg.wbit());
+	protected List<String> smlAliases() {
+		return smlPool.aliases();
 	}
 	
-	private Optional<SmlMessage> autoReply(int primaryStream, int primaryFunction, boolean primaryWbit) {
-		
-		if ( primaryWbit ) {
-			
-			List<SmlMessage> ss = autoReplys(primaryStream, primaryFunction);
-			return (ss.size() == 1) ? Optional.of(ss.get(0)) : Optional.empty();
-			
-		} else {
-			
-			return Optional.empty();
-		}
+	protected Optional<SmlMessage> optionalAlias(CharSequence alias) {
+		return smlPool.optionalAlias(alias);
 	}
 	
-	private List<SmlMessage> autoReplys(int primaryStream, int primaryFunction) {
-		
-		return smls.stream()
-				.map(x -> x.smlMessage())
-				.filter(x -> ! x.wbit())
-				.filter(s -> s.getStream() == primaryStream)
-				.filter(x -> x.getFunction() == primaryFunction + 1)
-				.filter(x -> (x.getFunction() % 2) == 0)
-				.collect(Collectors.toList());
+	protected boolean addSmlAliasesChangeListener(PropertyChangeListener<? super Collection<? extends SmlAliasPair>> l) {
+		return smlPool.addChangeListener(l);
 	}
 	
-	private List<SmlMessage> autoReplys(int primaryStream) {
-		
-		return smls.stream()
-				.map(x -> x.smlMessage())
-				.filter(x -> ! x.wbit())
-				.filter(s -> s.getStream() == primaryStream)
-				.filter(x -> (x.getFunction() % 2) == 0)
-				.collect(Collectors.toList());
+	protected boolean removeSmlAliasesChangeListener(PropertyChangeListener<? super Collection<? extends SmlAliasPair>> l) {
+		return smlPool.removeChangeListener(l);
 	}
 	
 	private Optional<LocalSecsMessage> autoReplySxF0(SecsMessage primary) {
 		
-		if ( primary.getStream() < 0 ) {
+		int strm = primary.getStream();
+		
+		if ( strm < 0 ) {
 			return Optional.empty();
 		}
 		
@@ -480,19 +421,21 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			return Optional.empty();
 		}
 		
-		int strm = primary.getStream();
 		int func = primary.getFunction();
 		boolean wbit = primary.wbit();
 		
 		if ( wbit ) {
 			
-			if ( autoReplys(strm, func).isEmpty() ) {
+			if ( ! smlPool.hasReplyMessages(strm, func) ) {
 				
-				if ( autoReplys(strm).isEmpty() ) {
+				if ( smlPool.hasReplyMessages(strm) ) {
+					
+					return Optional.of(new LocalSecsMessage(strm, 0, false, Secs2.empty()));
+					
+				} else {
+					
 					return Optional.of(new LocalSecsMessage(0, 0, false, Secs2.empty()));
 				}
-				
-				return Optional.of(new LocalSecsMessage(strm, 0, false, Secs2.empty()));
 			}
 		}
 		
@@ -501,7 +444,9 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	
 	private Optional<LocalSecsMessage> autoReplyS9Fy(SecsMessage primary) {
 		
-		if ( primary.getStream() < 0 ) {
+		int strm = primary.getStream();
+		
+		if ( strm < 0 ) {
 			return Optional.empty();
 		}
 		
@@ -509,19 +454,21 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			return Optional.of(new LocalSecsMessage(9, 1, false, Secs2.binary(primary.header10Bytes())));
 		}
 		
-		int strm = primary.getStream();
 		int func = primary.getFunction();
 		boolean wbit = primary.wbit();
 		
 		if ( wbit ) {
 			
-			if ( autoReplys(strm, func).isEmpty() ) {
+			if ( ! smlPool.hasReplyMessages(strm, func) ) {
 				
-				if ( autoReplys(strm).isEmpty() ) {
+				if ( smlPool.hasReplyMessages(strm) ) {
+					
 					return Optional.of(new LocalSecsMessage(9, 3, false, Secs2.binary(primary.header10Bytes())));
+					
+				} else {
+					
+					return Optional.of(new LocalSecsMessage(9, 5, false, Secs2.binary(primary.header10Bytes())));
 				}
-				
-				return Optional.of(new LocalSecsMessage(9, 5, false, Secs2.binary(primary.header10Bytes())));
 			}
 		}
 		
@@ -551,40 +498,39 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	/* Logging */
 	@Override
 	public void startLogging(Path path) throws IOException {
-		this.logger.start(path);
+		//TODO
 	}
 
 	@Override
 	public void stopLogging() {
-		this.logger.stop();
-	}
-	
-	protected void notifyLog(Object o) {
-		this.logger.putLog(o);
+		//TODO
 	}
 	
 	protected ReadOnlyBooleanProperty logging() {
-		return this.logger.logging();
+		//TODO
+		return null;
 	}
 	
 	
 	/* Macros */
 	@Override
 	public void startMacro(Path path) {
-		macro.start(path);
+		//TODO
 	}
 	
 	@Override
 	public void stopMacro() {
-		macro.stop();
+		//TODO
 	}
 	
 	public boolean addMacroReportListener(MacroReportListener l) {
-		return macro.addMacroReportListener(l);
+		//TODO
+		return false;
 	}
 	
 	public boolean removeMacroReportListener(MacroReportListener l) {
-		return macro.removeMacroReportListener(l);
+		//TODO
+		return false;
 	}
 	
 	

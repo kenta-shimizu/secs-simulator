@@ -25,7 +25,6 @@ public enum CliCommand {
 	LIST_SML(1, CliCommandManual.LIST_SML, "list"),
 	SHOW_SML(2, CliCommandManual.SHOW_SML, "show"),
 	ADD_SML(2, CliCommandManual.ADD_SML, "addfile", "add-file"),
-	ADD_SMLS(2, CliCommandManual.ADD_SMLS, "addfiles", "add-files"),
 	REMOVE_SML(2, CliCommandManual.REMOVE_SML, "removesml", "remove-sml"),
 	
 	PWD(1, CliCommandManual.PWD, "pwd"),

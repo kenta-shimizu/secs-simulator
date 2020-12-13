@@ -3,13 +3,30 @@ package com.shimizukenta.secssimulator;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
-import java.util.Set;
 
 import com.shimizukenta.secs.SecsCommunicator;
 import com.shimizukenta.secs.SecsMessage;
 import com.shimizukenta.secs.sml.SmlMessage;
 
 public interface SecsSimulator {
+	
+	/**
+	 * Save config to path-file.
+	 * 
+	 * @param path
+	 * @return {@code true} if save success
+	 * @throws IOException
+	 */
+	public boolean saveConfig(Path path) throws IOException;
+	
+	/**
+	 * Load config from path-file.
+	 * 
+	 * @param path
+	 * @return {@code true} if load success
+	 * @throws IOException
+	 */
+	public boolean loadConfig(Path path) throws IOException;
 	
 	/**
 	 * Open communicator.
@@ -81,32 +98,33 @@ public interface SecsSimulator {
 	public Optional<SecsMessage> send(SecsMessage primaryMsg, SmlMessage replySml) throws SecsSimulatorException, InterruptedException;
 	
 	/**
-	 * Link-test.
+	 * Linktest.
 	 * 
 	 * <p>
 	 * Blocking-method<br />
 	 * wait until linktest.rsp
 	 * </p>
 	 * 
-	 * @return true if link-test success
+	 * @return true if linktest success
 	 * @throws InterruptedException
 	 */
 	public boolean linktest() throws InterruptedException;
 	
-	/**
-	 * Return SML-Aliases set.
-	 * 
-	 * @return SML-Aliases set
-	 */
-	public Set<String> smlAliases();
 	
-	/**
-	 * Returns SML if exist, {@code Optional.empty()} otherwise.
-	 * 
-	 * @param alias
-	 * @return SmlMessage if exist
-	 */
-	public Optional<SmlMessage> sml(CharSequence alias);
+//	/**
+//	 * Return sorted SML-Aliases list.
+//	 * 
+//	 * @return sorted SML-Aliases list
+//	 */
+//	public List<String> smlAliases();
+//	
+//	/**
+//	 * Returns SML if exist, {@code Optional.empty()} otherwise.
+//	 * 
+//	 * @param alias
+//	 * @return SmlMessage if exist
+//	 */
+//	public Optional<SmlMessage> sml(CharSequence alias);
 	
 	/**
 	 * Add SML
@@ -125,6 +143,7 @@ public interface SecsSimulator {
 	 */
 	public boolean removeSml(CharSequence alias);
 	
+	
 	/**
 	 * Start logging.
 	 * 
@@ -139,17 +158,17 @@ public interface SecsSimulator {
 	public void stopLogging();
 	
 	
-//	/**
-//	 * Start Macro.
-//	 * 
-//	 * @param path
-//	 */
-//	public void startMacro(Path path);
-//	
-//	/**
-//	 * Stop Macro.
-//	 */
-//	public void stopMacro();
+	/**
+	 * Start Macro.
+	 * 
+	 * @param path
+	 */
+	public void startMacro(Path path);
+	
+	/**
+	 * Stop Macro.
+	 */
+	public void stopMacro();
 	
 	
 	

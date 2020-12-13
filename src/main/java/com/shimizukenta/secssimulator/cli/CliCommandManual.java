@@ -33,9 +33,6 @@ public enum CliCommandManual {
 			"option is Alias-Name of SML"),
 	ADD_SML("Add SML",
 			"option is path/to/file.sml"),
-	ADD_SMLS("Add SMLs",
-			"option is path/to/directory",
-			"add all files of *.sml in directory"),
 	REMOVE_SML("Remove SML",
 			"option is Alias-Name of SML"),
 	
