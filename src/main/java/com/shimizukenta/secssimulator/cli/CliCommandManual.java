@@ -11,6 +11,10 @@ public enum CliCommandManual {
 	CLOSE("Close communicator"),
 	QUIT("Quit application"),
 	
+	LOAD("Load config"),
+	SAVE("Save config"),
+	STATUS("Show status"),
+	
 	PWD("Present working directory"),
 	LS("List directory files"),
 	CD("Change directory",

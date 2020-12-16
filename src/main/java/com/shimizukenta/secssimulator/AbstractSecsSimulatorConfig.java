@@ -6,6 +6,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -31,7 +32,6 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 	private final BooleanProperty autoReply = BooleanProperty.newInstance(true);
 	private final BooleanProperty autoReplySxF0 = BooleanProperty.newInstance(false);
 	private final BooleanProperty autoReplyS9Fy = BooleanProperty.newInstance(false);
-	private final BooleanProperty autoOpen = BooleanProperty.newInstance(false);
 	
 	private final Property<SecsSimulatorProtocol> protocol = Property.newInstance(SecsSimulatorProtocol.HSMS_SS_PASSIVE);
 	
@@ -41,6 +41,8 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 	private final Property<SocketAddress> secs1AdapterSocketAddress = Property.newInstance(null);
 	
 	private final SmlAliasPairPool smlPool = new SmlAliasPairPool();
+	
+	private final BooleanProperty autoOpen = BooleanProperty.newInstance(false);
 	
 	
 	public AbstractSecsSimulatorConfig() {
@@ -227,8 +229,8 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 	 */
 	public boolean save(Path path) throws IOException {
 		synchronized ( this ) {
-			getJsonHub().writeFile(path);
-			return false;
+			getJsonHub().prettyPrint(path);
+			return true;
 		}
 	}
 	
@@ -315,7 +317,7 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 			if ( addr instanceof InetSocketAddress ) {
 				InetSocketAddress iaddr = (InetSocketAddress)addr;
 				int port = iaddr.getPort();
-				String v = iaddr.getAddress().toString() + ":" + port;
+				String v = iaddr.getAddress().getHostAddress() + ":" + port;
 				pairs.add(jhb.pair("socketAddress", v));
 			}
 		}
@@ -411,39 +413,49 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 		
 		Collection<SmlAliasPair> pairs = new HashSet<>();
 		
-		for ( JsonHub jhp : jh) {
+		for ( JsonHub jhp : jh ) {
 			
-			Path path = jhp.getOrDefault("path").optionalString().map(Paths::get).get();
-			
-			if ( Files.isDirectory(path) ) {
+			try {
+				Path path = jhp.getOrDefault("path").optionalString().map(Paths::get).get();
 				
-				try (
-						DirectoryStream<Path> smlPaths = Files.newDirectoryStream(path, "*.sml");
-						) {
+				if ( path != null ) {
 					
-					for ( Path smlPath : smlPaths ) {
+					if ( Files.isDirectory(path) ) {
 						
-						if ( ! Files.isDirectory(smlPath) ) {
+						try (
+								DirectoryStream<Path> smlPaths = Files.newDirectoryStream(path, "*.sml");
+								) {
 							
-							pairs.add(SmlAliasPair.fromFile(smlPath));
+							for ( Path smlPath : smlPaths ) {
+								
+								if ( ! Files.isDirectory(smlPath) ) {
+									
+									pairs.add(SmlAliasPair.fromFile(smlPath));
+								}
+							}
+						}
+						
+					} else {
+						
+						String alias = jhp.getOrDefault("alias").optionalString().orElse(null);
+						
+						if ( alias == null ) {
+							
+							pairs.add(SmlAliasPair.fromFile(path));
+							
+						} else {
+							
+							pairs.add(SmlAliasPair.fromFile(alias, path));
 						}
 					}
 				}
-				
-			} else {
-				
-				String alias = jhp.getOrDefault("alias").optionalString().orElse(null);
-				
-				if ( alias == null ) {
-					
-					pairs.add(SmlAliasPair.fromFile(path));
-					
-				} else {
-					
-					pairs.add(SmlAliasPair.fromFile(alias, path));
-				}
+			}
+			catch ( InvalidPathException e ) {
 			}
 		}
+		
+		this.smlPool.clear();
+		this.smlPool.addAll(pairs);
 	}
 	
 	protected static SocketAddress parseSocketAddress(CharSequence cs) {

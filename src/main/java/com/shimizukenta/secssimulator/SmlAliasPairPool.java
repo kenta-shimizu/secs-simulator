@@ -25,6 +25,14 @@ public class SmlAliasPairPool {
 	}
 	
 	/**
+	 * Clar all pairs.
+	 * 
+	 */
+	public void clear() {
+		pairs.clear();
+	}
+	
+	/**
 	 * Add SmlAliasPair to pair-pool.
 	 * 
 	 * @param pair

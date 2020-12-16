@@ -123,7 +123,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 				
 				if ( config.autoReply().get() ) {
 					
-					final SmlMessage sml = smlPool.optionalOnlyOneStreamFunction(strm, func).orElse(null);
+					final SmlMessage sml = config.smlAliasPairPool().optionalOnlyOneStreamFunction(strm, func).orElse(null);
 					
 					if ( sml != null ) {
 						
@@ -377,36 +377,34 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return ExtendSmlMessageParser.getInstance().parse(sml);
 	}
 	
-	private final SmlAliasPairPool smlPool = new SmlAliasPairPool();
-	
 	@Override
 	public boolean addSml(CharSequence alias, SmlMessage sml) {
-		return smlPool.add(alias, sml);
+		return config.smlAliasPairPool().add(alias, sml);
 	}
 	
 	@Override
 	public boolean removeSml(CharSequence alias) {
-		return smlPool.remove(alias);
+		return config.smlAliasPairPool().remove(alias);
 	}
 	
 	protected boolean addSmlPairs(Collection<? extends SmlAliasPair> pairs) {
-		return smlPool.addAll(pairs);
+		return config.smlAliasPairPool().addAll(pairs);
 	}
 	
 	protected List<String> smlAliases() {
-		return smlPool.aliases();
+		return config.smlAliasPairPool().aliases();
 	}
 	
 	protected Optional<SmlMessage> optionalAlias(CharSequence alias) {
-		return smlPool.optionalAlias(alias);
+		return config.smlAliasPairPool().optionalAlias(alias);
 	}
 	
 	protected boolean addSmlAliasesChangeListener(PropertyChangeListener<? super Collection<? extends SmlAliasPair>> l) {
-		return smlPool.addChangeListener(l);
+		return config.smlAliasPairPool().addChangeListener(l);
 	}
 	
 	protected boolean removeSmlAliasesChangeListener(PropertyChangeListener<? super Collection<? extends SmlAliasPair>> l) {
-		return smlPool.removeChangeListener(l);
+		return config.smlAliasPairPool().removeChangeListener(l);
 	}
 	
 	private Optional<LocalSecsMessage> autoReplySxF0(SecsMessage primary) {
@@ -426,9 +424,9 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		
 		if ( wbit ) {
 			
-			if ( ! smlPool.hasReplyMessages(strm, func) ) {
+			if ( ! config.smlAliasPairPool().hasReplyMessages(strm, func) ) {
 				
-				if ( smlPool.hasReplyMessages(strm) ) {
+				if ( config.smlAliasPairPool().hasReplyMessages(strm) ) {
 					
 					return Optional.of(new LocalSecsMessage(strm, 0, false, Secs2.empty()));
 					
@@ -459,9 +457,9 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		
 		if ( wbit ) {
 			
-			if ( ! smlPool.hasReplyMessages(strm, func) ) {
+			if ( ! config.smlAliasPairPool().hasReplyMessages(strm, func) ) {
 				
-				if ( smlPool.hasReplyMessages(strm) ) {
+				if ( config.smlAliasPairPool().hasReplyMessages(strm) ) {
 					
 					return Optional.of(new LocalSecsMessage(9, 3, false, Secs2.binary(primary.header10Bytes())));
 					

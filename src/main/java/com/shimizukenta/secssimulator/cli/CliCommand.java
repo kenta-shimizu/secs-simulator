@@ -1,10 +1,6 @@
 package com.shimizukenta.secssimulator.cli;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 public enum CliCommand {
 	
@@ -12,14 +8,20 @@ public enum CliCommand {
 	
 	MANUAL(2, CliCommandManual.MANUAL, "man", "?"),
 	
+	QUIT(1, CliCommandManual.QUIT, "quit", "exit"),
 	OPEN(1, CliCommandManual.OPEN, "open"),
 	CLOSE(1, CliCommandManual.CLOSE, "close"),
-	QUIT(1, CliCommandManual.QUIT, "quit", "exit"),
+	
+	LOAD(2, CliCommandManual.LOAD,"load", "load-config"),
+	SAVE(2, CliCommandManual.SAVE, "save", "save-config"),
+	STATUS(1, CliCommandManual.STATUS, "status"),
 	
 	SEND_SML(2, CliCommandManual.SEND_SML,
 			"send", "ss", "sendsml", "send-sml"),
-	SEND_DIRECT(2, CliCommandManual.SEND_DIRECT,
-			"senddirect", "sd", "send-direct"),
+	
+//	SEND_DIRECT(2, CliCommandManual.SEND_DIRECT,
+//			"senddirect", "sd", "send-direct"),
+	
 	LINKTEST(1, CliCommandManual.LINKTEST, "linktest"),
 	
 	LIST_SML(1, CliCommandManual.LIST_SML, "list"),
@@ -29,11 +31,11 @@ public enum CliCommand {
 	
 	PWD(1, CliCommandManual.PWD, "pwd"),
 	CD(2, CliCommandManual.CD, "cd"),
-	LS(1, CliCommandManual.LS, "ls"),
+	LS(2, CliCommandManual.LS, "ls"),
 	MKDIR(2, CliCommandManual.MKDIR, "mkdir"),
 	
-	LOG(2, CliCommandManual.LOG, "log"),
-	MACRO(2, CliCommandManual.MACRO, "macro"),
+//	LOG(2, CliCommandManual.LOG, "log"),
+//	MACRO(2, CliCommandManual.MACRO, "macro"),
 	
 	AUTO_REPLY(2, CliCommandManual.AUTO_REPLY, "autoreply", "auto-reply"),
 	AUTO_REPLY_S9Fy(2, CliCommandManual.AUTO_REPLY_S9Fy,
@@ -57,93 +59,77 @@ public enum CliCommand {
 		this(split, null, commands);
 	}
 	
-	public static CliCommand get(CharSequence requestLine) {
-		
-		String s = Objects.requireNonNull(requestLine).toString().trim();
-		
+	public int split() {
+		return this.split;
+	}
+	
+	public CliCommandManual manual() {
+		return this.manual;
+	}
+	
+	public String[] commands() {
+		return Arrays.copyOf(this.commands, this.commands.length);
+	}
+	
+	public static CliCommand get(CharSequence command) {
+		final String s = command.toString();
 		for ( CliCommand v : values() ) {
-			
-			String c;
-			if ( v.split > 1 ) {
-				c = (s.split("\\s+", 2))[0];
-			} else {
-				c = s;
-			}
-			
-			for (String a : v.commands ) {
-				if ( a.equalsIgnoreCase(c) ) {
-					return v;
+			if ( v != UNDEFINED ) {
+				for ( String c : v.commands ) {
+					if ( c.equalsIgnoreCase(s) ) {
+						return v;
+					}
 				}
 			}
 		}
-		
 		return UNDEFINED;
 	}
 	
-	private static final String[] emptyArray = new String[0];
 	
-	public static CliRequest getRequest(CharSequence requestLine) {
-		
-		CliCommand cmd = get(requestLine);
-		
-		if ( cmd.split > 1 ) {
-			
-			String[] ss = requestLine.toString().trim().split("\\s+", cmd.split);
-			
-			ss = Arrays.copyOfRange(ss, 1, ss.length);
-			
-			return new CliRequest(cmd, ss);
-			
-		} else {
-			
-			return new CliRequest(cmd, emptyArray);
-		}
-	}
-	
-	private static final String BR = System.lineSeparator();
-	
-	private static final String descLine(CliCommand cmd) {
-		
-		List<String> cmds = new ArrayList<>();
-		
-		for ( String s : cmd.commands ) {
-			cmds.add(s);
-		}
-		
-		return cmds.stream().collect(Collectors.joining(" | ", "[ ", " ]"))
-				+ " " + cmd.manual.description();
-	}
-	
-	public static String getManuals() {
-		
-		List<String> lines = new ArrayList<>();
-		
-		for ( CliCommand cmd : values() ) {
-			if ( cmd.manual != null ) {
-				lines.add(descLine(cmd));
-			}
-		}
-		
-		return lines.stream().collect(Collectors.joining(BR));
-	}
-	
-	public static String getDetailManual(CharSequence command) {
-		
-		CliCommand cmd = get(command);
-		
-		if ( cmd.manual == null ) {
-			return "\"" + command.toString() + "\" has no manual";
-		}
-		
-		List<String> lines = new ArrayList<>();
-		
-		lines.add(descLine(cmd));
-		
-		for ( String detail : cmd.manual.details() ) {
-			lines.add(detail);
-		}
-		
-		return lines.stream().collect(Collectors.joining(BR));
-	}
+//	private static final String BR = System.lineSeparator();
+//	
+//	private static final String descLine(CliCommand cmd) {
+//		
+//		List<String> cmds = new ArrayList<>();
+//		
+//		for ( String s : cmd.commands ) {
+//			cmds.add(s);
+//		}
+//		
+//		return cmds.stream().collect(Collectors.joining(" | ", "[ ", " ]"))
+//				+ " " + cmd.manual.description();
+//	}
+//	
+//	public static String getManuals() {
+//		
+//		List<String> lines = new ArrayList<>();
+//		
+//		for ( CliCommand cmd : values() ) {
+//			if ( cmd.manual != null ) {
+//				lines.add(descLine(cmd));
+//			}
+//		}
+//		
+//		return lines.stream().collect(Collectors.joining(BR));
+//	}
+//	
+//	public static String getDetailManual(CharSequence command) {
+//		
+//		CliCommand cmd = get(command);
+//		
+//		if ( cmd.manual == null ) {
+//			return "\"" + command.toString() + "\" has no manual";
+//		}
+//		
+//		List<String> lines = new ArrayList<>();
+//		
+//		lines.add(descLine(cmd));
+//		
+//		for ( String detail : cmd.manual.details() ) {
+//			lines.add(detail);
+//		}
+//		
+//		return lines.stream().collect(Collectors.joining(BR));
+//	}
 	
 }

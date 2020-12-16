@@ -1,21 +1,211 @@
 package com.shimizukenta.secssimulator.cli;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import com.shimizukenta.secs.sml.SmlMessage;
 import com.shimizukenta.secssimulator.AbstractSecsSimulator;
 import com.shimizukenta.secssimulator.AbstractSecsSimulatorConfig;
+import com.shimizukenta.secssimulator.SecsSimulatorException;
 import com.shimizukenta.secssimulator.SecsSimulatorProtocol;
 
 public class CliSecsSimulator extends AbstractSecsSimulator {
 	
+	private final ExecutorService execServ = Executors.newCachedThreadPool(r -> {
+		Thread th = new Thread(r);
+		th.setDaemon(true);
+		return th;
+	});
+	
+	private final AbstractSecsSimulatorConfig config;
+	private Path pwd;
+	
+	private CliSecsSimulator(AbstractSecsSimulatorConfig config) {
+		super(config);
+		this.config = config;
+		this.pwd = Paths.get(".").toAbsolutePath().normalize();
+	}
+	
+	@Override
+	public void quitApplication() {
+		try {
+			execServ.shutdown();
+			if ( ! execServ.awaitTermination(1L, TimeUnit.MILLISECONDS) ) {
+				execServ.shutdownNow();
+				if ( ! execServ.awaitTermination(10L, TimeUnit.SECONDS) ) {
+					echo("ExecutorService#shutdown failed");
+				}
+			}
+		}
+		catch ( InterruptedException giveup ) {
+		}
+		
+		super.quitApplication();
+	}
+	
+	private Optional<Path> loadConfig(String v) {
+		synchronized ( this ) {
+			try {
+				Path p = this.pwd.resolve(v);
+				if ( this.loadConfig(p) ) {
+					return Optional.of(p.normalize());
+				}
+			}
+			catch ( IOException | InvalidPathException e ) {
+			}
+			return Optional.empty();
+		}
+	}
+	
+	private Optional<Path> saveConfig(String v) {
+		synchronized ( this ) {
+			try {
+				Path p = this.pwd.resolve(v);
+				if ( this.saveConfig(p) ) {
+					return Optional.of(p.normalize());
+				}
+			}
+			catch ( IOException | InvalidPathException e ) {
+			}
+			return Optional.empty();
+		}
+	}
+	
+	private List<String> status() {
+		synchronized ( this ) {
+			return Arrays.asList(
+					"Protocol: " + config.protocol().get(),
+					"SocketAddress: " + config.hsmsSsCommunicatorConfig().socketAddress().get(),
+					"Device-ID: " + config.hsmsSsCommunicatorConfig().deviceId().intValue(),
+					"IS-EQUIP: " + config.hsmsSsCommunicatorConfig().isEquip().booleanValue(),
+					"IS-MASTER: " + config.secs1OnTcpIpCommunicatorConfig().isMaster().booleanValue(),
+					"Auto-Reply: " + config.autoReply().booleanValue(),
+					"Auto-Reply-S9Fy: " + config.autoReplyS9Fy().booleanValue(),
+					"Auto-Reply-SxF0: " + config.autoReplySxF0().booleanValue()
+					);
+		}
+	}
+	
+	private Optional<String> addSml(String v) {
+		
+		//TODO
+		
+		
+		return Optional.empty();
+	}
+	
+	private Path presentWorkingDirectory() {
+		synchronized ( this ) {
+			return this.pwd;
+		}
+	}
+	
+	private Path changeWorkingDirectory(String path) {
+		synchronized ( this ) {
+			try {
+				Path p = this.pwd.resolve(path);
+				if ( Files.isDirectory(p) ) {
+					this.pwd = p.normalize();
+				}
+			}
+			catch ( InvalidPathException ignore ) {
+			}
+			return this.pwd;
+		}
+	}
+	
+	private List<Path> listDirectory(String path) {
+		synchronized ( this ) {
+			try {
+				Path p = this.pwd.resolve(path);
+				try (
+						Stream<Path> pp = Files.list(p);
+						) {
+					return pp.map(Path::getFileName)
+							.collect(Collectors.toList());
+				}
+			}
+			catch ( IOException | InvalidPathException giveup ) {
+			}
+			return Collections.emptyList();
+		}
+	}
+	
+	private Optional<Path> makeDirectory(String dir) {
+		synchronized ( this ) {
+			try {
+				Path p = Paths.get(dir);
+				Path newDir = this.pwd.resolve(p);
+				Path result = Files.createDirectories(newDir);
+				return Optional.of(result.normalize());
+			}
+			catch ( IOException | InvalidPathException giveup ) {
+			}
+			return Optional.empty();
+		}
+	}
+	
+	private void asyncSend(SmlMessage sm) {
+		execServ.execute(() -> {
+			try {
+				send(sm);
+			}
+			catch ( SecsSimulatorException | InterruptedException idgnore ) {
+			}
+		});
+	}
+	
+	private void asyncLinktest() {
+		execServ.execute(() -> {
+			try {
+				linktest();
+			}
+			catch ( InterruptedException ignore ) {
+			}
+		});
+	}
+	
+	private void autoReply(String v) {
+		if ( v == null ) {
+			config.autoReply().set(! config.autoReply().booleanValue());
+		} else {
+			config.autoReply().set(Boolean.parseBoolean(v.trim()));
+		}
+	}
+	
+	private void autoReplyS9Fy(String v) {
+		if ( v == null ) {
+			config.autoReplyS9Fy().set(! config.autoReplyS9Fy().booleanValue());
+		} else {
+			config.autoReplyS9Fy().set(Boolean.parseBoolean(v.trim()));
+		}
+	}
+	
+	private void autoReplySxF0(String v) {
+		if ( v == null ) {
+			config.autoReplySxF0().set(! config.autoReplySxF0().booleanValue());
+		} else {
+			config.autoReplySxF0().set(Boolean.parseBoolean(v.trim()));
+		}
+	}
+	
 	public static void main(String[] args) {
 		
 		try {
-			echo("Simulator started");
-			
 			final AbstractSecsSimulatorConfig config = new AbstractSecsSimulatorConfig() {
 				private static final long serialVersionUID = 5301436919812579702L;
 			};
@@ -47,36 +237,28 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 							) {
 						
 						if ( ! configLoaded ) {
-							
-							{
-								System.out.println("Choose prorocol");
-								System.out.println("1: HSMS-SS-PASSIVE, 2: HSMS-SS-ACTIVE");
-								System.out.println("3: SECS1-ON-TCP/IP, 4: SECS1-ON-TCP/IP-RECEIVER");
-								System.out.print(": ");
-								
-								String v = br.readLine();
-								if ( v.equals("1") ) {
-									config.protocol(SecsSimulatorProtocol.HSMS_SS_PASSIVE);
-								} else if ( v.equals("2") ) {
-									config.protocol(SecsSimulatorProtocol.HSMS_SS_ACTIVE);
-								} else if ( v.equals("3") ) {
-									config.protocol(SecsSimulatorProtocol.SECS1_ON_TCP_IP);
-								} else if ( v.equals("4") ) {
-									config.protocol(SecsSimulatorProtocol.SECS1_ON_TCP_IP_RECEIVER);
-								}
+							enterConfig(br, config);
+						}
+						
+						echo("");
+						echo("Simulator started");
+						
+						
+						//TODO
+						//auto-logging
+						
+						
+						
+						if ( simm.config.autoOpen().booleanValue() ) {
+							try {
+								simm.openCommunicator();
 							}
-							{
-								System.out.print("Enter SocketAddress: ");
-								String v = br.readLine();
-								config.socketAddress(v);
-							}
-							{
-								System.out.print("Enter Device-ID: ");
-								String v = br.readLine();
-								config.deviceId(Integer.parseInt(v));
+							catch ( IOException e ) {
+								echo(e);
 							}
 						}
 						
+						LOOP:
 						for ( ;; ) {
 							
 							String line = br.readLine();
@@ -85,22 +267,135 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 								break;
 							}
 							
-							line = line.trim();
+							CliRequest req = CliRequest.get(line);
 							
-							if ( line.isEmpty() ) {
-								continue;
-							}
-							
-							if ( line.equalsIgnoreCase("quit") ) {
+							switch ( req.command() ) {
+							case MANUAL: {
+								
+								//TODO
+								
 								break;
 							}
-							
-							if ( line.equalsIgnoreCase("open") ) {
-								simm.openCommunicator();
+							case QUIT: {
+								break LOOP;
 							}
-							
-							if ( line.equalsIgnoreCase("close") ) {
-								simm.closeCommunicator();
+							case OPEN: {
+								try {
+									simm.openCommunicator();
+								}
+								catch ( IOException e ) {
+									echo(e);
+								}
+								break;
+							}
+							case CLOSE: {
+								try {
+									simm.closeCommunicator();
+								}
+								catch ( IOException e ) {
+									echo(e);
+								}
+								break;
+							}
+							case LOAD: {
+								req.option(0).ifPresent(v -> {
+									simm.loadConfig(v).ifPresent(sp -> {
+										echo("loaded: " + sp);
+										try {
+											simm.closeCommunicator();
+										}
+										catch ( IOException e ) {
+											echo(e);
+										}
+									});
+								});
+								break;
+							}
+							case SAVE: {
+								req.option(0).ifPresent(v -> {
+									simm.saveConfig(v).ifPresent(sp -> {
+										echo("saved: " + sp);
+									});
+								});
+								break;
+							}
+							case STATUS: {
+								echo(simm.status());
+								break;
+							}
+							case LIST_SML: {
+								echo(simm.smlAliases());
+								break;
+							}
+							case SHOW_SML: {
+								req.option(0).ifPresent(alias -> {
+									simm.optionalAlias(alias).ifPresent(sm -> {
+										echo(sm);
+									});
+								});
+								break;
+							}
+							case ADD_SML: {
+								req.option(0).ifPresent(v -> {
+									simm.addSml(v).ifPresent(r -> {
+										echo("Add-SML: " + r);
+									});
+								});
+								break;
+							}
+							case REMOVE_SML: {
+								req.option(0).ifPresent(simm::removeSml);
+								break;
+							}
+							case SEND_SML: {
+								req.option(0).ifPresent(v -> {
+									simm.optionalAlias(v).ifPresent(sm -> {
+										simm.asyncSend(sm);
+									});
+								});
+								break;
+							}
+							case LINKTEST: {
+								simm.asyncLinktest();
+								break;
+							}
+							case PWD: {
+								echo("PWD: " + simm.presentWorkingDirectory());
+								break;
+							}
+							case CD: {
+								req.option(0).ifPresent(path -> {
+									echo("PWD: " + simm.changeWorkingDirectory(path));
+								});
+								break;
+							}
+							case LS: {
+								echo(simm.listDirectory(req.option(0).orElse(".")));
+								break;
+							}
+							case MKDIR: {
+								req.option(0).ifPresent(dir -> {
+									simm.makeDirectory(dir).ifPresent(newDir -> {
+										echo("MKDIR: " + newDir);
+									});
+								});
+								break;
+							}
+							case AUTO_REPLY: {
+								simm.autoReply(req.option(0).orElse(null));
+								break;
+							}
+							case AUTO_REPLY_S9Fy: {
+								simm.autoReplyS9Fy(req.option(0).orElse(null));
+								break;
+							}
+							case AUTO_REPLY_SxF0: {
+								simm.autoReplySxF0(req.option(0).orElse(null));
+								break;
+							}
+							default: {
+								/* Nothing */
+							}
 							}
 						}
 					}
@@ -117,37 +412,136 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 		echo("Simulator finished");
 	}
 	
-	
-	private Path pwd;
-	
-	public CliSecsSimulator(AbstractSecsSimulatorConfig config) {
-		super(config);
-		this.pwd = Paths.get(".").normalize();
+	private static void enterConfig(BufferedReader br, AbstractSecsSimulatorConfig config) throws IOException {
+		
+		for ( ;; ) {
+			if ( enterProtocolConfig(br, config) ) {
+				break;
+			}
+		}
+		
+		for ( ;; ) {
+			if ( enterSocketAddressConfig(br, config) ) {
+				break;
+			}
+		}
+		
+		for ( ;; ) {
+			if ( enterDeviceIdConfig(br, config) ) {
+				break;
+			}
+		}
+		
+		for ( ;; ) {
+			if ( enterIsEquipConfig(br, config) ) {
+				break;
+			}
+		}
+		
+		{
+			SecsSimulatorProtocol p = config.protocol().get();
+			if ( p == SecsSimulatorProtocol.SECS1_ON_TCP_IP
+					|| p == SecsSimulatorProtocol.SECS1_ON_TCP_IP_RECEIVER) {
+				
+				for ( ;; ) {
+					if ( enterIsMasterConfig(br, config) ) {
+						break;
+					}
+				}
+			}
+		}
 	}
 	
+	private static boolean enterProtocolConfig(BufferedReader br, AbstractSecsSimulatorConfig config) throws IOException {
+		
+		System.out.println("Choose protocol");
+		System.out.println("(1: HSMS-SS-PASSIVE, 2: HSMS-SS-ACTIVE");
+		System.out.println(" 3: SECS1-ON-TCP/IP, 4: SECS1-ON-TCP/IP-RECEIVER)");
+		System.out.print(": ");
+		
+		String v = br.readLine().trim();
+		
+		if ( v.equals("1") ) {
+			config.protocol(SecsSimulatorProtocol.HSMS_SS_PASSIVE);
+			return true;
+		} else if ( v.equals("2") ) {
+			config.protocol(SecsSimulatorProtocol.HSMS_SS_ACTIVE);
+			return true;
+		} else if ( v.equals("3") ) {
+			config.protocol(SecsSimulatorProtocol.SECS1_ON_TCP_IP);
+			return true;
+		} else if ( v.equals("4") ) {
+			config.protocol(SecsSimulatorProtocol.SECS1_ON_TCP_IP_RECEIVER);
+			return true;
+		} else {
+			return false;
+		}
+	}
 	
-//	private void asyncSend(SmlMessage sm) {
-//		executorService().execute(() -> {
-//			try {
-//				send(sm);
-//			}
-//			catch ( InterruptedException ignore ) {
-//			}
-//			catch ( SecsSimulatorException e ) {
-//				echo(e);
-//			}
-//		});
-//	}
-//	
-//	private void asyncLinktest() {
-//		executorService().execute(() -> {
-//			try {
-//				linktest();
-//			}
-//			catch ( InterruptedException ignore ) {
-//			}
-//		});
-//	}
+	private static boolean enterSocketAddressConfig(BufferedReader br, AbstractSecsSimulatorConfig config) throws IOException {
+		try {
+			System.out.println("Enter SocketAddress (Format is \"aaa.bbb.ccc.ddd:nnnnn\")");
+			System.out.print(": ");
+			
+			String v = br.readLine().trim();
+			
+			config.socketAddress(v);
+			return true;
+		}
+		catch ( RuntimeException giveup ) {
+		}
+		return false;
+	}
+	
+	private static boolean enterDeviceIdConfig(BufferedReader br, AbstractSecsSimulatorConfig config) throws IOException {
+		try {
+			System.out.print("Enter Device-ID: ");
+			
+			String v = br.readLine().trim();
+			
+			int id = Integer.parseInt(v);
+			if ( id > 0 && id < 65536 ) {
+				config.deviceId(id);
+				return true;
+			}
+		}
+		catch ( NumberFormatException giveup ) {
+		}
+		return false;
+	}
+	
+	private static boolean enterIsEquipConfig(BufferedReader br, AbstractSecsSimulatorConfig config) throws IOException {
+		System.out.print("Enter (1: Equip, 2: Host): ");
+		
+		String v = br.readLine().trim();
+		
+		if ( v.equals("1") ) {
+			config.isEquip(true);
+			return true;
+		} else if ( v.equals("2") ) {
+			config.isEquip(false);
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	private static boolean enterIsMasterConfig(BufferedReader br, AbstractSecsSimulatorConfig config) throws IOException {
+		
+		System.out.print("Enter is-Master ? (1: yes, 2: no): ");
+		
+		String v = br.readLine().trim();
+		
+		if ( v.equals("1") ) {
+			config.isMaster(true);
+			return true;
+		} else if ( v.equals("2") ) {
+			config.isMaster(false);
+			return true;
+		} else {
+			return false;
+		}
+	}
 	
 	private static final Object syncEcho = new Object();
 	
@@ -158,7 +552,13 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 			} else {
 				System.out.println(o);
 			}
-			System.out.println();
 		}
 	}
+	
+	private static final String BR = System.lineSeparator();
+	
+	private static void echo(List<? extends Object> oo) {
+		echo(oo.stream().map(Object::toString).collect(Collectors.joining(BR)));
+	}
+	
 }
