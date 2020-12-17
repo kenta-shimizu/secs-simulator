@@ -12,7 +12,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.shimizukenta.secs.BooleanProperty;
 import com.shimizukenta.secs.PropertyChangeListener;
-import com.shimizukenta.secs.ReadOnlyBooleanProperty;
+import com.shimizukenta.secs.ReadOnlyProperty;
 import com.shimizukenta.secs.SecsCommunicatableStateChangeListener;
 import com.shimizukenta.secs.SecsCommunicator;
 import com.shimizukenta.secs.SecsException;
@@ -26,9 +26,16 @@ import com.shimizukenta.secs.secs2.Secs2;
 import com.shimizukenta.secs.sml.SmlMessage;
 import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.extendsml.ExtendSmlMessageParser;
-import com.shimizukenta.secssimulator.macro.MacroReportListener;
+import com.shimizukenta.secssimulator.logging.AbstractLoggingEngine;
+import com.shimizukenta.secssimulator.logging.LoggingEngine;
+import com.shimizukenta.secssimulator.macro.AbstractMacroEngine;
+import com.shimizukenta.secssimulator.macro.MacroEngine;
+import com.shimizukenta.secssimulator.macro.MacroRecipe;
 
 public abstract class AbstractSecsSimulator implements SecsSimulator {
+	
+	private final LoggingEngine loggingEngine = new AbstractLoggingEngine() {};
+	private final MacroEngine macroEngine = new AbstractMacroEngine() {};
 	
 	private final AbstractSecsSimulatorConfig config;
 	
@@ -39,6 +46,8 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		this.config = config;
 		this.secsComm = null;
 		this.tcpipAdapter = null;
+		
+		this.addSecsLogListener(this.loggingEngine::putLog);
 	}
 	
 	@Override
@@ -97,9 +106,19 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	}
 	
 	protected void notifyLog(SecsLog log) {
+		SecsLog simpleLog = toSimpleThrowableLog(log);
 		logListeners.forEach(l -> {
-			l.received(log);
+			l.received(simpleLog);
 		});
+	}
+	
+	private static SecsLog toSimpleThrowableLog(SecsLog log) {
+		Object o = log.value().orElse(null);
+		if ((o != null) && (o instanceof Throwable)) {
+			String s = o.getClass().getName();
+			return new SecsLog(log.subject(), log.timestamp(), s);
+		}
+		return log;
 	}
 	
 	
@@ -121,7 +140,12 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 				int strm = primaryMsg.getStream();
 				int func = primaryMsg.getFunction();
 				
-				if ( config.autoReply().get() ) {
+				if ( equalsDeviceId(primaryMsg) ) {
+					
+					
+				}
+
+				if ( config.autoReply().booleanValue() ) {
 					
 					final SmlMessage sml = config.smlAliasPairPool().optionalOnlyOneStreamFunction(strm, func).orElse(null);
 					
@@ -137,7 +161,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 					}
 				}
 				
-				if ( config.autoReplySxF0().get() ) {
+				if ( config.autoReplySxF0().booleanValue() ) {
 					
 					final LocalSecsMessage reply = autoReplySxF0(primaryMsg).orElse(null);
 					
@@ -151,7 +175,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 					}
 				}
 				
-				if ( config.autoReplyS9Fy().get() ) {
+				if ( config.autoReplyS9Fy().booleanValue() ) {
 					
 					final LocalSecsMessage s9fy = autoReplyS9Fy(primaryMsg).orElse(null);
 					
@@ -178,11 +202,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 				});
 			});
 			
-			comm.addSecsLogListener(log -> {
-				this.logListeners.forEach(l -> {
-					l.received(log);
-				});
-			});
+			comm.addSecsLogListener(this::notifyLog);
 			
 			if ( config.protocol().get() == SecsSimulatorProtocol.SECS1_ON_TCP_IP_RECEIVER ) {
 				
@@ -193,7 +213,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 				config.secs1OnTcpIpReceiverCommunicatorConfig().socketAddress(bx);
 				
 				tcpipAdapter.addThrowableListener((sock, t) -> {
-					//TODO
+					/* Nothing */
 				});
 			}
 			
@@ -244,13 +264,33 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	}
 
 	@Override
-	public void quitApplication() {
+	public void quitApplication() throws IOException {
+		
+		IOException ioExcept = null;
+		
 		try {
 			closeCommunicator();
-			stopLogging();
-			stopMacro();
 		}
-		catch (IOException giveup) {
+		catch (IOException e) {
+			ioExcept = e;
+		}
+		
+		try {
+			loggingEngine.close();
+		}
+		catch ( IOException e ) {
+			ioExcept = e;
+		}
+		
+		try {
+			macroEngine.close();
+		}
+		catch ( IOException e ) {
+			ioExcept = e;
+		}
+		
+		if (ioExcept != null) {
+			throw ioExcept;
 		}
 	}
 
@@ -263,8 +303,6 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	public SecsSimulatorProtocol protocol() {
 		return this.config.protocol().get();
 	}
-	
-	
 	
 	private Optional<SecsMessage> waitPrimaryMessage(SmlMessage sml) {
 		
@@ -321,7 +359,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			throw new SecsSimulatorSendException(e);
 		}
 	}
-
+	
 	@Override
 	public Optional<SecsMessage> send(SecsMessage primaryMsg, SmlMessage replySml) throws SecsSimulatorException, InterruptedException {
 		try {
@@ -478,57 +516,31 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	}
 	
 	
-	private static final Object commRefObj = new Object();
-	
-	protected SecsLog toSimpleThrowableLog(SecsLog log) {
-		
-		Object o = log.value().orElse(commRefObj);
-		
-		if (o instanceof Throwable) {
-			String s = o.getClass().getName();
-			return new SecsLog(log.subject(), log.timestamp(), s);
-		}
-		
-		return log;
-	}
-	
-	
 	/* Logging */
 	@Override
-	public void startLogging(Path path) throws IOException {
-		//TODO
+	public Optional<Path> startLogging(Path path) throws IOException, InterruptedException {
+		return this.loggingEngine.start(path);
 	}
 
 	@Override
-	public void stopLogging() {
-		//TODO
+	public Optional<Path> stopLogging() throws IOException, InterruptedException {
+		return this.loggingEngine.stop();
 	}
 	
-	protected ReadOnlyBooleanProperty logging() {
-		//TODO
-		return null;
+	protected ReadOnlyProperty<Path> loggingProperty() {
+		return this.loggingEngine.loggingProperty();
 	}
 	
 	
 	/* Macros */
 	@Override
-	public void startMacro(Path path) {
-		//TODO
+	public Optional<MacroRecipe> startMacro(MacroRecipe recipe) throws InterruptedException {
+		return this.macroEngine.start(recipe);
 	}
 	
 	@Override
-	public void stopMacro() {
-		//TODO
-	}
-	
-	public boolean addMacroReportListener(MacroReportListener l) {
-		//TODO
-		return false;
-	}
-	
-	public boolean removeMacroReportListener(MacroReportListener l) {
-		//TODO
-		return false;
+	public Optional<MacroRecipe> stopMacro() throws InterruptedException {
+		return this.macroEngine.stop();
 	}
 	
 	

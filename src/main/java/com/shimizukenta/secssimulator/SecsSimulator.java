@@ -7,6 +7,7 @@ import java.util.Optional;
 import com.shimizukenta.secs.SecsCommunicator;
 import com.shimizukenta.secs.SecsMessage;
 import com.shimizukenta.secs.sml.SmlMessage;
+import com.shimizukenta.secssimulator.macro.MacroRecipe;
 
 public interface SecsSimulator {
 	
@@ -44,10 +45,11 @@ public interface SecsSimulator {
 	public void closeCommunicator() throws IOException;
 	
 	/**
-	 * Quit application.
+	 * Quit Application
 	 * 
+	 * @throws IOException
 	 */
-	public void quitApplication();
+	public void quitApplication() throws IOException;
 	
 	/**
 	 * Communicator protocol setter.
@@ -110,22 +112,6 @@ public interface SecsSimulator {
 	 */
 	public boolean linktest() throws InterruptedException;
 	
-	
-//	/**
-//	 * Return sorted SML-Aliases list.
-//	 * 
-//	 * @return sorted SML-Aliases list
-//	 */
-//	public List<String> smlAliases();
-//	
-//	/**
-//	 * Returns SML if exist, {@code Optional.empty()} otherwise.
-//	 * 
-//	 * @param alias
-//	 * @return SmlMessage if exist
-//	 */
-//	public Optional<SmlMessage> sml(CharSequence alias);
-	
 	/**
 	 * Add SML
 	 * 
@@ -143,33 +129,40 @@ public interface SecsSimulator {
 	 */
 	public boolean removeSml(CharSequence alias);
 	
-	
 	/**
 	 * Start logging.
 	 * 
-	 * @param path
+	 * @param path of logging
+	 * @return Optional has value if start-logging success
 	 * @throws IOException
+	 * @throws InterruptedException
 	 */
-	public void startLogging(Path path) throws IOException;
+	public Optional<Path> startLogging(Path path) throws IOException, InterruptedException;
 	
 	/**
-	 * Stop logging
-	 */
-	public void stopLogging();
-	
-	
-	/**
-	 * Start Macro.
+	 * Stop logging.
 	 * 
-	 * @param path
+	 * @return Optional has value if stop-logging success
+	 * @throws IOException
+	 * @throws InterruptedException
 	 */
-	public void startMacro(Path path);
+	public Optional<Path> stopLogging() throws IOException, InterruptedException;
 	
 	/**
-	 * Stop Macro.
+	 * Start Macro-recipe.
+	 * 
+	 * @param recipe
+	 * @return Optional has value if start success
+	 * @throws InterruptedException
 	 */
-	public void stopMacro();
+	public Optional<MacroRecipe> startMacro(MacroRecipe recipe) throws InterruptedException;
 	
-	
+	/**
+	 * Stop Macro-recipe.
+	 * 
+	 * @return Optional has value if stop success
+	 * @throws InterruptedException
+	 */
+	public Optional<MacroRecipe> stopMacro() throws InterruptedException;
 	
 }

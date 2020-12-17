@@ -24,9 +24,9 @@ public enum CliCommand {
 	
 	LINKTEST(1, CliCommandManual.LINKTEST, "linktest"),
 	
-	LIST_SML(1, CliCommandManual.LIST_SML, "list"),
-	SHOW_SML(2, CliCommandManual.SHOW_SML, "show"),
-	ADD_SML(2, CliCommandManual.ADD_SML, "addfile", "add-file"),
+	LIST_SML(1, CliCommandManual.LIST_SML, "list", "list-sml"),
+	SHOW_SML(2, CliCommandManual.SHOW_SML, "show", "show-sml"),
+	ADD_SML(2, CliCommandManual.ADD_SML, "addsml", "add-sml"),
 	REMOVE_SML(2, CliCommandManual.REMOVE_SML, "removesml", "remove-sml"),
 	
 	PWD(1, CliCommandManual.PWD, "pwd"),
@@ -34,8 +34,8 @@ public enum CliCommand {
 	LS(2, CliCommandManual.LS, "ls"),
 	MKDIR(2, CliCommandManual.MKDIR, "mkdir"),
 	
-//	LOG(2, CliCommandManual.LOG, "log"),
-//	MACRO(2, CliCommandManual.MACRO, "macro"),
+	LOG(2, CliCommandManual.LOG, "log"),
+	MACRO(2, CliCommandManual.MACRO, "macro"),
 	
 	AUTO_REPLY(2, CliCommandManual.AUTO_REPLY, "autoreply", "auto-reply"),
 	AUTO_REPLY_S9Fy(2, CliCommandManual.AUTO_REPLY_S9Fy,
@@ -84,52 +84,5 @@ public enum CliCommand {
 		}
 		return UNDEFINED;
 	}
-	
-	
-//	private static final String BR = System.lineSeparator();
-//	
-//	private static final String descLine(CliCommand cmd) {
-//		
-//		List<String> cmds = new ArrayList<>();
-//		
-//		for ( String s : cmd.commands ) {
-//			cmds.add(s);
-//		}
-//		
-//		return cmds.stream().collect(Collectors.joining(" | ", "[ ", " ]"))
-//				+ " " + cmd.manual.description();
-//	}
-//	
-//	public static String getManuals() {
-//		
-//		List<String> lines = new ArrayList<>();
-//		
-//		for ( CliCommand cmd : values() ) {
-//			if ( cmd.manual != null ) {
-//				lines.add(descLine(cmd));
-//			}
-//		}
-//		
-//		return lines.stream().collect(Collectors.joining(BR));
-//	}
-//	
-//	public static String getDetailManual(CharSequence command) {
-//		
-//		CliCommand cmd = get(command);
-//		
-//		if ( cmd.manual == null ) {
-//			return "\"" + command.toString() + "\" has no manual";
-//		}
-//		
-//		List<String> lines = new ArrayList<>();
-//		
-//		lines.add(descLine(cmd));
-//		
-//		for ( String detail : cmd.manual.details() ) {
-//			lines.add(detail);
-//		}
-//		
-//		return lines.stream().collect(Collectors.joining(BR));
-//	}
 	
 }

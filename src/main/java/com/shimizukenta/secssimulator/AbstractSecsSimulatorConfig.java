@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 
 import com.shimizukenta.jsonhub.JsonHub;
 import com.shimizukenta.jsonhub.JsonHubBuilder;
@@ -43,10 +44,10 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 	private final SmlAliasPairPool smlPool = new SmlAliasPairPool();
 	
 	private final BooleanProperty autoOpen = BooleanProperty.newInstance(false);
-	
+	private Path autoLogging;
 	
 	public AbstractSecsSimulatorConfig() {
-		/* Nothing */
+		this.autoLogging = null;
 	}
 	
 	public BooleanProperty autoReply() {
@@ -65,6 +66,17 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 		return autoOpen;
 	}
 	
+	public Optional<Path> autoLogging() {
+		synchronized ( this ) {
+			return autoLogging == null ? Optional.empty() : Optional.of(autoLogging);
+		}
+	}
+	
+	public void autoLogging(Path logPath) {
+		synchronized ( this ) {
+			this.autoLogging = logPath;
+		}
+	}
 	
 	public HsmsSsCommunicatorConfig hsmsSsCommunicatorConfig() {
 		return hsmsSsCommConfig;
@@ -300,7 +312,8 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 				jhb.pair("autoReplyS9Fy", this.autoReplyS9Fy().booleanValue()),
 				jhb.pair("autoReplySxF0", this.autoReplySxF0().booleanValue()),
 				jhb.pair("smlFiles", this.smlAliasPairPool().getJsonHub()),
-				jhb.pair("autoOpen", this.autoOpen().booleanValue())
+				jhb.pair("autoOpen", this.autoOpen().booleanValue()),
+				jhb.pair("autoLogging", this.autoLogging().map(Path::normalize).map(Path::toString).orElse(null))
 				);
 	}
 	
@@ -360,6 +373,7 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 		setSmlAliasPairs(jh.getOrDefault("smlFiles"));
 		
 		jh.getOrDefault("autoOpen").optionalBoolean().ifPresent(this.autoOpen::set);
+		jh.getOrDefault("autoLogging").optionalString().map(Paths::get).ifPresent(this::autoLogging);
 	}
 	
 	protected void setCommunicatorByJson(JsonHub jh) {

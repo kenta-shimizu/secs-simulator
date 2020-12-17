@@ -2,6 +2,7 @@ package com.shimizukenta.secssimulator;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -201,6 +202,7 @@ public class SmlAliasPairPool {
 	public JsonHub getJsonHub() {
 		final JsonHubBuilder jhb = JsonHub.getBuilder();
 		List<JsonHub> ll = pairs.stream()
+				.filter(a -> Objects.nonNull(a.path()))
 				.map(a -> {
 					return jhb.object(
 							jhb.pair("alias", a.alias()),

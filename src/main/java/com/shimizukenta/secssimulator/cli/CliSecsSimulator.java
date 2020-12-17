@@ -7,9 +7,13 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -18,10 +22,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.shimizukenta.secs.sml.SmlMessage;
+import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.AbstractSecsSimulator;
 import com.shimizukenta.secssimulator.AbstractSecsSimulatorConfig;
 import com.shimizukenta.secssimulator.SecsSimulatorException;
 import com.shimizukenta.secssimulator.SecsSimulatorProtocol;
+import com.shimizukenta.secssimulator.SmlAliasPair;
 
 public class CliSecsSimulator extends AbstractSecsSimulator {
 	
@@ -41,20 +47,32 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 	}
 	
 	@Override
-	public void quitApplication() {
+	public void quitApplication() throws IOException {
+		
+		IOException ioExcept = null;
+		
 		try {
 			execServ.shutdown();
 			if ( ! execServ.awaitTermination(1L, TimeUnit.MILLISECONDS) ) {
 				execServ.shutdownNow();
 				if ( ! execServ.awaitTermination(10L, TimeUnit.SECONDS) ) {
-					echo("ExecutorService#shutdown failed");
+					ioExcept = new IOException("ExecutorService#shutdown failed");
 				}
 			}
 		}
 		catch ( InterruptedException giveup ) {
 		}
 		
-		super.quitApplication();
+		try {
+			super.quitApplication();
+		}
+		catch ( IOException e ) {
+			ioExcept = e;
+		}
+		
+		if ( ioExcept != null ) {
+			throw ioExcept;
+		}
 	}
 	
 	private Optional<Path> loadConfig(String v) {
@@ -95,17 +113,24 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 					"IS-MASTER: " + config.secs1OnTcpIpCommunicatorConfig().isMaster().booleanValue(),
 					"Auto-Reply: " + config.autoReply().booleanValue(),
 					"Auto-Reply-S9Fy: " + config.autoReplyS9Fy().booleanValue(),
-					"Auto-Reply-SxF0: " + config.autoReplySxF0().booleanValue()
+					"Auto-Reply-SxF0: " + config.autoReplySxF0().booleanValue(),
+					"Logging: " + this.loggingProperty().get()
 					);
 		}
 	}
 	
 	private Optional<String> addSml(String v) {
-		
-		//TODO
-		
-		
-		return Optional.empty();
+		synchronized ( this ) {
+			try {
+				SmlAliasPair pair = SmlAliasPair.fromFile(this.pwd.resolve(v));
+				if ( config.smlAliasPairPool().add(pair) ) {
+					return Optional.of(pair.alias());
+				}
+			}
+			catch ( InvalidPathException | IOException | SmlParseException giveup ) {
+			}
+			return Optional.empty();
+		}
 	}
 	
 	private Path presentWorkingDirectory() {
@@ -179,6 +204,39 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 		});
 	}
 	
+	private Optional<Path> startLogging(String v) {
+		synchronized ( this ) {
+			try {
+				return this.startLogging(this.pwd.resolve(v));
+			}
+			catch ( InvalidPathException giveup ) {
+			}
+			return Optional.empty();
+		}
+	}
+	
+	@Override
+	public Optional<Path> startLogging(Path path) {
+		synchronized ( this ) {
+			try {
+				return super.startLogging(path);
+			}
+			catch ( IOException | InterruptedException giveup ) {
+			}
+			return Optional.empty();
+		}
+	}
+	
+	@Override
+	public Optional<Path> stopLogging() {
+		try {
+			return super.stopLogging();
+		}
+		catch (IOException | InterruptedException giveup) {
+		}
+		return Optional.empty();
+	}
+	
 	private void autoReply(String v) {
 		if ( v == null ) {
 			config.autoReply().set(! config.autoReply().booleanValue());
@@ -212,13 +270,25 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 			
 			boolean configLoaded = false;
 			
-			for ( int i = 0, m = args.length; i < m; i += 2 ) {
-				String key = args[i];
-				String v = args[i + 1];
-				if ( key.equalsIgnoreCase("--config") ) {
+			{
+				final Map<String, List<String>> map = new HashMap<>();
+				
+				for ( int i = 0, m = args.length; i < m; i += 2 ) {
+					map.computeIfAbsent(args[i], k -> new ArrayList<>()).add(args[i + 1]);
+				}
+				
+				for ( String v : map.getOrDefault("--config", Collections.emptyList()) ) {
 					if ( config.load(Paths.get(v)) ) {
 						configLoaded = true;
 					}
+				}
+				
+				for ( String v : map.getOrDefault("--auto-open", Collections.emptyList()) ) {
+					config.autoOpen().set(Boolean.parseBoolean(v));
+				}
+				
+				for ( String v : map.getOrDefault("--auto-logging", Collections.emptyList()) ) {
+					config.autoLogging(Paths.get(v));
 				}
 			}
 			
@@ -240,14 +310,14 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 							enterConfig(br, config);
 						}
 						
-						echo("");
 						echo("Simulator started");
 						
 						
-						//TODO
-						//auto-logging
-						
-						
+						simm.config.autoLogging().ifPresent(v -> {
+							simm.startLogging(v).ifPresent(path -> {
+								echo("Logging start: " + path);
+							});
+						});
 						
 						if ( simm.config.autoOpen().booleanValue() ) {
 							try {
@@ -271,9 +341,12 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 							
 							switch ( req.command() ) {
 							case MANUAL: {
-								
-								//TODO
-								
+								String v = req.option(0).orElse(null);
+								if ( v == null ) {
+									echoManual();
+								} else {
+									echoManual(v);
+								}
 								break;
 							}
 							case QUIT: {
@@ -344,7 +417,11 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 								break;
 							}
 							case REMOVE_SML: {
-								req.option(0).ifPresent(simm::removeSml);
+								req.option(0).ifPresent(alias -> {
+									if ( simm.removeSml(alias) ) {
+										echo("Remove-SML: " + alias);
+									}
+								});
 								break;
 							}
 							case SEND_SML: {
@@ -381,6 +458,25 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 								});
 								break;
 							}
+							case LOG: {
+								String v = req.option(0).orElse(null);
+								if ( v == null ) {
+									simm.stopLogging().ifPresent(path -> {
+										echo("Logging stop: " + path);
+									});
+								} else {
+									simm.startLogging(v).ifPresent(path -> {
+										echo("Logging start: " + path);
+									});
+								}
+								break;
+							}
+							case MACRO: {
+								
+								//TODO
+								
+								break;
+							}
 							case AUTO_REPLY: {
 								simm.autoReply(req.option(0).orElse(null));
 								break;
@@ -402,7 +498,13 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 				}
 			}
 			finally {
-				simm.quitApplication();
+				
+				try {
+					simm.quitApplication();
+				}
+				catch (IOException e ) {
+					echo(e);
+				}
 			}
 		}
 		catch ( Throwable t ) {
@@ -541,6 +643,36 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 		} else {
 			return false;
 		}
+	}
+	
+	private static void echoManual() {
+		List<String> ss = Stream.of(CliCommand.values())
+				.filter(c -> Objects.nonNull(c.manual()))
+				.filter(c -> c.commands().length > 0)
+				.map(c -> {
+					return commandArrayString(c) + " " + c.manual().description();
+				})
+				.collect(Collectors.toList());
+		echo(ss);
+	}
+	
+	private static void echoManual(String v) {
+		CliCommand c = CliCommand.get(v);
+		CliCommandManual m = CliCommand.get(v).manual();
+		if ( m != null ) {
+			List<String> ss = new ArrayList<>();
+			ss.add(m.description());
+			ss.add(commandArrayString(c));
+			for ( String s : m.details() ) {
+				ss.add(s);
+			}
+			echo(ss);
+		}
+	}
+	
+	private static String commandArrayString(CliCommand c) {
+		return Stream.of(c.commands())
+				.collect(Collectors.joining("\", \"", "[ \"", "\" ]"));
 	}
 	
 	private static final Object syncEcho = new Object();
