@@ -44,10 +44,6 @@ public enum CliCommandManual {
 			"if has option (path/to/file.log), logging start.",
 			"if has no option, logging stop",
 			"if already started, stop and restart."),
-	MACRO("Macro start/stop",
-			"if has option (path/to/file.macro), macro start.",
-			"if has not option, macro stop.",
-			"if already started, stop and restart."),
 	
 	AUTO_REPLY("Switch Auto Reply",
 			"if has option (true/false), set option value",
@@ -58,6 +54,16 @@ public enum CliCommandManual {
 	AUTO_REPLY_SxF0("Switch Auto Reply SxF0",
 			"if has option (true/false), set option value",
 			"if has no option, toggle value"),
+	
+	MACRO("Macro start/stop",
+			"if has option (path/to/file.macro), macro start.",
+			"if has not option, macro stop.",
+			"if already started, stop and restart."),
+	MACROS("Macro Macros"),
+	ADD_MACRO("Add Macro",
+			"option is path/to/file.macro"),
+	REMOVE_MACRO("Remove Macro",
+			"option is Alias-Name of Macro"),
 	
 	;
 	

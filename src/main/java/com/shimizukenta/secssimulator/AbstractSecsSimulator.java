@@ -89,11 +89,11 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	/* state-changed-listener */
 	private final BooleanProperty communicateState = BooleanProperty.newInstance(false);
 	
-	protected boolean addSecsCommunicatableStateChangeListener(SecsCommunicatableStateChangeListener lstnr) {
+	public boolean addSecsCommunicatableStateChangeListener(SecsCommunicatableStateChangeListener lstnr) {
 		return communicateState.addChangeListener(lstnr::changed);
 	}
 	
-	protected boolean removeSecsCommunicatableStateChangeListener(SecsCommunicatableStateChangeListener lstnr) {
+	public boolean removeSecsCommunicatableStateChangeListener(SecsCommunicatableStateChangeListener lstnr) {
 		return communicateState.removeChangeListener(lstnr::changed);
 	}
 	
@@ -105,11 +105,11 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	/* receive-message-listener */
 	private final Collection<SecsMessageReceiveListener> recvMsgListeners = new CopyOnWriteArrayList<>();
 	
-	protected boolean addSecsMessageReceiveListener(SecsMessageReceiveListener lstnr) {
+	public boolean addSecsMessageReceiveListener(SecsMessageReceiveListener lstnr) {
 		return recvMsgListeners.add(lstnr);
 	}
 	
-	protected boolean removeSecsMessageReceiveListener(SecsMessageReceiveListener lstnr) {
+	public boolean removeSecsMessageReceiveListener(SecsMessageReceiveListener lstnr) {
 		return recvMsgListeners.remove(lstnr);
 	}
 	
@@ -401,7 +401,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return config.smlAliasPairPool().aliases();
 	}
 	
-	protected Optional<SmlMessage> optionalSmlAlias(CharSequence alias) {
+	public Optional<SmlMessage> optionalSmlAlias(CharSequence alias) {
 		return config.smlAliasPairPool().optionalAlias(alias);
 	}
 	
@@ -581,11 +581,11 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 					
 					if ( config.smlAliasPairPool().hasReplyMessages(strm) ) {
 						
-						return Optional.of(new LocalSecsMessage(9, 3, false, Secs2.binary(primary.header10Bytes())));
+						return Optional.of(new LocalSecsMessage(9, 5, false, Secs2.binary(primary.header10Bytes())));
 						
 					} else {
 						
-						return Optional.of(new LocalSecsMessage(9, 5, false, Secs2.binary(primary.header10Bytes())));
+						return Optional.of(new LocalSecsMessage(9, 3, false, Secs2.binary(primary.header10Bytes())));
 					}
 				}
 			}
@@ -633,8 +633,27 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return this.macroEngine.stop();
 	}
 	
-	protected List<String> macroAliases() {
+	@Override
+	public List<String> macroRecipeAliases() {
 		return this.config.macroRecipePairPool().aliases();
+	}
+	
+	@Override
+	public Optional<MacroRecipe> addMacroRecipe(MacroRecipe r) {
+		MacroRecipePair pair = new MacroRecipePair(r, null);
+		boolean f = config.macroRecipePairPool().add(pair);
+		return f ? Optional.of(r) : Optional.empty();
+	}
+	
+	@Override
+	public Optional<MacroRecipe> removeMacroRecipe(CharSequence macroRecipeAlias) {
+		MacroRecipe r = config.macroRecipePairPool().optionalAlias(macroRecipeAlias).orElse(null);
+		if ( r != null ) {
+			if ( config.macroRecipePairPool().remove(macroRecipeAlias) ) {
+				return Optional.of(r);
+			}
+		}
+		return Optional.empty();
 	}
 	
 	protected Optional<MacroRecipe> optionalMacroRecipeAlias(CharSequence alias) {

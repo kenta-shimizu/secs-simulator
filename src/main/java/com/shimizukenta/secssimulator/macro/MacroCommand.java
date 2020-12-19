@@ -10,7 +10,7 @@ public enum MacroCommand {
 	SEND_SML_ALIAS("send-sml-alias", "sendsmlalias"),
 	SEND_SML_DIRECT("send-sml-direct", "sendsmldirect"),
 	
-	WAIT("wait-sxfy", "wait", "waitsxfy"),
+	WAIT_SxFy("wait-sxfy", "wait", "waitsxfy"),
 	
 	SLEEP("sleep"),
 	

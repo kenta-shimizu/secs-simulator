@@ -1,7 +1,8 @@
 package com.shimizukenta.secssimulator.macro;
 
-import com.shimizukenta.secssimulator.SecsSimulator;
+import com.shimizukenta.secs.ReadOnlyProperty;
+import com.shimizukenta.secssimulator.AbstractSecsSimulator;
 
 public interface MacroTask {
-	public void execute(SecsSimulator simm) throws InterruptedException, Exception;
+	public void execute(AbstractSecsSimulator simm, ReadOnlyProperty<Integer> lastRecvSxFy) throws InterruptedException, Exception;
 }

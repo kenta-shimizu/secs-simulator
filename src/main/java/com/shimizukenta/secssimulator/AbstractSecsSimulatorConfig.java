@@ -321,7 +321,7 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 				jhb.pair("autoReplyS9Fy", this.autoReplyS9Fy().booleanValue()),
 				jhb.pair("autoReplySxF0", this.autoReplySxF0().booleanValue()),
 				jhb.pair("smlFiles", this.smlAliasPairPool().getJsonHub()),
-				jhb.pair("macroFiles", this.macroRecipePairPool().getJsonHub()),
+				jhb.pair("macroRecipeFiles", this.macroRecipePairPool().getJsonHub()),
 				jhb.pair("autoOpen", this.autoOpen().booleanValue()),
 				jhb.pair("autoLogging", this.autoLogging().map(Path::normalize).map(Path::toString).orElse(null))
 				);
@@ -381,7 +381,7 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 		jh.getOrDefault("autoReplySxF0").optionalBoolean().ifPresent(this.autoReplySxF0::set);
 		
 		setSmlAliasPairs(jh.getOrDefault("smlFiles"));
-		setMacroRecipePairs(jh.getOrDefault("macroFiles"));
+		setMacroRecipePairs(jh.getOrDefault("macroRecipeFiles"));
 		
 		jh.getOrDefault("autoOpen").optionalBoolean().ifPresent(this.autoOpen::set);
 		jh.getOrDefault("autoLogging").optionalString().map(Paths::get).ifPresent(this::autoLogging);
@@ -441,7 +441,7 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 		for ( JsonHub jhp : jh ) {
 			
 			try {
-				Path path = jhp.getOrDefault("path").optionalString().map(Paths::get).get();
+				Path path = jhp.getOrDefault("path").optionalString().map(Paths::get).orElse(null);
 				
 				if ( path != null ) {
 					
@@ -487,9 +487,42 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 		
 		Collection<MacroRecipePair> pairs = new HashSet<>();
 		
-		
-		//TODO
-		
+		for ( JsonHub jhp : jh ) {
+			Path path = jhp.getOrDefault("path").optionalString().map(Paths::get).orElse(null);
+			
+			if ( path != null ) {
+				if ( path != null ) {
+					
+					if ( Files.isDirectory(path) ) {
+						
+						try (
+								DirectoryStream<Path> macroRecipePaths = Files.newDirectoryStream(path, "*.macro");
+								) {
+							
+							for ( Path mrPath : macroRecipePaths ) {
+								
+								if ( ! Files.isDirectory(mrPath) ) {
+									pairs.add(MacroRecipePair.fromFile(mrPath));
+								}
+							}
+						}
+						
+					} else {
+						
+						String alias = jhp.getOrDefault("alias").optionalString().orElse(null);
+						
+						if ( alias == null ) {
+							
+							pairs.add(MacroRecipePair.fromFile(path));
+							
+						} else {
+							
+							pairs.add(MacroRecipePair.fromFile(alias, path));
+						}
+					}
+				}
+			}
+		}
 		
 		this.macroPool.clear();
 		this.macroPool.addAll(pairs);

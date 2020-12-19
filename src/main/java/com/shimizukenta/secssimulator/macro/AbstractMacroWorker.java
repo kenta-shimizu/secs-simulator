@@ -10,8 +10,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.shimizukenta.secs.Property;
 import com.shimizukenta.secs.PropertyChangeListener;
-import com.shimizukenta.secssimulator.SecsSimulator;
+import com.shimizukenta.secssimulator.AbstractSecsSimulator;
 
 public abstract class AbstractMacroWorker implements MacroWorker {
 	
@@ -20,32 +21,47 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 	
 	private final int id;
 	private final MacroRecipe recipe;
-	private final SecsSimulator simm;
+	private final AbstractSecsSimulator simm;
 	private final ExecutorService execServ;
 	
-	private boolean canceled;
+	private boolean cancelled;
 	private boolean done;
+	private boolean failed;
 	private int step;
+	private Property<Integer> lastRecvSxFy = Property.newInstance(Integer.valueOf(-1));
 	
 	public AbstractMacroWorker(int id, MacroRecipe recipe,
-			SecsSimulator simm,
+			AbstractSecsSimulator simm,
 			ExecutorService execServ) {
 		
 		this.id = id;
 		this.recipe = recipe;
 		this.simm = simm;
 		this.execServ = execServ;
-		this.canceled = false;
+		this.cancelled = false;
 		this.done = false;
+		this.failed = false;
 		this.step = -1;
+		
+		simm.addSecsCommunicatableStateChangeListener(f -> {
+			this.lastRecvSxFy.set(Integer.valueOf(-1));
+		});
+		
+		simm.addSecsMessageReceiveListener(msg -> {
+			int strm = msg.getStream();
+			if ( strm >= 0) {
+				int func = msg.getFunction();
+				this.lastRecvSxFy.set(Integer.valueOf((strm << 8) + func));
+			}
+		});
 	}
 	
 	@Override
 	public boolean cancel(boolean mayInterruptIfRunning) {
 		synchronized ( sync ) {
 			synchronized ( this.abortTask ) {
-				if ( ! canceled && ! done ) {
-					this.canceled = true;
+				if ( ! cancelled && ! done ) {
+					this.cancelled = true;
 					this.abortTask.notifyAll();
 					return true;
 				} else {
@@ -58,7 +74,7 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 	@Override
 	public boolean isCancelled() {
 		synchronized ( sync ) {
-			return this.canceled;
+			return this.cancelled;
 		}
 	}
 	
@@ -85,27 +101,36 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 				() -> {
 					try {
 						
-						synchronized ( sync ) {
-							this.step = 0;
-						}
-						notifyStateChanged(this);
+						int m = recipe.tasks().size();
 						
-						for ( MacroTask task : recipe.tasks() ) {
-							task.execute(simm);
+						for ( ;; ) {
 							
 							synchronized ( sync ) {
 								this.step += 1;
+								if ( this.step >= m ) {
+									break;
+								}
 							}
 							notifyStateChanged(this);
+							
+							recipe.tasks().get(this.step).execute(simm, lastRecvSxFy);
 						}
+					}
+					catch ( InterruptedException ignore ) {
+					}
+					catch ( Exception e ) {
+						synchronized ( sync ) {
+							this.failed = true;
+						}
+					}
+					finally {
 						
 						synchronized ( sync ) {
 							this.done = true;
 						}
 						notifyStateChanged(this);
 					}
-					catch ( InterruptedException ignore ) {
-					}
+					
 					return null;
 				},
 				() -> {
@@ -123,6 +148,13 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 	}
 	
 	@Override
+	public boolean failed() {
+		synchronized ( sync ) {
+			return this.failed;
+		}
+	}
+	
+	@Override
 	public int id() {
 		return this.id;
 	}
@@ -135,7 +167,7 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 	@Override
 	public int step() {
 		synchronized ( sync ) {
-			return this.step;
+			return this.step + 1;
 		}
 	}
 	
@@ -188,17 +220,53 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 	
 	@Override
 	public boolean equals(Object other) {
-		
-		//TODO
-		
+		if ( other != null && (other instanceof AbstractMacroWorker)) {
+			return ((AbstractMacroWorker)other).id == id;
+		}
 		return false;
 	}
 	
 	@Override
 	public String toString() {
-		
-		//TODO
-		
-		return "";
+		synchronized ( sync ) {
+			StringBuilder sb = new StringBuilder("ID: ")
+					.append(id())
+					.append(", \"")
+					.append(recipe().alias())
+					.append("\", ");
+			
+			if ( isCancelled() ) {
+				
+				sb.append("cancelled");
+				
+			} else if ( failed() ) {
+				
+				sb.append("failed, ")
+				.append(step())
+				.append("/")
+				.append(this.taskCount());
+				
+			} else if ( isDone() ) {
+				
+				sb.append("completed");
+				
+			} else {
+				
+				int s = step();
+				
+				if ( s > 0 ) {
+					
+					sb.append(s)
+					.append("/")
+					.append(this.taskCount());
+					 
+				} else {
+					
+					sb.append("yet");
+				}
+			}
+			
+			return sb.toString();
+		}
 	}
 }

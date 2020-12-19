@@ -14,29 +14,56 @@ public class MacroRecipe implements Serializable {
 	private final String alias;
 	private final List<MacroTask> tasks;
 	
-	public MacroRecipe(String alias, List<MacroTask> tasks) {
-		this.alias = Objects.requireNonNull(alias);
+	public MacroRecipe(CharSequence alias, List<? extends MacroTask> tasks) {
+		this.alias = Objects.requireNonNull(alias).toString();
 		this.tasks = Collections.unmodifiableList(tasks);
 	}
 	
+	/**
+	 * Crate Macro-Recipe instance from file-path.
+	 * 
+	 * @param alias
+	 * @param path
+	 * @return Macro-Recipe instance
+	 * @throws MacroRecipeParseException
+	 * @throws IOException
+	 */
 	public static MacroRecipe fromFile(CharSequence alias, Path path) throws MacroRecipeParseException, IOException {
-		
-		//TODO
-		
-		return null;
+		return new MacroRecipe(alias, MacroTaskBuilder.getInstance().build(path));
 	}
 	
+	private static final String SmlExtension = ".macro";
+	
+	/**
+	 * Crate Macro-Recipe instance from file-path.
+	 * 
+	 * @param path
+	 * @return Macro-Recipe instance
+	 * @throws MacroRecipeParseException
+	 * @throws IOException
+	 */
 	public static MacroRecipe fromFile(Path path) throws MacroRecipeParseException, IOException {
-		
-		//TODO
-		
-		return null;
+		String alias = path.getFileName().toString();
+		if ( alias.endsWith(SmlExtension) ) {
+			alias = alias.substring(0, alias.length() - SmlExtension.length());
+		}
+		return fromFile(alias, path);
 	}
 	
+	/**
+	 * Returns alias.
+	 * 
+	 * @return alias
+	 */
 	public String alias() {
 		return this.alias;
 	}
 	
+	/**
+	 * Returns list of tasks.
+	 * 
+	 * @return list of tasks
+	 */
 	public List<MacroTask> tasks() {
 		return tasks;
 	}

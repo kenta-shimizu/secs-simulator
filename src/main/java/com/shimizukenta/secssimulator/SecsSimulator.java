@@ -192,4 +192,27 @@ public interface SecsSimulator {
 	 */
 	public List<MacroWorker> stopMacro() throws InterruptedException;
 	
+	/**
+	 * Returns Macro-recipe-alias list.
+	 * 
+	 * @return Macro-recipe-alias list.
+	 */
+	public List<String> macroRecipeAliases();
+	
+	/**
+	 * Add Macro-recipe.
+	 * 
+	 * @param r
+	 * @return Optional has value if add success, otherwise {@code Optional.empty()}
+	 */
+	public Optional<MacroRecipe> addMacroRecipe(MacroRecipe r);
+	
+	/**
+	 * Remove Macro-recipe.
+	 * 
+	 * @param r
+	 * @return Optional has removed-recipe if remove success, otherwise {@code Optional.empty()}
+	 */
+	public Optional<MacroRecipe> removeMacroRecipe(CharSequence macroRecipeAlias);
+	
 }

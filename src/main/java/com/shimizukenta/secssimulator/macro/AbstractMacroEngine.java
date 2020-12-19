@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.shimizukenta.secs.PropertyChangeListener;
-import com.shimizukenta.secssimulator.SecsSimulator;
+import com.shimizukenta.secssimulator.AbstractSecsSimulator;
 
 public abstract class AbstractMacroEngine implements MacroEngine {
 	
@@ -28,10 +28,10 @@ public abstract class AbstractMacroEngine implements MacroEngine {
 	
 	private final Object sync = new Object();
 	
-	private final SecsSimulator simm;
+	private final AbstractSecsSimulator simm;
 	private boolean closed;
 	
-	public AbstractMacroEngine(SecsSimulator simm) {
+	public AbstractMacroEngine(AbstractSecsSimulator simm) {
 		this.simm = simm;
 		this.closed = false;
 	}

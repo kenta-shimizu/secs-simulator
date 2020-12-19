@@ -8,6 +8,13 @@ import com.shimizukenta.secs.PropertyChangeListener;
 public interface MacroWorker extends Future<Void> {
 	
 	/**
+	 * Returns {@code true} if macro failed.
+	 * 
+	 * @return {@code true} if macro failed
+	 */
+	public boolean failed();
+	
+	/**
 	 * Returns id.
 	 * 
 	 * @return id
@@ -24,7 +31,7 @@ public interface MacroWorker extends Future<Void> {
 	/**
 	 * Returns step of tasks.
 	 * 
-	 * @return step, -1 if not started
+	 * @return step, 0 if not started
 	 */
 	public int step();
 	

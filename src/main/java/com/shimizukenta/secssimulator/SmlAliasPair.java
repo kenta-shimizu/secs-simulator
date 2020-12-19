@@ -67,7 +67,7 @@ public class SmlAliasPair implements Comparable<SmlAliasPair>, Serializable {
 	private static final String SmlExtension = ".sml";
 	
 	/**
-	 * Create CmlAliasPair instance.
+	 * Create SmlAliasPair instance.
 	 * 
 	 * @param path
 	 * @return SmlAliasPair instance

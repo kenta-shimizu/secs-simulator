@@ -35,13 +35,19 @@ public enum CliCommand {
 	MKDIR(2, CliCommandManual.MKDIR, "mkdir"),
 	
 	LOG(2, CliCommandManual.LOG, "log"),
-	MACRO(2, CliCommandManual.MACRO, "macro"),
 	
 	AUTO_REPLY(2, CliCommandManual.AUTO_REPLY, "autoreply", "auto-reply"),
 	AUTO_REPLY_S9Fy(2, CliCommandManual.AUTO_REPLY_S9Fy,
 			"autoreplys9fy", "auto-reply-s9fy", "autos9fy", "auto-s9fy"),
 	AUTO_REPLY_SxF0(2, CliCommandManual.AUTO_REPLY_SxF0,
 			"autoreplysxf0", "auto-reply-sxf0", "autosxf0", "auto-sxf0"),
+	
+	MACRO(2, CliCommandManual.MACRO, "macro"),
+	LIST_MACRO(1, CliCommandManual.MACROS, "macros"),
+	ADD_MACRO(2, CliCommandManual.ADD_MACRO,
+			"addmacro", "add-macro"),
+	REMOVE_MACRO(2, CliCommandManual.REMOVE_MACRO,
+			"removemacro", "remove-macro"),
 	
 	;
 	
