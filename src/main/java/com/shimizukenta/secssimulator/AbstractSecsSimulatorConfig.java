@@ -25,6 +25,7 @@ import com.shimizukenta.secs.hsmsss.HsmsSsCommunicatorConfig;
 import com.shimizukenta.secs.hsmsss.HsmsSsProtocol;
 import com.shimizukenta.secs.secs1ontcpip.Secs1OnTcpIpCommunicatorConfig;
 import com.shimizukenta.secs.sml.SmlParseException;
+import com.shimizukenta.secssimulator.macro.MacroRecipeParseException;
 
 public abstract class AbstractSecsSimulatorConfig implements Serializable {
 	
@@ -42,6 +43,7 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 	private final Property<SocketAddress> secs1AdapterSocketAddress = Property.newInstance(null);
 	
 	private final SmlAliasPairPool smlPool = new SmlAliasPairPool();
+	private final MacroRecipePairPool macroPool = new MacroRecipePairPool();
 	
 	private final BooleanProperty autoOpen = BooleanProperty.newInstance(false);
 	private Path autoLogging;
@@ -233,6 +235,10 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 		return smlPool;
 	}
 	
+	public MacroRecipePairPool macroRecipePairPool() {
+		return macroPool;
+	}
+	
 	/**
 	 * Save config to path-file.
 	 * 
@@ -257,7 +263,10 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 			try {
 				this.setByJson(JsonHub.fromFile(path));
 			}
-			catch ( SmlParseException e ) {
+			catch ( SmlParseException e) {
+				throw new IOException(e);
+			}
+			catch ( MacroRecipeParseException e ) {
 				throw new IOException(e);
 			}
 			return true;
@@ -312,6 +321,7 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 				jhb.pair("autoReplyS9Fy", this.autoReplyS9Fy().booleanValue()),
 				jhb.pair("autoReplySxF0", this.autoReplySxF0().booleanValue()),
 				jhb.pair("smlFiles", this.smlAliasPairPool().getJsonHub()),
+				jhb.pair("macroFiles", this.macroRecipePairPool().getJsonHub()),
 				jhb.pair("autoOpen", this.autoOpen().booleanValue()),
 				jhb.pair("autoLogging", this.autoLogging().map(Path::normalize).map(Path::toString).orElse(null))
 				);
@@ -362,7 +372,7 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 		return jhb.object(pairs);
 	}
 	
-	protected void setByJson(JsonHub jh) throws SmlParseException, IOException {
+	protected void setByJson(JsonHub jh) throws SmlParseException, MacroRecipeParseException, IOException {
 		
 		setCommunicatorByJson(jh.getOrDefault("communicator"));
 		
@@ -371,6 +381,7 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 		jh.getOrDefault("autoReplySxF0").optionalBoolean().ifPresent(this.autoReplySxF0::set);
 		
 		setSmlAliasPairs(jh.getOrDefault("smlFiles"));
+		setMacroRecipePairs(jh.getOrDefault("macroFiles"));
 		
 		jh.getOrDefault("autoOpen").optionalBoolean().ifPresent(this.autoOpen::set);
 		jh.getOrDefault("autoLogging").optionalString().map(Paths::get).ifPresent(this::autoLogging);
@@ -470,6 +481,18 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 		
 		this.smlPool.clear();
 		this.smlPool.addAll(pairs);
+	}
+	
+	protected void setMacroRecipePairs(JsonHub jh) throws MacroRecipeParseException, IOException {
+		
+		Collection<MacroRecipePair> pairs = new HashSet<>();
+		
+		
+		//TODO
+		
+		
+		this.macroPool.clear();
+		this.macroPool.addAll(pairs);
 	}
 	
 	protected static SocketAddress parseSocketAddress(CharSequence cs) {

@@ -2,12 +2,14 @@ package com.shimizukenta.secssimulator;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 
 import com.shimizukenta.secs.SecsCommunicator;
 import com.shimizukenta.secs.SecsMessage;
 import com.shimizukenta.secs.sml.SmlMessage;
 import com.shimizukenta.secssimulator.macro.MacroRecipe;
+import com.shimizukenta.secssimulator.macro.MacroWorker;
 
 public interface SecsSimulator {
 	
@@ -50,6 +52,13 @@ public interface SecsSimulator {
 	 * @throws IOException
 	 */
 	public void quitApplication() throws IOException;
+	
+	/**
+	 * Wait until communicated, blocking-method.
+	 * 
+	 * @throws InterruptedException
+	 */
+	public void waitUntilCommunicatable() throws InterruptedException;
 	
 	/**
 	 * Communicator protocol setter.
@@ -155,14 +164,32 @@ public interface SecsSimulator {
 	 * @return Optional has value if start success
 	 * @throws InterruptedException
 	 */
-	public Optional<MacroRecipe> startMacro(MacroRecipe recipe) throws InterruptedException;
+	public Optional<MacroWorker> startMacro(MacroRecipe recipe) throws InterruptedException;
 	
 	/**
-	 * Stop Macro-recipe.
+	 * Stop Macro-worker.
 	 * 
+	 * @param worker
 	 * @return Optional has value if stop success
 	 * @throws InterruptedException
 	 */
-	public Optional<MacroRecipe> stopMacro() throws InterruptedException;
+	public Optional<MacroWorker> stopMacro(MacroWorker worker) throws InterruptedException;
+	
+	/**
+	 * Stop Macro-worker by id.
+	 * 
+	 * @param worker
+	 * @return Optional has value if stop success
+	 * @throws InterruptedException
+	 */
+	public Optional<MacroWorker> stopMacro(int workerId) throws InterruptedException;
+	
+	/**
+	 * Stop all Macro-Workers.
+	 * 
+	 * @return List of stopped Macro-workers
+	 * @throws InterruptedException
+	 */
+	public List<MacroWorker> stopMacro() throws InterruptedException;
 	
 }

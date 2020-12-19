@@ -26,7 +26,7 @@ public class SmlAliasPairPool {
 	}
 	
 	/**
-	 * Clar all pairs.
+	 * Clear all pairs.
 	 * 
 	 */
 	public void clear() {
@@ -206,7 +206,7 @@ public class SmlAliasPairPool {
 				.map(a -> {
 					return jhb.object(
 							jhb.pair("alias", a.alias()),
-							jhb.pair("path", a.path().toAbsolutePath().toString())
+							jhb.pair("path", a.path().toAbsolutePath().normalize().toString())
 							);
 				})
 				.collect(Collectors.toList());

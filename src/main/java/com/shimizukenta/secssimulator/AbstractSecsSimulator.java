@@ -16,8 +16,6 @@ import com.shimizukenta.secs.ReadOnlyProperty;
 import com.shimizukenta.secs.SecsCommunicatableStateChangeListener;
 import com.shimizukenta.secs.SecsCommunicator;
 import com.shimizukenta.secs.SecsException;
-import com.shimizukenta.secs.SecsLog;
-import com.shimizukenta.secs.SecsLogListener;
 import com.shimizukenta.secs.SecsMessage;
 import com.shimizukenta.secs.SecsMessageReceiveListener;
 import com.shimizukenta.secs.SecsWaitReplyMessageException;
@@ -31,11 +29,12 @@ import com.shimizukenta.secssimulator.logging.LoggingEngine;
 import com.shimizukenta.secssimulator.macro.AbstractMacroEngine;
 import com.shimizukenta.secssimulator.macro.MacroEngine;
 import com.shimizukenta.secssimulator.macro.MacroRecipe;
+import com.shimizukenta.secssimulator.macro.MacroWorker;
 
 public abstract class AbstractSecsSimulator implements SecsSimulator {
 	
-	private final LoggingEngine loggingEngine = new AbstractLoggingEngine() {};
-	private final MacroEngine macroEngine = new AbstractMacroEngine() {};
+	private final LoggingEngine loggingEngine;
+	private final MacroEngine macroEngine;
 	
 	private final AbstractSecsSimulatorConfig config;
 	
@@ -47,7 +46,28 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		this.secsComm = null;
 		this.tcpipAdapter = null;
 		
-		this.addSecsLogListener(this.loggingEngine::putLog);
+		this.loggingEngine = createLoggingEngine();
+		this.macroEngine = createMacroEngine();
+		
+		this.addLogListener(this.loggingEngine::putLog);
+	}
+	
+	/**
+	 * Prototype pattern, LoggingEngine builder.
+	 * 
+	 * @return LoggingEngine
+	 */
+	protected LoggingEngine createLoggingEngine() {
+		return new AbstractLoggingEngine() {};
+	}
+	
+	/**
+	 * Prototype pattern, MacroEngine builder.
+	 * 
+	 * @return MacroEngine
+	 */
+	protected MacroEngine createMacroEngine() {
+		return new AbstractMacroEngine(this) {};
 	}
 	
 	@Override
@@ -77,10 +97,10 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return communicateState.removeChangeListener(lstnr::changed);
 	}
 	
-	protected void waitUntilCommunicatable() throws InterruptedException {
+	@Override
+	public void waitUntilCommunicatable() throws InterruptedException {
 		communicateState.waitUntilTrue();
 	}
-	
 	
 	/* receive-message-listener */
 	private final Collection<SecsMessageReceiveListener> recvMsgListeners = new CopyOnWriteArrayList<>();
@@ -95,32 +115,19 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	
 	
 	/* log-listener */
-	private final Collection<SecsLogListener> logListeners = new CopyOnWriteArrayList<>();
+	private final Collection<SecsSimulatorLogListener> logListeners = new CopyOnWriteArrayList<>();
 	
-	protected boolean addSecsLogListener(SecsLogListener lstnr) {
+	protected boolean addLogListener(SecsSimulatorLogListener lstnr) {
 		return logListeners.add(lstnr);
 	}
 	
-	protected boolean removeSecsLogListener(SecsLogListener lstnr) {
+	protected boolean removeLogListener(SecsSimulatorLogListener lstnr) {
 		return logListeners.remove(lstnr);
 	}
 	
-	protected void notifyLog(SecsLog log) {
-		SecsLog simpleLog = toSimpleThrowableLog(log);
-		logListeners.forEach(l -> {
-			l.received(simpleLog);
-		});
+	protected void notifyLog(SecsSimulatorLog log) {
+		logListeners.forEach(l -> {l.received(log);});
 	}
-	
-	private static SecsLog toSimpleThrowableLog(SecsLog log) {
-		Object o = log.value().orElse(null);
-		if ((o != null) && (o instanceof Throwable)) {
-			String s = o.getClass().getName();
-			return new SecsLog(log.subject(), log.timestamp(), s);
-		}
-		return log;
-	}
-	
 	
 	private final Collection<SecsMessage> waitPrimaryMsgs = new ArrayList<>();
 	
@@ -131,68 +138,19 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			
 			closeCommunicator();
 			
+			synchronized ( waitPrimaryMsgs ) {
+				waitPrimaryMsgs.clear();
+			}
+			
 			final SecsCommunicator comm = SecsCommunicatorBuilder.getInstance().build(config);
 			
 			comm.addSecsCommunicatableStateChangeListener(communicateState::set);
 			
 			comm.addSecsMessageReceiveListener(primaryMsg -> {
-				
-				int strm = primaryMsg.getStream();
-				int func = primaryMsg.getFunction();
-				
-				if ( equalsDeviceId(primaryMsg) ) {
-					
-					
+				try {
+					this.receivePrimaryMsg(primaryMsg);
 				}
-
-				if ( config.autoReply().booleanValue() ) {
-					
-					final SmlMessage sml = config.smlAliasPairPool().optionalOnlyOneStreamFunction(strm, func).orElse(null);
-					
-					if ( sml != null ) {
-						
-						try {
-							send(primaryMsg, sml);
-						}
-						catch (InterruptedException | SecsSimulatorException ignore) {
-						}
-						
-						return;
-					}
-				}
-				
-				if ( config.autoReplySxF0().booleanValue() ) {
-					
-					final LocalSecsMessage reply = autoReplySxF0(primaryMsg).orElse(null);
-					
-					if ( reply != null ) {
-						
-						try {
-							send(primaryMsg, reply);
-						}
-						catch (InterruptedException | SecsSimulatorException ignore) {
-						}
-					}
-				}
-				
-				if ( config.autoReplyS9Fy().booleanValue() ) {
-					
-					final LocalSecsMessage s9fy = autoReplyS9Fy(primaryMsg).orElse(null);
-					
-					if ( s9fy != null ) {
-						
-						try {
-							send(s9fy);
-						}
-						catch (InterruptedException | SecsSimulatorException ignore) {
-						}
-					}
-				}
-				
-				if ( primaryMsg.wbit() ) {
-					synchronized ( waitPrimaryMsgs ) {
-						waitPrimaryMsgs.add(primaryMsg);
-					}
+				catch ( InterruptedException ignore ) {
 				}
 			});
 			
@@ -202,7 +160,9 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 				});
 			});
 			
-			comm.addSecsLogListener(this::notifyLog);
+			comm.addSecsLogListener(log -> {
+				notifyLog(SecsSimulatorLog.from(log));
+			});
 			
 			if ( config.protocol().get() == SecsSimulatorProtocol.SECS1_ON_TCP_IP_RECEIVER ) {
 				
@@ -233,6 +193,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			IOException ioExcept = null;
 			
 			if ( secsComm != null ) {
+				
 				try {
 					secsComm.close();
 				}
@@ -241,11 +202,12 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 				}
 				finally {
 					secsComm = null;
-					notifyLog(new SecsLog("Communicator closed"));
+					notifyLog(new SecsSimulatorLog("Communicator closed"));
 				}
 			}
 			
 			if ( tcpipAdapter != null ) {
+				
 				try {
 					tcpipAdapter.close();
 				}
@@ -335,11 +297,13 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		}
 		
 		try {
-			return getCommunicator().orElseThrow(SecsSimulatorNotOpenException::new).send(sml);
+			return getCommunicator()
+					.orElseThrow(SecsSimulatorNotOpenException::new)
+					.send(sml);
 		}
 		catch ( SecsWaitReplyMessageException e ) {
 			
-			if ( config.autoReplyS9Fy().get() ) {
+			if ( config.autoReplyS9Fy().booleanValue() ) {
 				
 				SecsMessage m = e.secsMessage().orElse(null);
 				
@@ -363,7 +327,9 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	@Override
 	public Optional<SecsMessage> send(SecsMessage primaryMsg, SmlMessage replySml) throws SecsSimulatorException, InterruptedException {
 		try {
-			return getCommunicator().orElseThrow(SecsSimulatorNotOpenException::new).send(primaryMsg, replySml);
+			return getCommunicator()
+					.orElseThrow(SecsSimulatorNotOpenException::new)
+					.send(primaryMsg, replySml);
 		}
 		catch ( SecsException e ) {
 			throw new SecsSimulatorSendException(e);
@@ -373,7 +339,8 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	private Optional<SecsMessage> send(LocalSecsMessage msg) throws SecsSimulatorException, InterruptedException {
 		
 		try {
-			return getCommunicator().orElseThrow(SecsSimulatorNotOpenException::new)
+			return getCommunicator()
+					.orElseThrow(SecsSimulatorNotOpenException::new)
 					.send(msg.strm
 							, msg.func
 							, msg.wbit
@@ -390,7 +357,8 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	private Optional<SecsMessage> send(SecsMessage primaryMsg, LocalSecsMessage reply) throws SecsSimulatorException, InterruptedException {
 		
 		try {
-			return getCommunicator().orElseThrow(SecsSimulatorNotOpenException::new)
+			return getCommunicator()
+					.orElseThrow(SecsSimulatorNotOpenException::new)
 					.send(primaryMsg
 							, reply.strm
 							, reply.func
@@ -433,7 +401,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return config.smlAliasPairPool().aliases();
 	}
 	
-	protected Optional<SmlMessage> optionalAlias(CharSequence alias) {
+	protected Optional<SmlMessage> optionalSmlAlias(CharSequence alias) {
 		return config.smlAliasPairPool().optionalAlias(alias);
 	}
 	
@@ -443,6 +411,115 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	
 	protected boolean removeSmlAliasesChangeListener(PropertyChangeListener<? super Collection<? extends SmlAliasPair>> l) {
 		return config.smlAliasPairPool().removeChangeListener(l);
+	}
+	
+	
+	private boolean equalsDeviceId(SecsMessage msg) {
+		return getCommunicator()
+				.filter(comm -> comm.deviceId() == msg.deviceId())
+				.isPresent();
+	}
+	
+	private void receivePrimaryMsg(SecsMessage primaryMsg) throws InterruptedException {
+		
+		{
+			/*** check S9F1 ***/
+			
+			LocalSecsMessage reply = autoReplyS9F1(primaryMsg).orElse(null);
+			
+			if ( reply != null ) {
+				try {
+					send(primaryMsg, reply);
+				}
+				catch (SecsSimulatorException ignore) {
+				}
+				
+				return;
+			}
+		}
+		
+		{
+			/*** Auto-reply ***/
+			
+			final SmlMessage reply = autoReply(primaryMsg).orElse(null);
+				
+			if ( reply != null ) {
+				try {
+					send(primaryMsg, reply);
+				}
+				catch (SecsSimulatorException ignore) {
+				}
+				
+				return;
+			}
+		}
+		
+		boolean alreadyReply = false;
+		
+		{
+			/*** Auto-reply SxF0 or S9F5 ***/
+			
+			final LocalSecsMessage reply = autoReplySxF0(primaryMsg).orElse(null);
+			
+			if ( reply != null ) {
+				
+				try {
+					send(primaryMsg, reply);
+				}
+				catch (SecsSimulatorException ignore) {
+				}
+				
+				alreadyReply = true;
+			}
+		}
+		
+		{
+			/*** Auto-reply S9F3 or S9F5 ***/
+			
+			final LocalSecsMessage s9fy = autoReplyS9F3or5(primaryMsg).orElse(null);
+			
+			if ( s9fy != null ) {
+				
+				try {
+					send(s9fy);
+				}
+				catch (SecsSimulatorException ignore) {
+				}
+			}
+		}
+		
+		if (
+				! alreadyReply
+				&& primaryMsg.wbit()
+				&& ((primaryMsg.getFunction() % 2) == 0)
+				) {
+			
+			synchronized ( waitPrimaryMsgs ) {
+				waitPrimaryMsgs.add(primaryMsg);
+			}
+		}
+	}
+	
+	private Optional<SmlMessage> autoReply(SecsMessage primary) {
+		
+		if ( config.autoReply().booleanValue() ) {
+			
+			int strm = primary.getStream();
+			int func = primary.getFunction();
+			
+			if (
+					primary.wbit()
+					&& ((func % 2) == 1)
+					&& strm >= 0 && strm <= 127
+					&& func >= 0 && func <= 255
+					) {
+				
+			}
+			return config.smlAliasPairPool()
+					.optionalOnlyOneStreamFunction(strm, func + 1);
+		}
+		
+		return Optional.empty();
 	}
 	
 	private Optional<LocalSecsMessage> autoReplySxF0(SecsMessage primary) {
@@ -458,9 +535,8 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		}
 		
 		int func = primary.getFunction();
-		boolean wbit = primary.wbit();
 		
-		if ( wbit ) {
+		if ( primary.wbit() ) {
 			
 			if ( ! config.smlAliasPairPool().hasReplyMessages(strm, func) ) {
 				
@@ -478,32 +554,39 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return Optional.empty();
 	}
 	
-	private Optional<LocalSecsMessage> autoReplyS9Fy(SecsMessage primary) {
+	private Optional<LocalSecsMessage> autoReplyS9F1(SecsMessage primary) {
 		
-		int strm = primary.getStream();
-		
-		if ( strm < 0 ) {
-			return Optional.empty();
-		}
-		
-		if ( ! equalsDeviceId(primary) ) {
-			return Optional.of(new LocalSecsMessage(9, 1, false, Secs2.binary(primary.header10Bytes())));
-		}
-		
-		int func = primary.getFunction();
-		boolean wbit = primary.wbit();
-		
-		if ( wbit ) {
+		if ( config.autoReplyS9Fy().booleanValue() ) {
 			
-			if ( ! config.smlAliasPairPool().hasReplyMessages(strm, func) ) {
+			if ( primary.getStream() >= 0 ) {
 				
-				if ( config.smlAliasPairPool().hasReplyMessages(strm) ) {
+				if ( ! equalsDeviceId(primary) ) {
+					return Optional.of(new LocalSecsMessage(9, 1, false, Secs2.binary(primary.header10Bytes())));
+				}
+			}
+		}
+		return Optional.empty();
+	}
+	
+	private Optional<LocalSecsMessage> autoReplyS9F3or5(SecsMessage primary) {
+		
+		if ( config.autoReplyS9Fy().booleanValue() ) {
+			
+			int strm = primary.getStream();
+			int func = primary.getFunction();
+			
+			if ( strm >= 0 ) {
+				
+				if ( ! config.smlAliasPairPool().hasReplyMessages(strm, func) ) {
 					
-					return Optional.of(new LocalSecsMessage(9, 3, false, Secs2.binary(primary.header10Bytes())));
-					
-				} else {
-					
-					return Optional.of(new LocalSecsMessage(9, 5, false, Secs2.binary(primary.header10Bytes())));
+					if ( config.smlAliasPairPool().hasReplyMessages(strm) ) {
+						
+						return Optional.of(new LocalSecsMessage(9, 3, false, Secs2.binary(primary.header10Bytes())));
+						
+					} else {
+						
+						return Optional.of(new LocalSecsMessage(9, 5, false, Secs2.binary(primary.header10Bytes())));
+					}
 				}
 			}
 		}
@@ -511,9 +594,6 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return Optional.empty();
 	}
 	
-	private boolean equalsDeviceId(SecsMessage msg) {
-		return getCommunicator().filter(comm -> comm.deviceId() == msg.deviceId()).isPresent();
-	}
 	
 	
 	/* Logging */
@@ -534,15 +614,32 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	
 	/* Macros */
 	@Override
-	public Optional<MacroRecipe> startMacro(MacroRecipe recipe) throws InterruptedException {
+	public Optional<MacroWorker> startMacro(MacroRecipe recipe) throws InterruptedException {
 		return this.macroEngine.start(recipe);
 	}
 	
 	@Override
-	public Optional<MacroRecipe> stopMacro() throws InterruptedException {
+	public Optional<MacroWorker> stopMacro(MacroWorker worker) throws InterruptedException {
+		return this.macroEngine.stop(worker);
+	}
+	
+	@Override
+	public Optional<MacroWorker> stopMacro(int workerId) throws InterruptedException {
+		return this.macroEngine.stop(workerId);
+	}
+	
+	@Override
+	public List<MacroWorker>  stopMacro() throws InterruptedException {
 		return this.macroEngine.stop();
 	}
 	
+	protected List<String> macroAliases() {
+		return this.config.macroRecipePairPool().aliases();
+	}
+	
+	protected Optional<MacroRecipe> optionalMacroRecipeAlias(CharSequence alias) {
+		return this.config.macroRecipePairPool().optionalAlias(alias);
+	}
 	
 	private class LocalSecsMessage {
 		

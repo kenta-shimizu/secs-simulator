@@ -28,6 +28,8 @@ import com.shimizukenta.secssimulator.AbstractSecsSimulatorConfig;
 import com.shimizukenta.secssimulator.SecsSimulatorException;
 import com.shimizukenta.secssimulator.SecsSimulatorProtocol;
 import com.shimizukenta.secssimulator.SmlAliasPair;
+import com.shimizukenta.secssimulator.macro.MacroRecipe;
+import com.shimizukenta.secssimulator.macro.MacroWorker;
 
 public class CliSecsSimulator extends AbstractSecsSimulator {
 	
@@ -37,10 +39,10 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 		return th;
 	});
 	
-	private final AbstractSecsSimulatorConfig config;
+	private final CliSecsSimulatorConfig config;
 	private Path pwd;
 	
-	private CliSecsSimulator(AbstractSecsSimulatorConfig config) {
+	private CliSecsSimulator(CliSecsSimulatorConfig config) {
 		super(config);
 		this.config = config;
 		this.pwd = Paths.get(".").toAbsolutePath().normalize();
@@ -227,6 +229,29 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 		}
 	}
 	
+	private Optional<MacroWorker> startMacro(String v) {
+		try {
+			this.stopMacro();
+			MacroRecipe r = this.optionalMacroRecipeAlias(v).orElse(null);
+			if ( r != null ) {
+				return super.startMacro(r);
+			}
+		}
+		catch ( InterruptedException giveup ) {
+		}
+		return Optional.empty();
+	}
+	
+	@Override
+	public List<MacroWorker> stopMacro() {
+		try {
+			return super.stopMacro();
+		}
+		catch ( InterruptedException ignore ) {
+		}
+		return Collections.emptyList();
+	}
+	
 	@Override
 	public Optional<Path> stopLogging() {
 		try {
@@ -264,9 +289,7 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 	public static void main(String[] args) {
 		
 		try {
-			final AbstractSecsSimulatorConfig config = new AbstractSecsSimulatorConfig() {
-				private static final long serialVersionUID = 5301436919812579702L;
-			};
+			final CliSecsSimulatorConfig config = new CliSecsSimulatorConfig();
 			
 			boolean configLoaded = false;
 			
@@ -294,7 +317,7 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 			
 			final CliSecsSimulator simm = new CliSecsSimulator(config);
 			
-			simm.addSecsLogListener(log -> {echo(log);});
+			simm.addLogListener(log -> {echo(log);});
 			
 			try {
 				
@@ -311,7 +334,6 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 						}
 						
 						echo("Simulator started");
-						
 						
 						simm.config.autoLogging().ifPresent(v -> {
 							simm.startLogging(v).ifPresent(path -> {
@@ -402,7 +424,7 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 							}
 							case SHOW_SML: {
 								req.option(0).ifPresent(alias -> {
-									simm.optionalAlias(alias).ifPresent(sm -> {
+									simm.optionalSmlAlias(alias).ifPresent(sm -> {
 										echo(sm);
 									});
 								});
@@ -426,7 +448,7 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 							}
 							case SEND_SML: {
 								req.option(0).ifPresent(v -> {
-									simm.optionalAlias(v).ifPresent(sm -> {
+									simm.optionalSmlAlias(v).ifPresent(sm -> {
 										simm.asyncSend(sm);
 									});
 								});
@@ -472,9 +494,12 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 								break;
 							}
 							case MACRO: {
-								
-								//TODO
-								
+								String v = req.option(0).orElse(null);
+								if ( v == null ) {
+									simm.stopMacro();
+								} else {
+									simm.startMacro(v);
+								}
 								break;
 							}
 							case AUTO_REPLY: {
@@ -514,41 +539,24 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 		echo("Simulator finished");
 	}
 	
+	private static interface InnerEnterConfig {
+		public boolean enter(BufferedReader br, AbstractSecsSimulatorConfig config) throws IOException;
+	}
+	
 	private static void enterConfig(BufferedReader br, AbstractSecsSimulatorConfig config) throws IOException {
 		
-		for ( ;; ) {
-			if ( enterProtocolConfig(br, config) ) {
-				break;
-			}
-		}
+		List<InnerEnterConfig> ll = Arrays.asList(
+				CliSecsSimulator::enterProtocolConfig,
+				CliSecsSimulator::enterSocketAddressConfig,
+				CliSecsSimulator::enterDeviceIdConfig,
+				CliSecsSimulator::enterIsEquipConfig,
+				CliSecsSimulator::enterIsMasterConfig
+				);
 		
-		for ( ;; ) {
-			if ( enterSocketAddressConfig(br, config) ) {
-				break;
-			}
-		}
-		
-		for ( ;; ) {
-			if ( enterDeviceIdConfig(br, config) ) {
-				break;
-			}
-		}
-		
-		for ( ;; ) {
-			if ( enterIsEquipConfig(br, config) ) {
-				break;
-			}
-		}
-		
-		{
-			SecsSimulatorProtocol p = config.protocol().get();
-			if ( p == SecsSimulatorProtocol.SECS1_ON_TCP_IP
-					|| p == SecsSimulatorProtocol.SECS1_ON_TCP_IP_RECEIVER) {
-				
-				for ( ;; ) {
-					if ( enterIsMasterConfig(br, config) ) {
-						break;
-					}
+		for ( InnerEnterConfig x : ll ) {
+			for ( ;; ) {
+				if ( x.enter(br, config) ) {
+					break;
 				}
 			}
 		}
@@ -613,19 +621,30 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 	}
 	
 	private static boolean enterIsEquipConfig(BufferedReader br, AbstractSecsSimulatorConfig config) throws IOException {
-		System.out.print("Enter (1: Equip, 2: Host): ");
 		
-		String v = br.readLine().trim();
-		
-		if ( v.equals("1") ) {
-			config.isEquip(true);
-			return true;
-		} else if ( v.equals("2") ) {
-			config.isEquip(false);
-			return true;
+		SecsSimulatorProtocol p = config.protocol().get();
+		if ( p == SecsSimulatorProtocol.SECS1_ON_TCP_IP
+				|| p == SecsSimulatorProtocol.SECS1_ON_TCP_IP_RECEIVER) {
+			
+			System.out.print("Enter (1: Equip, 2: Host): ");
+			
+			String v = br.readLine().trim();
+			
+			if ( v.equals("1") ) {
+				config.isEquip(true);
+				return true;
+			} else if ( v.equals("2") ) {
+				config.isEquip(false);
+				return true;
+			} else {
+				return false;
+			}
+			
 		} else {
-			return false;
+			
+			return true;
 		}
+		
 	}
 	
 	private static boolean enterIsMasterConfig(BufferedReader br, AbstractSecsSimulatorConfig config) throws IOException {
