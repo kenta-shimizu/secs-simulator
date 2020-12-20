@@ -4,25 +4,37 @@ import java.util.Objects;
 
 public enum SecsSimulatorProtocol {
 	
-	UNDEFINED(false, ""),
+	UNDEFINED(false, "", false, false),
 	
-	HSMS_SS_PASSIVE(true, "hsms-ss-passive"),
-	HSMS_SS_ACTIVE(true, "hsms-ss-active"),
-	SECS1_ON_TCP_IP(false, "secs1-on-tcp-ip"),
-	SECS1_ON_TCP_IP_RECEIVER(false, "secs1-on-tcp-ip-receiver"),
+	HSMS_SS_PASSIVE(true, "hsms-ss-passive", true, false),
+	HSMS_SS_ACTIVE(true, "hsms-ss-active", true, false),
+	SECS1_ON_TCP_IP(false, "secs1-on-tcp-ip", false, true),
+	SECS1_ON_TCP_IP_RECEIVER(false, "secs1-on-tcp-ip-receiver", false, true),
 	
 	;
 	
-	private final boolean linktest;
 	private final String optionName;
+	private final boolean isHsmsSs;
+	private final boolean isSecs1;
 	
-	private SecsSimulatorProtocol(boolean linktest, String optionName) {
-		this.linktest = linktest;
+	private SecsSimulatorProtocol(
+			boolean linktest,
+			String optionName,
+			boolean isHsmsSs,
+			boolean isSecs1) {
+		
 		this.optionName = optionName;
+		this.isHsmsSs = isHsmsSs;
+		this.isSecs1 = isSecs1;
 	}
 	
-	public boolean linktestable() {
-		return linktest;
+	
+	public boolean isHsmsSs() {
+		return isHsmsSs;
+	}
+	
+	public boolean isSecs1() {
+		return isSecs1;
 	}
 	
 	public String optionName() {

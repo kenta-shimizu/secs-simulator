@@ -4,10 +4,19 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.shimizukenta.jsonhub.JsonHub;
 import com.shimizukenta.jsonhub.JsonHubParseException;
+import com.shimizukenta.secs.ReadOnlyProperty;
+import com.shimizukenta.secs.sml.SmlMessage;
+import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.AbstractSecsSimulator;
+import com.shimizukenta.secssimulator.SecsSimulatorException;
+import com.shimizukenta.secssimulator.extendsml.ExtendSmlMessageParser;
 
 public class MacroTaskBuilder {
 
@@ -32,11 +41,8 @@ public class MacroTaskBuilder {
 			
 			for ( JsonHub jht : jh.getOrDefault("tasks") ) {
 				
-				String s = jht.getOrDefault("command").optionalString().orElse(null);
-				
-				if ( s == null ) {
-					throw new MacroRecipeParseException("\"command\" not setted");
-				}
+				String s = jht.getOrDefault("command").optionalString()
+						.orElseThrow(() -> new MacroRecipeParseException("\"command\" not setted"));
 				
 				MacroCommand cmd = MacroCommand.get(s);
 				
@@ -79,43 +85,204 @@ public class MacroTaskBuilder {
 	}
 	
 	protected MacroTask buildOpen(JsonHub jh) throws MacroRecipeParseException {
-		return (simm, lastRecvSxFy) -> {
-			simm.openCommunicator();
-			simm.waitUntilCommunicatable();
+		
+		return new MacroTask() {
+
+			@Override
+			public void execute(
+					AbstractSecsSimulator simm,
+					ReadOnlyProperty<Integer> lastRecvSxFy)
+							throws InterruptedException, Exception {
+				
+				simm.openCommunicator();
+				simm.waitUntilCommunicatable();
+			}
+			
+			@Override
+			public String toString() {
+				return "Open-Communicator";
+			}
 		};
 	}
 	
 	protected MacroTask buildClose(JsonHub jh) throws MacroRecipeParseException {
-		return (simm, lastRecvSxFy) -> {
-			simm.closeCommunicator();
+		return new MacroTask() {
+
+			@Override
+			public void execute(
+					AbstractSecsSimulator simm,
+					ReadOnlyProperty<Integer> lastRecvSxFy)
+							throws InterruptedException, Exception {
+				
+				simm.closeCommunicator();
+			}
+			
+			@Override
+			public String toString() {
+				return "Close-Communicator";
+			}
 		};
 	}
 	
 	protected MacroTask buildSendSmlAlias(JsonHub jh) throws MacroRecipeParseException {
-		return (simm, lastRecvSxFy) -> {
+		
+		String op = jh.getOrDefault("option").optionalString()
+				.orElseThrow(() -> new MacroRecipeParseException("option is not string"));
+		
+		return new MacroTask() {
+
+			@Override
+			public void execute(
+					AbstractSecsSimulator simm,
+					ReadOnlyProperty<Integer> lastRecvSxFy)
+							throws InterruptedException, Exception {
+				
+				SmlMessage sml = simm.optionalSmlAlias(op)
+						.orElseThrow(() -> new SecsSimulatorException("Sml-Alias \"" + op + "\"not found"));
+				
+				simm.send(sml);
+			}
 			
-			//TODO
+			@Override
+			public String toString() {
+				return "Send-SML-Alias \"" + op + "\"";
+			}
 		};
 	}
 	
 	protected MacroTask buildSendSmlDirect(JsonHub jh) throws MacroRecipeParseException {
-		return (simm, lastRecvSxFy) -> {
+		
+		try {
+			String op = jh.getOrDefault("option").optionalString()
+					.orElseThrow(() -> new MacroRecipeParseException("option is not string"));
 			
-			//TODO
-		};
+			final SmlMessage sml = ExtendSmlMessageParser.getInstance().parse(op);
+			
+			return new MacroTask() {
+
+				@Override
+				public void execute(
+						AbstractSecsSimulator simm,
+						ReadOnlyProperty<Integer> lastRecvSxFy)
+								throws InterruptedException, Exception {
+					
+					simm.send(sml);
+				}
+				
+				@Override
+				public String toString() {
+					return "Send-SML-Direct \"S" + sml.getStream() + "F" + sml.getFunction()+ "\"";
+				}
+			};
+		}
+		catch ( SmlParseException e ) {
+			throw new MacroRecipeParseException(e);
+		}
 	}
 	
+	protected static final String GROUP_STREAM = "STREAM";
+	protected static final String GROUP_FUNCTION = "FUNCTION";
+	protected static final String pregSxFy = "[Ss](?<" + GROUP_STREAM + ">[0-9]{1,3})[Ff](?<" + GROUP_FUNCTION + ">[0-9]{1,3})";
+	
+	protected static final Pattern ptnSxFy = Pattern.compile("^" + pregSxFy + "$");
+	
 	protected MacroTask buildWaitSxFy(JsonHub jh) throws MacroRecipeParseException {
-		return (simm, lastRecvSxFy) -> {
+		
+		String op = jh.getOrDefault("option").optionalString()
+				.orElseThrow(() -> new MacroRecipeParseException("option is not string"));
+		
+		Matcher m = ptnSxFy.matcher(op);
+		
+		if ( ! m.matches() ) {
+			throw new MacroRecipeParseException("\"" + op + "\" not match SxFy");
+		}
+		
+		final int x = Integer.parseInt(m.group(GROUP_STREAM));
+		final int y = Integer.parseInt(m.group(GROUP_FUNCTION));
+		
+		final Integer sxfy = Integer.valueOf((x * 256) + y);
+		
+		final float timeout = jh.getOrDefault("timeout").optionalNubmer()
+				.map(Number::floatValue)
+				.orElse(-1.0F);
+		
+		final long ms = (long)(timeout * 1000.0F);
+		
+		return new MacroTask() {
 			
-			//TODO
+			@Override
+			public void execute(
+					AbstractSecsSimulator simm,
+					ReadOnlyProperty<Integer> lastRecvSxFy)
+							throws InterruptedException, Exception {
+				
+				if ( ms > 0 ) {
+					
+					Thread th = new Thread(() -> {
+						try {
+							lastRecvSxFy.waitUntil(sxfy);
+						}
+						catch ( InterruptedException ignore ) {
+						}
+					});
+					
+					th.setDaemon(true);
+					th.start();
+					th.join(ms);
+					
+					if ( th.isAlive() ) {
+						th.interrupt();
+						throw new TimeoutException("Wait S" + x + "F" + y + ", timeout: " + timeout + "sec.");
+					}
+					
+				} else {
+					
+					lastRecvSxFy.waitUntil(sxfy);
+				}
+			}
+			
+			@Override
+			public String toString() {
+				
+				StringBuilder sb = new StringBuilder("Wait-S")
+						.append(x)
+						.append("F")
+						.append(y);
+				
+				if ( ms > 0L ) {
+					sb.append(", timeout ")
+					.append(timeout)
+					.append(" sec.");
+				}
+				
+				return sb.toString();
+			}
 		};
 	}
 	
 	protected MacroTask buildSleep(JsonHub jh) throws MacroRecipeParseException {
-		return (simm, lastRecvSxFy) -> {
+		
+		final float v = jh.getOrDefault("timeout").optionalNubmer()
+				.orElseThrow(() -> new MacroRecipeParseException("option is not number"))
+				.floatValue();
+		
+		final long ms = (long)(v * 1000.0F);
+		
+		return new MacroTask() {
+
+			@Override
+			public void execute(
+					AbstractSecsSimulator simm,
+					ReadOnlyProperty<Integer> lastRecvSxFy)
+							throws InterruptedException, Exception {
+				
+				TimeUnit.MILLISECONDS.sleep(ms);
+			}
 			
-			//TODO
+			@Override
+			public String toString() {
+				return "Sleep " + v + " sec.";
+			}
 		};
 	}
 }

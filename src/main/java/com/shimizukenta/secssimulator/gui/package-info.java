@@ -1,5 +1,5 @@
 /**
- * Provides GUI-SML-Parser.
+ * Provides GUI-SECS-Simulator.
  */
 /**
  * @author kenta-shimizu

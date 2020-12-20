@@ -1,0 +1,39 @@
+{
+    "tasks": [
+        {
+            "command": "open"
+        },
+        {
+            "command": "send-sml-alias",
+            "option": "s1f13"
+        },
+        {
+            "command": "send-sml-alias",
+            "option": "s1f17"
+        },
+        {
+            "command": "sleep",
+            "timeout": 3.0
+        },
+        {
+            "command": "wait-sxfy",
+            "option": "S5F1",
+            "timeout": -1
+        },
+        {
+            "command": "send-sml-direct",
+            "option": "S1F99 W."
+        },
+        {
+            "command": "sleep",
+            "timeout": 3.0
+        },
+        {
+            "command": "send-sml-alias",
+            "option": "s1f15"
+        },
+        {
+            "command": "close"
+        }
+    ]
+}

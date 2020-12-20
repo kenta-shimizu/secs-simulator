@@ -16,7 +16,6 @@ import com.shimizukenta.secssimulator.AbstractSecsSimulator;
 
 public abstract class AbstractMacroWorker implements MacroWorker {
 	
-	private final Object sync = new Object();
 	private final Object abortTask = new Object();
 	
 	private final int id;
@@ -27,6 +26,7 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 	private boolean cancelled;
 	private boolean done;
 	private boolean failed;
+	private Exception failedException;
 	private int step;
 	private Property<Integer> lastRecvSxFy = Property.newInstance(Integer.valueOf(-1));
 	
@@ -41,6 +41,7 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 		this.cancelled = false;
 		this.done = false;
 		this.failed = false;
+		this.failedException = null;
 		this.step = -1;
 		
 		simm.addSecsCommunicatableStateChangeListener(f -> {
@@ -51,14 +52,14 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 			int strm = msg.getStream();
 			if ( strm >= 0) {
 				int func = msg.getFunction();
-				this.lastRecvSxFy.set(Integer.valueOf((strm << 8) + func));
+				this.lastRecvSxFy.set(Integer.valueOf((strm * 256) + func));
 			}
 		});
 	}
 	
 	@Override
 	public boolean cancel(boolean mayInterruptIfRunning) {
-		synchronized ( sync ) {
+		synchronized ( this ) {
 			synchronized ( this.abortTask ) {
 				if ( ! cancelled && ! done ) {
 					this.cancelled = true;
@@ -73,14 +74,14 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 	
 	@Override
 	public boolean isCancelled() {
-		synchronized ( sync ) {
+		synchronized ( this ) {
 			return this.cancelled;
 		}
 	}
 	
 	@Override
 	public boolean isDone() {
-		synchronized ( sync ) {
+		synchronized ( this ) {
 			return this.done;
 		}
 	}
@@ -99,13 +100,13 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 		
 		return Arrays.asList(
 				() -> {
+					
 					try {
-						
 						int m = recipe.tasks().size();
 						
 						for ( ;; ) {
 							
-							synchronized ( sync ) {
+							synchronized ( this ) {
 								this.step += 1;
 								if ( this.step >= m ) {
 									break;
@@ -113,19 +114,20 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 							}
 							notifyStateChanged(this);
 							
-							recipe.tasks().get(this.step).execute(simm, lastRecvSxFy);
+							this.presentTask().get().execute(simm, lastRecvSxFy);
 						}
 					}
 					catch ( InterruptedException ignore ) {
 					}
 					catch ( Exception e ) {
-						synchronized ( sync ) {
+						synchronized ( this ) {
 							this.failed = true;
+							this.failedException = e;
 						}
 					}
 					finally {
 						
-						synchronized ( sync ) {
+						synchronized ( this ) {
 							this.done = true;
 						}
 						notifyStateChanged(this);
@@ -139,7 +141,6 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 						synchronized ( this.abortTask ) {
 							this.abortTask.wait();
 						}
-						notifyStateChanged(this);
 					}
 					catch ( InterruptedException ignore ) {
 					}
@@ -149,8 +150,15 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 	
 	@Override
 	public boolean failed() {
-		synchronized ( sync ) {
+		synchronized ( this ) {
 			return this.failed;
+		}
+	}
+	
+	@Override
+	public Optional<Exception> failedException() {
+		synchronized ( this ) {
+			return failedException == null ? Optional.empty() : Optional.of(failedException);
 		}
 	}
 	
@@ -166,7 +174,7 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 	
 	@Override
 	public int step() {
-		synchronized ( sync ) {
+		synchronized ( this ) {
 			return this.step + 1;
 		}
 	}
@@ -178,7 +186,7 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 	
 	@Override
 	public Optional<MacroTask> presentTask() {
-		synchronized ( sync ) {
+		synchronized ( this ) {
 			if ( this.step >= 0 && this.step < taskCount() ) {
 				return Optional.of(this.recipe.tasks().get(this.step));
 			} else {
@@ -228,8 +236,10 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 	
 	@Override
 	public String toString() {
-		synchronized ( sync ) {
-			StringBuilder sb = new StringBuilder("ID: ")
+		
+		synchronized ( this ) {
+			
+			final StringBuilder sb = new StringBuilder("ID: ")
 					.append(id())
 					.append(", \"")
 					.append(recipe().alias())
@@ -259,7 +269,13 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 					sb.append(s)
 					.append("/")
 					.append(this.taskCount());
-					 
+					
+					this.presentTask().ifPresent(pt -> {
+						
+						sb.append(", ")
+						.append(pt);
+					});
+					
 				} else {
 					
 					sb.append("yet");

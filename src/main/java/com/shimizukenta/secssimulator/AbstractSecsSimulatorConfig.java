@@ -436,6 +436,8 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 	
 	protected void setSmlAliasPairs(JsonHub jh) throws SmlParseException, IOException {
 		
+		this.smlPool.clear();
+		
 		Collection<SmlAliasPair> pairs = new HashSet<>();
 		
 		for ( JsonHub jhp : jh ) {
@@ -443,7 +445,7 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 			try {
 				Path path = jhp.getOrDefault("path").optionalString().map(Paths::get).orElse(null);
 				
-				if ( path != null ) {
+				if ( path != null && Files.exists(path) ) {
 					
 					if ( Files.isDirectory(path) ) {
 						
@@ -479,24 +481,27 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 			}
 		}
 		
-		this.smlPool.clear();
 		this.smlPool.addAll(pairs);
 	}
 	
 	protected void setMacroRecipePairs(JsonHub jh) throws MacroRecipeParseException, IOException {
 		
+		this.macroPool.clear();
+		
 		Collection<MacroRecipePair> pairs = new HashSet<>();
 		
 		for ( JsonHub jhp : jh ) {
-			Path path = jhp.getOrDefault("path").optionalString().map(Paths::get).orElse(null);
 			
-			if ( path != null ) {
-				if ( path != null ) {
+			try {
+				
+				Path path = jhp.getOrDefault("path").optionalString().map(Paths::get).orElse(null);
+				
+				if ( path != null && Files.exists(path) ) {
 					
 					if ( Files.isDirectory(path) ) {
 						
 						try (
-								DirectoryStream<Path> macroRecipePaths = Files.newDirectoryStream(path, "*.macro");
+								DirectoryStream<Path> macroRecipePaths = Files.newDirectoryStream(path, "*.json");
 								) {
 							
 							for ( Path mrPath : macroRecipePaths ) {
@@ -522,9 +527,10 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 					}
 				}
 			}
+			catch ( InvalidPathException e ) {
+			}
 		}
 		
-		this.macroPool.clear();
 		this.macroPool.addAll(pairs);
 	}
 	

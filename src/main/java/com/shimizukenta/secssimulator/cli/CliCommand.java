@@ -26,8 +26,8 @@ public enum CliCommand {
 	
 	LIST_SML(1, CliCommandManual.LIST_SML, "list", "list-sml"),
 	SHOW_SML(2, CliCommandManual.SHOW_SML, "show", "show-sml"),
-	ADD_SML(2, CliCommandManual.ADD_SML, "addsml", "add-sml"),
-	REMOVE_SML(2, CliCommandManual.REMOVE_SML, "removesml", "remove-sml"),
+	ADD_SML(2, CliCommandManual.ADD_SML, "add-sml", "addsml"),
+	REMOVE_SML(2, CliCommandManual.REMOVE_SML, "remove-sml", "removesml"),
 	
 	PWD(1, CliCommandManual.PWD, "pwd"),
 	CD(2, CliCommandManual.CD, "cd"),
@@ -36,18 +36,18 @@ public enum CliCommand {
 	
 	LOG(2, CliCommandManual.LOG, "log"),
 	
-	AUTO_REPLY(2, CliCommandManual.AUTO_REPLY, "autoreply", "auto-reply"),
+	AUTO_REPLY(2, CliCommandManual.AUTO_REPLY, "auto-reply", "autoreply"),
 	AUTO_REPLY_S9Fy(2, CliCommandManual.AUTO_REPLY_S9Fy,
-			"autoreplys9fy", "auto-reply-s9fy", "autos9fy", "auto-s9fy"),
+			"auto-reply-s9fy", "autoreplys9fy", "autos9fy", "auto-s9fy"),
 	AUTO_REPLY_SxF0(2, CliCommandManual.AUTO_REPLY_SxF0,
-			"autoreplysxf0", "auto-reply-sxf0", "autosxf0", "auto-sxf0"),
+			"auto-reply-sxf0", "autoreplysxf0", "autosxf0", "auto-sxf0"),
 	
 	MACRO(2, CliCommandManual.MACRO, "macro"),
-	LIST_MACRO(1, CliCommandManual.MACROS, "macros"),
+	LIST_MACRO(1, CliCommandManual.MACROS, "list-macro", "listmacro", "macros"),
 	ADD_MACRO(2, CliCommandManual.ADD_MACRO,
-			"addmacro", "add-macro"),
+			"add-macro", "addmacro"),
 	REMOVE_MACRO(2, CliCommandManual.REMOVE_MACRO,
-			"removemacro", "remove-macro"),
+			"remove-macro", "removemacro"),
 	
 	;
 	

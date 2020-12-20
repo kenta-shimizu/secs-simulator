@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import com.shimizukenta.jsoncommunicator.JsonCommunicatorLog;
 import com.shimizukenta.secs.SecsLog;
+import com.shimizukenta.secssimulator.macro.MacroWorker;
 
 /**
  * SecsLog contains subject, timestamp, detail-information.
@@ -56,6 +57,31 @@ public class SecsSimulatorLog {
 	
 	public static SecsSimulatorLog from(JsonCommunicatorLog log) {
 		return new SecsSimulatorLog(log.subject(), log.timestamp(), log.value().orElse(null));
+	}
+	
+	public static SecsSimulatorLog from(MacroWorker w) {
+		if ( w.failed() ) {
+			
+			String value = w.failedException()
+					.map(e -> {
+						StringBuilder sb = new StringBuilder()
+								.append(e.getClass().getSimpleName());
+						
+						String msg = e.getMessage();
+						if ( msg != null && ! msg.isEmpty() ) {
+							sb.append(": ").append(msg);
+						}
+						
+						return sb.toString();
+					})
+					.orElse(null);
+			
+			return new SecsSimulatorLog("Macro worker " + w.toString(), value);
+			
+		} else {
+			
+			return new SecsSimulatorLog("Macro worker state changed", w);
+		}
 	}
 	
 	/**

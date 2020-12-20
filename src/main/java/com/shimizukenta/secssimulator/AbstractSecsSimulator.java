@@ -3,12 +3,18 @@ package com.shimizukenta.secssimulator;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 import com.shimizukenta.secs.BooleanProperty;
 import com.shimizukenta.secs.PropertyChangeListener;
@@ -29,6 +35,7 @@ import com.shimizukenta.secssimulator.logging.LoggingEngine;
 import com.shimizukenta.secssimulator.macro.AbstractMacroEngine;
 import com.shimizukenta.secssimulator.macro.MacroEngine;
 import com.shimizukenta.secssimulator.macro.MacroRecipe;
+import com.shimizukenta.secssimulator.macro.MacroRecipeParseException;
 import com.shimizukenta.secssimulator.macro.MacroWorker;
 
 public abstract class AbstractSecsSimulator implements SecsSimulator {
@@ -383,6 +390,47 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return ExtendSmlMessageParser.getInstance().parse(sml);
 	}
 	
+
+	public Set<String> addSml(Path path) throws SmlParseException, IOException {
+		
+		Set<SmlAliasPair> pairs = new HashSet<>();
+		
+		if ( ! Files.exists(path) ) {
+			return Collections.emptySet();
+		}
+			
+		if ( Files.isDirectory(path) ) {
+			
+			try (
+					DirectoryStream<Path> smlPaths = Files.newDirectoryStream(path, "*.sml");
+					) {
+				
+				for ( Path smlPath : smlPaths ) {
+					
+					if ( ! Files.isDirectory(smlPath) ) {
+						
+						pairs.add(SmlAliasPair.fromFile(smlPath));
+					}
+				}
+			}
+			
+		} else {
+			
+			pairs.add(SmlAliasPair.fromFile(path));
+		}
+		
+		boolean f = config.smlAliasPairPool().addAll(pairs);
+		
+		if ( f  ) {
+			
+			return pairs.stream().map(p -> p.alias()).collect(Collectors.toSet());
+			
+		} else {
+			
+			return Collections.emptySet();
+		}
+	}
+	
 	@Override
 	public boolean addSml(CharSequence alias, SmlMessage sml) {
 		return config.smlAliasPairPool().add(alias, sml);
@@ -638,6 +686,46 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return this.config.macroRecipePairPool().aliases();
 	}
 	
+	public Set<MacroRecipe> addMacroRecipe(Path path) throws MacroRecipeParseException , IOException {
+		
+		Set<MacroRecipePair> pairs = new HashSet<>();
+		
+		if ( ! Files.exists(path) ) {
+			return Collections.emptySet();
+		}
+			
+		if ( Files.isDirectory(path) ) {
+			
+			try (
+					DirectoryStream<Path> mrPaths = Files.newDirectoryStream(path, "*.json");
+					) {
+				
+				for ( Path mrPath : mrPaths ) {
+					
+					if ( ! Files.isDirectory(mrPath) ) {
+						
+						pairs.add(MacroRecipePair.fromFile(mrPath));
+					}
+				}
+			}
+			
+		} else {
+			
+			pairs.add(MacroRecipePair.fromFile(path));
+		}
+		
+		boolean f = config.macroRecipePairPool().addAll(pairs);
+		
+		if ( f  ) {
+			
+			return pairs.stream().map(p -> p.recipe()).collect(Collectors.toSet());
+			
+		} else {
+			
+			return Collections.emptySet();
+		}
+	}
+	
 	@Override
 	public Optional<MacroRecipe> addMacroRecipe(MacroRecipe r) {
 		MacroRecipePair pair = new MacroRecipePair(r, null);
@@ -658,6 +746,14 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	
 	protected Optional<MacroRecipe> optionalMacroRecipeAlias(CharSequence alias) {
 		return this.config.macroRecipePairPool().optionalAlias(alias);
+	}
+	
+	protected boolean addMacroWorkerStateChangedListener(PropertyChangeListener<? super MacroWorker> l) {
+		return this.macroEngine.addStateChangeListener(l);
+	}
+	
+	protected boolean removeMacroWorkerStateChangedListener(PropertyChangeListener<? super MacroWorker> l) {
+		return this.macroEngine.removeStateChangeListener(l);
 	}
 	
 	private class LocalSecsMessage {

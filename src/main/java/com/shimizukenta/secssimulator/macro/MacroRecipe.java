@@ -32,7 +32,7 @@ public class MacroRecipe implements Serializable {
 		return new MacroRecipe(alias, MacroTaskBuilder.getInstance().build(path));
 	}
 	
-	private static final String SmlExtension = ".macro";
+	private static final String SmlExtension = ".json";
 	
 	/**
 	 * Crate Macro-Recipe instance from file-path.

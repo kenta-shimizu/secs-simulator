@@ -25,11 +25,9 @@ import com.shimizukenta.secs.sml.SmlMessage;
 import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.AbstractSecsSimulator;
 import com.shimizukenta.secssimulator.AbstractSecsSimulatorConfig;
-import com.shimizukenta.secssimulator.MacroRecipePair;
 import com.shimizukenta.secssimulator.SecsSimulatorException;
 import com.shimizukenta.secssimulator.SecsSimulatorLog;
 import com.shimizukenta.secssimulator.SecsSimulatorProtocol;
-import com.shimizukenta.secssimulator.SmlAliasPair;
 import com.shimizukenta.secssimulator.macro.MacroRecipe;
 import com.shimizukenta.secssimulator.macro.MacroRecipeParseException;
 import com.shimizukenta.secssimulator.macro.MacroWorker;
@@ -110,27 +108,38 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 	
 	private List<String> status() {
 		synchronized ( this ) {
-			return Arrays.asList(
-					"Protocol: " + config.protocol().get(),
+			
+			SecsSimulatorProtocol protocol = config.protocol().get();
+			
+			List<String> ll = new ArrayList<>();
+			
+			ll.addAll(Arrays.asList(
+					"Protocol: " + protocol,
 					"SocketAddress: " + config.hsmsSsCommunicatorConfig().socketAddress().get(),
 					"Device-ID: " + config.hsmsSsCommunicatorConfig().deviceId().intValue(),
-					"IS-EQUIP: " + config.hsmsSsCommunicatorConfig().isEquip().booleanValue(),
-					"IS-MASTER: " + config.secs1OnTcpIpCommunicatorConfig().isMaster().booleanValue(),
+					"IS-EQUIP: " + config.hsmsSsCommunicatorConfig().isEquip().booleanValue()
+					));
+			
+			if ( protocol.isSecs1() ) {
+				ll.add("IS-MASTER: " + config.secs1OnTcpIpCommunicatorConfig().isMaster().booleanValue());
+			}
+			
+			ll.addAll(Arrays.asList(
 					"Auto-Reply: " + config.autoReply().booleanValue(),
 					"Auto-Reply-S9Fy: " + config.autoReplyS9Fy().booleanValue(),
 					"Auto-Reply-SxF0: " + config.autoReplySxF0().booleanValue(),
 					"Logging: " + this.loggingProperty().get()
-					);
+					));
+			
+			return Collections.unmodifiableList(ll);
 		}
 	}
 	
 	private Optional<String> addSml(String v) {
 		synchronized ( this ) {
 			try {
-				SmlAliasPair pair = SmlAliasPair.fromFile(this.pwd.resolve(v));
-				if ( config.smlAliasPairPool().add(pair) ) {
-					return Optional.of(pair.alias());
-				}
+				Path path = this.pwd.resolve(v);
+				return super.addSml(path).stream().findFirst();
 			}
 			catch ( InvalidPathException | IOException | SmlParseException giveup ) {
 			}
@@ -268,10 +277,7 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 	private Optional<MacroRecipe> addMacroRecipe(String path) {
 		try {
 			Path p = this.pwd.resolve(path);
-			MacroRecipePair pair = MacroRecipePair.fromFile(p);
-			if ( config.macroRecipePairPool().add(pair) ) {
-				return Optional.of(pair.recipe());
-			}
+			return super.addMacroRecipe(p).stream().findFirst();
 		}
 		catch ( InvalidPathException | MacroRecipeParseException | IOException giveup ) {
 		}
@@ -334,6 +340,10 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 			final CliSecsSimulator simm = new CliSecsSimulator(config);
 			
 			simm.addLogListener(log -> {echo(log);});
+			
+			simm.addMacroWorkerStateChangedListener(w -> {
+				echo(SecsSimulatorLog.from(w));
+			});
 			
 			try {
 				

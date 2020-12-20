@@ -91,7 +91,8 @@ public abstract class AbstractMacroEngine implements MacroEngine {
 		
 		w.addStateChangeListener(this::notifyStateChanged);
 		
-		execServ.execute(() ->{
+		execServ.execute(() -> {
+			
 			try {
 				w.get();
 			}
@@ -108,8 +109,6 @@ public abstract class AbstractMacroEngine implements MacroEngine {
 					throw (RuntimeException)t;
 				}
 				
-				//TODO
-				//throw error.
 			}
 			finally {
 				synchronized ( this.workers ) {
@@ -130,17 +129,37 @@ public abstract class AbstractMacroEngine implements MacroEngine {
 	@Override
 	public Optional<MacroWorker> stop(int workerId) throws InterruptedException {
 		
-		//TODO
-		
-		return Optional.empty();
+		synchronized ( this ) {
+			
+			final Collection<MacroWorker> ww = new ArrayList<>();
+			
+			this.workers.stream()
+			.filter(w -> w.id() == workerId)
+			.forEach(w -> {
+				if ( w.cancel(true) ) {
+					ww.add(w);
+				}
+			});
+			
+			return ww.stream().findAny();
+		}
 	}
 	
 	@Override
 	public List<MacroWorker> stop() throws InterruptedException {
 		
-		//TODO
-		
-		return Collections.emptyList();
+		synchronized ( this ) {
+			
+			final List<MacroWorker> ww = new ArrayList<>();
+			
+			this.workers.forEach(w -> {
+				if ( w.cancel(true) ) {
+					ww.add(w);
+				}
+			});
+			
+			return Collections.unmodifiableList(ww);
+		}
 	}
 	
 	private final Collection<PropertyChangeListener<? super MacroWorker>> listeners = new CopyOnWriteArrayList<>();

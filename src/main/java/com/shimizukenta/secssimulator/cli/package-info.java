@@ -1,5 +1,5 @@
 /**
- * Provides super-interfacies, CLI-SECS-Simulator.
+ * Provides CLI-SECS-Simulator.
  */
 /**
  * @author kenta-shimizu

@@ -15,6 +15,13 @@ public interface MacroWorker extends Future<Void> {
 	public boolean failed();
 	
 	/**
+	 * Return Optional has Exception if failed.
+	 * 
+	 * @return Optional has Exception if failed.
+	 */
+	public Optional<Exception> failedException();
+	
+	/**
 	 * Returns id.
 	 * 
 	 * @return id
