@@ -1,6 +1,11 @@
 package com.shimizukenta.secssimulator.gui;
 
+import java.io.IOException;
+
+import com.shimizukenta.jsonhub.JsonHub;
+import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.AbstractSecsSimulatorConfig;
+import com.shimizukenta.secssimulator.macro.MacroRecipeParseException;
 
 public abstract class AbstractGuiSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 	
@@ -8,6 +13,18 @@ public abstract class AbstractGuiSecsSimulatorConfig extends AbstractSecsSimulat
 
 	public AbstractGuiSecsSimulatorConfig() {
 		super();
+	}
+	
+	@Override
+	public void setByJson(JsonHub jh)
+			 throws SmlParseException, MacroRecipeParseException, IOException{
+		
+		super.setByJson(jh);
+	}
+	
+	@Override
+	public JsonHub getJsonHub() {
+		return super.getJsonHub();
 	}
 	
 }

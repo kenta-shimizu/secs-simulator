@@ -11,16 +11,18 @@ public enum CliCommandManual {
 	CLOSE("Close communicator"),
 	QUIT("Quit application"),
 	
-	LOAD("Load config"),
-	SAVE("Save config"),
+	LOAD("Load config",
+			"option is path/to/config.json"),
+	SAVE("Save config",
+			"option is path/to/config.json"),
 	STATUS("Show status"),
 	
 	PWD("Present working directory"),
 	LS("List directory files"),
 	CD("Change directory",
-			"option is destination directory"),
+			"option is path/destination/directory"),
 	MKDIR("Make directory",
-			"option is new directory name"),
+			"option is path/to/new/directory"),
 	
 	SEND_SML("Send SML",
 			"option is Alias-Name of SML"),
@@ -29,7 +31,7 @@ public enum CliCommandManual {
 			"Support 1 line only.",
 			"sample: \"sd S1F16 <B 0x0>.\""),
 	LINKTEST("Linktest",
-			"Linktest if protocol is HSMS-SS."),
+			"Linktest if protocol is HSMS-SS"),
 	
 	LIST_SML("List SMLs",
 			"List is SML entries"),
@@ -60,8 +62,10 @@ public enum CliCommandManual {
 			"if has not option, macro stop.",
 			"if already started, stop and restart."),
 	MACROS("Macro Macros"),
+	SHOW_MACRO("Show Macro tasks",
+			"option is Alias-Name of Macro"),
 	ADD_MACRO("Add Macro",
-			"option is path/to/file.macro"),
+			"option is path/to/macro.json"),
 	REMOVE_MACRO("Remove Macro",
 			"option is Alias-Name of Macro"),
 	

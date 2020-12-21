@@ -28,8 +28,8 @@ import com.shimizukenta.secssimulator.AbstractSecsSimulatorConfig;
 import com.shimizukenta.secssimulator.SecsSimulatorException;
 import com.shimizukenta.secssimulator.SecsSimulatorLog;
 import com.shimizukenta.secssimulator.SecsSimulatorProtocol;
-import com.shimizukenta.secssimulator.macro.MacroRecipe;
 import com.shimizukenta.secssimulator.macro.MacroRecipeParseException;
+import com.shimizukenta.secssimulator.macro.MacroRecipe;
 import com.shimizukenta.secssimulator.macro.MacroWorker;
 
 public class CliSecsSimulator extends AbstractSecsSimulator {
@@ -50,16 +50,14 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 	}
 	
 	@Override
-	public void quitApplication() throws IOException {
-		
-		IOException ioExcept = null;
+	public void quitApplication() {
 		
 		try {
 			execServ.shutdown();
 			if ( ! execServ.awaitTermination(1L, TimeUnit.MILLISECONDS) ) {
 				execServ.shutdownNow();
 				if ( ! execServ.awaitTermination(10L, TimeUnit.SECONDS) ) {
-					ioExcept = new IOException("ExecutorService#shutdown failed");
+					/* giveup */
 				}
 			}
 		}
@@ -69,12 +67,7 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 		try {
 			super.quitApplication();
 		}
-		catch ( IOException e ) {
-			ioExcept = e;
-		}
-		
-		if ( ioExcept != null ) {
-			throw ioExcept;
+		catch ( IOException giveup ) {
 		}
 	}
 	
@@ -544,6 +537,14 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 								echo(simm.macroRecipeAliases());
 								break;
 							}
+							case SHOW_MACRO: {
+								req.option(0).ifPresent(v -> {
+									simm.optionalMacroRecipeAlias(v).ifPresent(r -> {
+										echo(r);
+									});
+								});
+								break;
+							}
 							case ADD_MACRO: {
 								req.option(0).ifPresent(path -> {
 									simm.addMacroRecipe(path).ifPresent(r -> {
@@ -569,13 +570,7 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 				}
 			}
 			finally {
-				
-				try {
-					simm.quitApplication();
-				}
-				catch (IOException e ) {
-					echo(e);
-				}
+				simm.quitApplication();
 			}
 		}
 		catch ( Throwable t ) {
@@ -686,9 +681,7 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 	
 	private static boolean enterIsMasterConfig(BufferedReader br, AbstractSecsSimulatorConfig config) throws IOException {
 		
-		switch ( config.protocol().get() ) {
-		case SECS1_ON_TCP_IP:
-		case SECS1_ON_TCP_IP_RECEIVER: {
+		if ( config.protocol().get().isSecs1() ) {
 			
 			System.out.print("Enter is-Master ? (1: yes, 2: no): ");
 			
@@ -700,14 +693,13 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 			} else if ( v.equals("2") ) {
 				config.isMaster(false);
 				return true;
-			} else {
-				return false;
 			}
-			/* break; */
-		}
-		default: {
+			
+			return false;
+			
+		} else {
+			
 			return true;
-		}
 		}
 	}
 	

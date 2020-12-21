@@ -4,20 +4,25 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.shimizukenta.jsonhub.JsonHub;
 import com.shimizukenta.jsonhub.JsonHubParseException;
-import com.shimizukenta.secs.ReadOnlyProperty;
 import com.shimizukenta.secs.sml.SmlMessage;
 import com.shimizukenta.secs.sml.SmlParseException;
-import com.shimizukenta.secssimulator.AbstractSecsSimulator;
 import com.shimizukenta.secssimulator.SecsSimulatorException;
 import com.shimizukenta.secssimulator.extendsml.ExtendSmlMessageParser;
 
+/**
+ * Macro-Tasks builder, Singleton-pattern.
+ * 
+ * @author kenta-shimizu
+ *
+ */
 public class MacroTaskBuilder {
 
 	protected MacroTaskBuilder() {
@@ -89,13 +94,11 @@ public class MacroTaskBuilder {
 		return new MacroTask() {
 
 			@Override
-			public void execute(
-					AbstractSecsSimulator simm,
-					ReadOnlyProperty<Integer> lastRecvSxFy)
-							throws InterruptedException, Exception {
+			public void execute(AbstractMacroWorker worker)
+					throws InterruptedException, Exception {
 				
-				simm.openCommunicator();
-				simm.waitUntilCommunicatable();
+				worker.simulator().openCommunicator();
+				worker.simulator().waitUntilCommunicatable();
 			}
 			
 			@Override
@@ -109,12 +112,10 @@ public class MacroTaskBuilder {
 		return new MacroTask() {
 
 			@Override
-			public void execute(
-					AbstractSecsSimulator simm,
-					ReadOnlyProperty<Integer> lastRecvSxFy)
-							throws InterruptedException, Exception {
+			public void execute(AbstractMacroWorker worker)
+					throws InterruptedException, Exception {
 				
-				simm.closeCommunicator();
+				worker.simulator().closeCommunicator();
 			}
 			
 			@Override
@@ -130,17 +131,15 @@ public class MacroTaskBuilder {
 				.orElseThrow(() -> new MacroRecipeParseException("option is not string"));
 		
 		return new MacroTask() {
-
+			
 			@Override
-			public void execute(
-					AbstractSecsSimulator simm,
-					ReadOnlyProperty<Integer> lastRecvSxFy)
-							throws InterruptedException, Exception {
+			public void execute(AbstractMacroWorker worker)
+					throws InterruptedException, Exception {
 				
-				SmlMessage sml = simm.optionalSmlAlias(op)
+				SmlMessage sml = worker.simulator().optionalSmlAlias(op)
 						.orElseThrow(() -> new SecsSimulatorException("Sml-Alias \"" + op + "\"not found"));
 				
-				simm.send(sml);
+				worker.simulator().send(sml);
 			}
 			
 			@Override
@@ -161,12 +160,10 @@ public class MacroTaskBuilder {
 			return new MacroTask() {
 
 				@Override
-				public void execute(
-						AbstractSecsSimulator simm,
-						ReadOnlyProperty<Integer> lastRecvSxFy)
-								throws InterruptedException, Exception {
+				public void execute(AbstractMacroWorker worker)
+						throws InterruptedException, Exception {
 					
-					simm.send(sml);
+					worker.simulator().send(sml);
 				}
 				
 				@Override
@@ -211,33 +208,31 @@ public class MacroTaskBuilder {
 		return new MacroTask() {
 			
 			@Override
-			public void execute(
-					AbstractSecsSimulator simm,
-					ReadOnlyProperty<Integer> lastRecvSxFy)
-							throws InterruptedException, Exception {
+			public void execute(AbstractMacroWorker worker)
+					throws InterruptedException, Exception {
 				
-				if ( ms > 0 ) {
+				final Future<Void> future = worker.executorService().submit(() -> {
+					worker.lastRecvSxFy().waitUntil(sxfy);
+					return null;
+				});
+				
+				try {
+					if ( ms > 0 ) {
+						future.get(ms, TimeUnit.MILLISECONDS);
+					} else {
+						future.get();
+					}
+				}
+				catch ( ExecutionException e ) {
+					Throwable t = e.getCause();
 					
-					Thread th = new Thread(() -> {
-						try {
-							lastRecvSxFy.waitUntil(sxfy);
-						}
-						catch ( InterruptedException ignore ) {
-						}
-					});
-					
-					th.setDaemon(true);
-					th.start();
-					th.join(ms);
-					
-					if ( th.isAlive() ) {
-						th.interrupt();
-						throw new TimeoutException("Wait S" + x + "F" + y + ", timeout: " + timeout + "sec.");
+					if ( t instanceof Error ) {
+						throw (Error)t;
 					}
 					
-				} else {
-					
-					lastRecvSxFy.waitUntil(sxfy);
+					if ( t instanceof Exception ) {
+						throw (Exception)t;
+					}
 				}
 			}
 			
@@ -271,10 +266,8 @@ public class MacroTaskBuilder {
 		return new MacroTask() {
 
 			@Override
-			public void execute(
-					AbstractSecsSimulator simm,
-					ReadOnlyProperty<Integer> lastRecvSxFy)
-							throws InterruptedException, Exception {
+			public void execute(AbstractMacroWorker worker)
+					throws InterruptedException, Exception {
 				
 				TimeUnit.MILLISECONDS.sleep(ms);
 			}

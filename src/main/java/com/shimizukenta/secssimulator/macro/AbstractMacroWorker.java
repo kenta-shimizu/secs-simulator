@@ -12,6 +12,7 @@ import java.util.concurrent.TimeoutException;
 
 import com.shimizukenta.secs.Property;
 import com.shimizukenta.secs.PropertyChangeListener;
+import com.shimizukenta.secs.ReadOnlyProperty;
 import com.shimizukenta.secssimulator.AbstractSecsSimulator;
 
 public abstract class AbstractMacroWorker implements MacroWorker {
@@ -20,35 +21,32 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 	
 	private final int id;
 	private final MacroRecipe recipe;
-	private final AbstractSecsSimulator simm;
-	private final ExecutorService execServ;
+	private final AbstractMacroEngine engine;
 	
 	private boolean cancelled;
 	private boolean done;
 	private boolean failed;
 	private Exception failedException;
 	private int step;
-	private Property<Integer> lastRecvSxFy = Property.newInstance(Integer.valueOf(-1));
+	private Property<Integer> lastRecvSxFy;
 	
-	public AbstractMacroWorker(int id, MacroRecipe recipe,
-			AbstractSecsSimulator simm,
-			ExecutorService execServ) {
+	public AbstractMacroWorker(int id, MacroRecipe recipe, AbstractMacroEngine engine) {
 		
 		this.id = id;
 		this.recipe = recipe;
-		this.simm = simm;
-		this.execServ = execServ;
+		this.engine = engine;
 		this.cancelled = false;
 		this.done = false;
 		this.failed = false;
 		this.failedException = null;
 		this.step = -1;
+		this.lastRecvSxFy = Property.newInstance(Integer.valueOf(-1));
 		
-		simm.addSecsCommunicatableStateChangeListener(f -> {
+		simulator().addSecsCommunicatableStateChangeListener(f -> {
 			this.lastRecvSxFy.set(Integer.valueOf(-1));
 		});
 		
-		simm.addSecsMessageReceiveListener(msg -> {
+		simulator().addSecsMessageReceiveListener(msg -> {
 			int strm = msg.getStream();
 			if ( strm >= 0) {
 				int func = msg.getFunction();
@@ -88,12 +86,24 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 	
 	@Override
 	public Void get() throws InterruptedException, ExecutionException {
-		return execServ.invokeAny(createTasks());
+		return executorService().invokeAny(createTasks());
 	}
 	
 	@Override
 	public Void get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-		return execServ.invokeAny(createTasks(), timeout, unit);
+		return executorService().invokeAny(createTasks(), timeout, unit);
+	}
+	
+	protected AbstractSecsSimulator simulator() {
+		return engine.simulator();
+	}
+	
+	protected ExecutorService executorService() {
+		return engine.executorService();
+	}
+	
+	protected ReadOnlyProperty<Integer> lastRecvSxFy() {
+		return lastRecvSxFy;
 	}
 	
 	private Collection<Callable<Void>> createTasks() {
@@ -114,7 +124,7 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 							}
 							notifyStateChanged(this);
 							
-							this.presentTask().get().execute(simm, lastRecvSxFy);
+							this.presentTask().get().execute(this);
 						}
 					}
 					catch ( InterruptedException ignore ) {
@@ -144,6 +154,7 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 					}
 					catch ( InterruptedException ignore ) {
 					}
+					
 					return null;
 				});
 	}

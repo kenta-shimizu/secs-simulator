@@ -1,17 +1,17 @@
-package com.shimizukenta.secssimulator.cli;
+package com.shimizukenta.secssimulator.swing;
 
 import java.io.IOException;
 
 import com.shimizukenta.jsonhub.JsonHub;
 import com.shimizukenta.secs.sml.SmlParseException;
-import com.shimizukenta.secssimulator.AbstractSecsSimulatorConfig;
+import com.shimizukenta.secssimulator.gui.AbstractGuiSecsSimulatorConfig;
 import com.shimizukenta.secssimulator.macro.MacroRecipeParseException;
 
-public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
+public class SwingSecsSimulatorConfig extends AbstractGuiSecsSimulatorConfig {
 	
-	private static final long serialVersionUID = -4642182855193964949L;
-
-	public CliSecsSimulatorConfig() {
+	private static final long serialVersionUID = -528323152735952588L;
+	
+	public SwingSecsSimulatorConfig() {
 		super();
 	}
 	
@@ -26,5 +26,4 @@ public class CliSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 	public JsonHub getJsonHub() {
 		return super.getJsonHub();
 	}
-	
 }

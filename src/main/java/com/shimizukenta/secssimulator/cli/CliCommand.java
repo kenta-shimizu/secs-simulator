@@ -19,8 +19,10 @@ public enum CliCommand {
 	SEND_SML(2, CliCommandManual.SEND_SML,
 			"send", "ss", "sendsml", "send-sml"),
 	
-//	SEND_DIRECT(2, CliCommandManual.SEND_DIRECT,
-//			"senddirect", "sd", "send-direct"),
+	/*
+	SEND_DIRECT(2, CliCommandManual.SEND_DIRECT,
+			"senddirect", "sd", "send-direct"),
+	*/
 	
 	LINKTEST(1, CliCommandManual.LINKTEST, "linktest"),
 	
@@ -44,6 +46,7 @@ public enum CliCommand {
 	
 	MACRO(2, CliCommandManual.MACRO, "macro"),
 	LIST_MACRO(1, CliCommandManual.MACROS, "list-macro", "listmacro", "macros"),
+	SHOW_MACRO(2, CliCommandManual.SHOW_MACRO, "show-macro", "showmacro"),
 	ADD_MACRO(2, CliCommandManual.ADD_MACRO,
 			"add-macro", "addmacro"),
 	REMOVE_MACRO(2, CliCommandManual.REMOVE_MACRO,

@@ -24,9 +24,11 @@ public abstract class AbstractMacroEngine implements MacroEngine {
 		return th;
 	});
 	
-	private final Collection<MacroWorker> workers = new ArrayList<>();
+	protected ExecutorService executorService() {
+		return execServ;
+	}
 	
-	private final Object sync = new Object();
+	private final Collection<MacroWorker> workers = new ArrayList<>();
 	
 	private final AbstractSecsSimulator simm;
 	private boolean closed;
@@ -39,7 +41,7 @@ public abstract class AbstractMacroEngine implements MacroEngine {
 	@Override
 	public void close() throws IOException {
 		
-		synchronized ( sync ) {
+		synchronized ( this ) {
 			
 			if ( this.closed ) {
 				return ;
@@ -69,15 +71,19 @@ public abstract class AbstractMacroEngine implements MacroEngine {
 	 * @return worker
 	 */
 	protected MacroWorker createWorker(int id, MacroRecipe recipe) {
-		return new AbstractMacroWorker(id, recipe, simm, execServ) {};
+		return new AbstractMacroWorker(id, recipe, this) {};
 	}
 	
 	private final AtomicInteger autoNumber = new AtomicInteger(0);
 	
+	protected AbstractSecsSimulator simulator() {
+		return simm;
+	}
+	
 	@Override
 	public Optional<MacroWorker> start(MacroRecipe recipe) throws InterruptedException {
 		
-		synchronized ( sync ) {
+		synchronized ( this ) {
 			if ( this.closed ) {
 				return Optional.empty();
 			}

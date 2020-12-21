@@ -5,6 +5,12 @@ import java.util.concurrent.Future;
 
 import com.shimizukenta.secs.PropertyChangeListener;
 
+/**
+ * This interface is Macro-worker, provices worker id, step, recipe, status.
+ * 
+ * @author kenta-shimizu
+ *
+ */
 public interface MacroWorker extends Future<Void> {
 	
 	/**
