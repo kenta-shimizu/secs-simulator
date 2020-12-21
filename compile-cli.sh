@@ -3,6 +3,7 @@
 path_src="src/main/java/com"
 path_bin="bin"
 path_export_jar="CliSecsSimulator.jar"
+main_class="com.shimizukenta.secssimulator.cli.CliSecsSimulator"
 version="8"
 
 # remove bin files
@@ -20,6 +21,6 @@ $(find ${path_src} -name "*.java")
 # jar
 jar -c \
 -f ${path_export_jar} \
--e com.shimizukenta.secssimulator.cli.CliSecsSimulator \
+-e ${main_class} \
 -C ${path_bin} .
 

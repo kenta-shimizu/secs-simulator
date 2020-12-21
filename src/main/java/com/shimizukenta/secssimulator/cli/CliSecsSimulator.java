@@ -334,7 +334,7 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 			
 			simm.addLogListener(log -> {echo(log);});
 			
-			simm.addMacroWorkerStateChangedListener(w -> {
+			simm.addMacroWorkerStateChangeListener(w -> {
 				echo(SecsSimulatorLog.from(w));
 			});
 			

@@ -756,11 +756,11 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return this.config.macroRecipePairPool().removeChangeListener(l);
 	}
 	
-	protected boolean addMacroWorkerStateChangedListener(PropertyChangeListener<? super MacroWorker> l) {
+	protected boolean addMacroWorkerStateChangeListener(PropertyChangeListener<? super MacroWorker> l) {
 		return this.macroEngine.addStateChangeListener(l);
 	}
 	
-	protected boolean removeMacroWorkerStateChangedListener(PropertyChangeListener<? super MacroWorker> l) {
+	protected boolean removeMacroWorkerStateChangeListener(PropertyChangeListener<? super MacroWorker> l) {
 		return this.macroEngine.removeStateChangeListener(l);
 	}
 	
