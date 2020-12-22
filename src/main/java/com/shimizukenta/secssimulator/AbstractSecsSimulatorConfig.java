@@ -17,6 +17,7 @@ import java.util.Optional;
 
 import com.shimizukenta.jsonhub.JsonHub;
 import com.shimizukenta.jsonhub.JsonHubBuilder;
+import com.shimizukenta.jsonhub.JsonHubParseException;
 import com.shimizukenta.jsonhub.JsonObjectPair;
 import com.shimizukenta.secs.BooleanProperty;
 import com.shimizukenta.secs.Property;
@@ -50,6 +51,39 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 	
 	public AbstractSecsSimulatorConfig() {
 		this.autoLogging = null;
+	}
+	
+	public void initialize() {
+		this.autoReply.set(true);
+		this.autoReplySxF0.set(false);
+		this.autoReplyS9Fy.set(false);
+		
+		this.protocol(SecsSimulatorProtocol.HSMS_SS_PASSIVE);
+		
+		{
+			SocketAddress a = null;
+			this.socketAddress(a);
+		}
+		
+		this.deviceId(10);
+		this.isEquip(false);
+		this.isMaster(true);
+		this.timeoutT1( 1.0F);
+		this.timeoutT2(15.0F);
+		this.timeoutT3(45.0F);
+		this.timeoutT4(45.0F);
+		this.timeoutT5(10.0F);
+		this.timeoutT6( 5.0F);
+		this.timeoutT7(10.0F);
+		this.timeoutT8( 6.0F);
+		this.retry(3);
+		this.notLinktest();
+		
+		this.smlPool.clear();
+		this.macroPool.clear();
+		
+		this.autoOpen.set(false);
+		this.autoLogging(null);
 	}
 	
 	public BooleanProperty autoReply() {
@@ -257,8 +291,9 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 	 * 
 	 * @param path
 	 * @throws IOException
+	 * @throws JsonHubParseException
 	 */
-	public boolean load(Path path) throws IOException {
+	public boolean load(Path path) throws IOException, JsonHubParseException {
 		synchronized ( this ) {
 			try {
 				this.setByJson(JsonHub.fromFile(path));

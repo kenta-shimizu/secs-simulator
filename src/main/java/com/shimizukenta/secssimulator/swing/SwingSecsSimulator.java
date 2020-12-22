@@ -3,6 +3,7 @@ package com.shimizukenta.secssimulator.swing;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,66 +13,43 @@ import java.util.Map;
 
 import javax.swing.JFrame;
 
+import com.shimizukenta.jsonhub.JsonHubParseException;
 import com.shimizukenta.secssimulator.gui.AbstractGuiSecsSimulator;
 
 public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 	
 	private final SwingSecsSimulatorConfig config;
-	private final SwingCockpitFrame cockpit;
+	private final SwingMainFrame frame;
 	
 	public SwingSecsSimulator(SwingSecsSimulatorConfig config) {
 		super(config);
 		
 		this.config = config;
 		
-		this.cockpit = new SwingCockpitFrame(this);
+		this.frame = new SwingMainFrame(this);
 		
-		this.cockpit.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		this.cockpit.addWindowListener(new WindowAdapter() {
+		this.frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		this.frame.addWindowListener(new WindowAdapter() {
 			
 			@Override
 			public void windowClosing(WindowEvent ev) {
-				cockpit.setVisible(false);
+				frame.setVisible(false);
 				notifyApplicationQuit();
 			}
 		});
 		
-		this.addLogListener(log -> {
-			
-			//TODO
-		});
-		
-		this.addSecsCommunicatableStateChangeListener(communicatable -> {
-			
-			//TODO
-		});
-		
-		this.loggingProperty().addChangeListener(path -> {
-			
-			//TODO
-		});
-		
-		this.addSmlAliasesChangeListener(pairs -> {
-			
-			//TODO
-		});
-		
-		this.addMacroRecipeChangeListener(pairs -> {
-			
-			//TODO
-		});
-		
-		this.addMacroWorkerStateChangeListener(w -> {
-			
-			//TODO
-		});
-		
+		this.addLogListener(frame::putMessageLog);
+		this.addSecsCommunicatableStateChangeListener(frame::notifyCommunicateStateChanged);
+		this.loggingProperty().addChangeListener(frame::notifyLoggingPropertyChanged);
+		this.addSmlAliasesChangeListener(frame::notifySmlAliasesChanged);
+		this.addMacroRecipeChangeListener(frame::notifyMacroRecipeChanged);
+		this.addMacroWorkerStateChangeListener(frame::notifyMacroWorkerStateChanged);
 	}
 	
 	@Override
 	public void quitApplication() {
 		
-		this.cockpit.dispose();
+		this.frame.dispose();
 		
 		try {
 			super.quitApplication();
@@ -85,7 +63,7 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 	}
 	
 	private void showWindow() {
-		this.cockpit.setVisible(true);
+		this.frame.setVisible(true);
 	}
 	
 	public static void main(String[] args) {
@@ -104,8 +82,13 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 				}
 				
 				for ( String v : map.getOrDefault("--config", Collections.emptyList()) ) {
-					if ( config.load(Paths.get(v)) ) {
-						configLoaded = true;
+					try {
+						if ( config.load(Paths.get(v)) ) {
+							configLoaded = true;
+						}
+					}
+					catch ( InvalidPathException | JsonHubParseException e ) {
+						throw new IOException(e);
 					}
 				}
 				
@@ -117,7 +100,7 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 					config.autoLogging(Paths.get(v));
 				}
 			}
-
+			
 			final SwingSecsSimulator simm = new SwingSecsSimulator(config);
 			
 			try {
@@ -129,6 +112,32 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 				
 				simm.showWindow();
 				
+				if ( configLoaded ) {
+					
+					config.autoLogging().ifPresent(path -> {
+						try {
+							simm.startLogging(path);
+						}
+						catch (InterruptedException ignore) {
+						}
+						catch (IOException giveup) {
+						}
+					});
+					
+					if ( config.autoOpen().booleanValue() ) {
+						try {
+							simm.openCommunicator();
+						}
+						catch ( IOException giveup ) {
+						}
+					}
+					
+				} else {
+					
+					//TODO
+					//show-dialog.
+				}
+				
 				synchronized ( SwingSecsSimulator.class ) {
 					SwingSecsSimulator.class.wait();
 				}
@@ -139,11 +148,20 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 		}
 		catch ( InterruptedException ignore ) {
 		}
-		catch ( Throwable e ) {
-			
+		catch ( Error e ) {
 			e.printStackTrace();
-			/* giveup */
+			System.exit(10);
 		}
+		catch ( RuntimeException e ) {
+			e.printStackTrace();
+			System.exit(100);
+		}
+		catch ( Exception e ) {
+			e.printStackTrace();
+			System.exit(1000);
+		}
+		
+		System.exit(0);
 	}
-
+	
 }
