@@ -6,7 +6,11 @@ import java.util.Collection;
 
 import javax.swing.JDesktopPane;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 
+import com.shimizukenta.secs.sml.SmlMessage;
 import com.shimizukenta.secssimulator.MacroRecipePair;
 import com.shimizukenta.secssimulator.SecsSimulatorLog;
 import com.shimizukenta.secssimulator.SmlAliasPair;
@@ -19,6 +23,8 @@ public class SwingMainFrame extends JFrame {
 	private final JDesktopPane desktopPane = new JDesktopPane();
 	private final Collection<AbstractSwingInnerFrame> inners = new ArrayList<>();
 	
+	private final SendSmlDirectFrame sendSmlDirectFrame;
+	
 	private final SwingSecsSimulator simm;
 	
 	public SwingMainFrame(SwingSecsSimulator simm) {
@@ -26,14 +32,17 @@ public class SwingMainFrame extends JFrame {
 		
 		this.simm = simm;
 		
-		this.inners.add(new ViewerFrame(simm));
+		this.sendSmlDirectFrame = new SendSmlDirectFrame(simm);
+		
+		this.setJMenuBar(new MenuBar(simm));
+		
+		this.inners.add(new ViewFrame(simm));
+		this.inners.add(new ControlFrame(simm));
+		this.inners.add(this.sendSmlDirectFrame);
 		
 		this.inners.forEach(this.desktopPane::add);
 		
-		if ( config().darkMode() ) {
-			
-			//HOOK
-		}
+		this.add(desktopPane);
 		
 		if ( config().fullScreen() ) {
 			
@@ -42,9 +51,20 @@ public class SwingMainFrame extends JFrame {
 		} else {
 			
 			this.setSize(config().screenWidth(), config().screenHeight());
-			this.add(desktopPane);
 			this.setLocationRelativeTo(null);
 		}
+		
+		config().darkMode().addChangeListener(dark -> {
+			
+			if ( dark ) {
+				
+				//HOOK
+				
+			} else {
+				
+				//HOOK
+			}
+		});
 	}
 	
 	@Override
@@ -60,6 +80,23 @@ public class SwingMainFrame extends JFrame {
 	protected SwingSecsSimulatorConfig config() {
 		return simm.config();
 	}
+	
+	protected void showSendSmlDirectFrame() {
+		this.sendSmlDirectFrame.setVisible(true);
+	}
+	
+	protected void showSml(SmlMessage sm) {
+		JTextArea textarea = new JTextArea(sm.toString());
+		textarea.setEditable(false);
+		
+		final JScrollPane scrollPane = new JScrollPane(
+				textarea,
+				JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+				JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+
+		JOptionPane.showMessageDialog(this, scrollPane);
+	}
+	
 	
 	protected void putMessageLog(SecsSimulatorLog log) {
 		this.inners.forEach(f -> {f.putMessageLog(log);});

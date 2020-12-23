@@ -1,5 +1,6 @@
 package com.shimizukenta.secssimulator.swing;
 
+import java.awt.Color;
 import java.io.IOException;
 
 import com.shimizukenta.jsonhub.JsonHub;
@@ -39,6 +40,12 @@ public class SwingSecsSimulatorConfig extends AbstractGuiSecsSimulatorConfig {
 		synchronized ( this ) {
 			this.viewerSize = size;
 		}
+	}
+	
+	private final Color communicatingColor = Color.GREEN;
+	
+	public Color communicatingColor() {
+		return communicatingColor;
 	}
 	
 	@Override

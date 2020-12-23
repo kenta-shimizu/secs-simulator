@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 
 import javax.swing.JInternalFrame;
+import javax.swing.JPanel;
 
 import com.shimizukenta.secssimulator.MacroRecipePair;
 import com.shimizukenta.secssimulator.SecsSimulatorLog;
@@ -98,6 +99,12 @@ public class AbstractSwingInnerFrame extends JInternalFrame {
 	
 	protected void notifyMacroWorkerStateChanged(MacroWorker w) {
 		/* Override-if-use */
+	}
+	
+	protected static JPanel emptyPanel() {
+		JPanel p = new JPanel();
+		p.setOpaque(false);
+		return p;
 	}
 	
 }

@@ -10,10 +10,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.swing.JFrame;
 
 import com.shimizukenta.jsonhub.JsonHubParseException;
+import com.shimizukenta.secs.SecsCommunicator;
+import com.shimizukenta.secs.SecsMessage;
+import com.shimizukenta.secs.sml.SmlMessage;
+import com.shimizukenta.secssimulator.SecsSimulatorException;
 import com.shimizukenta.secssimulator.gui.AbstractGuiSecsSimulator;
 
 public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
@@ -33,7 +38,6 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 			
 			@Override
 			public void windowClosing(WindowEvent ev) {
-				frame.setVisible(false);
 				notifyApplicationQuit();
 			}
 		});
@@ -47,8 +51,14 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 	}
 	
 	@Override
+	protected void notifyApplicationQuit() {
+		super.notifyApplicationQuit();
+	}
+	
+	@Override
 	public void quitApplication() {
 		
+		this.frame.setVisible(false);
 		this.frame.dispose();
 		
 		try {
@@ -58,6 +68,35 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 		}
 	}
 	
+	@Override
+	public SecsCommunicator openCommunicator() {
+		try {
+			return super.openCommunicator();
+		}
+		catch ( IOException giveup ) {
+		}
+		return null;
+	}
+	
+	@Override
+	public void closeCommunicator() {
+		try {
+			super.closeCommunicator();
+		}
+		catch ( IOException giveup ) {
+		}
+	}
+	
+	@Override
+	public Optional<SecsMessage> send(SmlMessage sm) throws InterruptedException {
+		try {
+			return super.send(sm);
+		}
+		catch ( SecsSimulatorException e ) {
+		}
+		return Optional.empty();
+	}
+	
 	protected SwingSecsSimulatorConfig config() {
 		return config;
 	}
@@ -65,6 +104,15 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 	private void showWindow() {
 		this.frame.setVisible(true);
 	}
+	
+	protected void showSendSmlDirectFrame() {
+		this.frame.showSendSmlDirectFrame();
+	}
+	
+	protected void showSml(SmlMessage sm) {
+		this.frame.showSml(sm);
+	}
+	
 	
 	public static void main(String[] args) {
 		
@@ -125,11 +173,7 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 					});
 					
 					if ( config.autoOpen().booleanValue() ) {
-						try {
-							simm.openCommunicator();
-						}
-						catch ( IOException giveup ) {
-						}
+						simm.openCommunicator();
 					}
 					
 				} else {

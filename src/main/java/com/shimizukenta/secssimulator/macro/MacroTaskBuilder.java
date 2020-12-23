@@ -269,7 +269,9 @@ public class MacroTaskBuilder {
 			public void execute(AbstractMacroWorker worker)
 					throws InterruptedException, Exception {
 				
-				TimeUnit.MILLISECONDS.sleep(ms);
+				if ( ms > 0 ) {
+					TimeUnit.MILLISECONDS.sleep(ms);
+				}
 			}
 			
 			@Override

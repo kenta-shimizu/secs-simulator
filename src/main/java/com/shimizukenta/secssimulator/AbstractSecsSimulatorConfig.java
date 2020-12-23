@@ -21,6 +21,7 @@ import com.shimizukenta.jsonhub.JsonHubParseException;
 import com.shimizukenta.jsonhub.JsonObjectPair;
 import com.shimizukenta.secs.BooleanProperty;
 import com.shimizukenta.secs.Property;
+import com.shimizukenta.secs.ReadOnlyTimeProperty;
 import com.shimizukenta.secs.SecsTimeout;
 import com.shimizukenta.secs.hsmsss.HsmsSsCommunicatorConfig;
 import com.shimizukenta.secs.hsmsss.HsmsSsProtocol;
@@ -32,11 +33,20 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 	
 	private static final long serialVersionUID = 7451456701694504127L;
 	
-	private final BooleanProperty autoReply = BooleanProperty.newInstance(true);
-	private final BooleanProperty autoReplySxF0 = BooleanProperty.newInstance(false);
-	private final BooleanProperty autoReplyS9Fy = BooleanProperty.newInstance(false);
+	private static final SecsSimulatorProtocol defaultSecsSimulatorProtocol = SecsSimulatorProtocol.HSMS_SS_PASSIVE;
+	private static final HsmsSsCommunicatorConfig defautlHsmsSsCommunicatorConfig = new HsmsSsCommunicatorConfig();
+	private static final Secs1OnTcpIpCommunicatorConfig defaultSecs1OnTcpIpCommunicatorConfig = new Secs1OnTcpIpCommunicatorConfig();
+	private static final boolean defaultAutoReply = true;
+	private static final boolean defaultAutoReplySxF0 = false;
+	private static final boolean defaultAutoReplyS9Fy = false;
+	private static final boolean defaultAutoOpen = false;
+	private static final Path defaultAutoLogging = null;
 	
-	private final Property<SecsSimulatorProtocol> protocol = Property.newInstance(SecsSimulatorProtocol.HSMS_SS_PASSIVE);
+	private final BooleanProperty autoReply = BooleanProperty.newInstance(defaultAutoReply);
+	private final BooleanProperty autoReplySxF0 = BooleanProperty.newInstance(defaultAutoReplySxF0);
+	private final BooleanProperty autoReplyS9Fy = BooleanProperty.newInstance(defaultAutoReplyS9Fy);
+	
+	private final Property<SecsSimulatorProtocol> protocol = Property.newInstance(defaultSecsSimulatorProtocol);
 	
 	private final HsmsSsCommunicatorConfig hsmsSsCommConfig = new HsmsSsCommunicatorConfig();
 	private final Secs1OnTcpIpCommunicatorConfig secs1OnTcpIpCommConfig = new Secs1OnTcpIpCommunicatorConfig();
@@ -46,44 +56,55 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 	private final SmlAliasPairPool smlPool = new SmlAliasPairPool();
 	private final MacroRecipePairPool macroPool = new MacroRecipePairPool();
 	
-	private final BooleanProperty autoOpen = BooleanProperty.newInstance(false);
+	private final BooleanProperty autoOpen = BooleanProperty.newInstance(defaultAutoOpen);
 	private Path autoLogging;
 	
 	public AbstractSecsSimulatorConfig() {
-		this.autoLogging = null;
+		this.autoLogging = defaultAutoLogging;
 	}
 	
 	public void initialize() {
-		this.autoReply.set(true);
-		this.autoReplySxF0.set(false);
-		this.autoReplyS9Fy.set(false);
-		
-		this.protocol(SecsSimulatorProtocol.HSMS_SS_PASSIVE);
-		
-		{
-			SocketAddress a = null;
-			this.socketAddress(a);
+		synchronized ( this ) {
+			
+			this.autoReply.set(defaultAutoReply);
+			this.autoReplySxF0.set(defaultAutoReplySxF0);
+			this.autoReplyS9Fy.set(defaultAutoReplyS9Fy);
+			
+			this.protocol(defaultSecsSimulatorProtocol);
+			
+			this.deviceId(defautlHsmsSsCommunicatorConfig.deviceId().intValue());
+			this.isEquip(defautlHsmsSsCommunicatorConfig.isEquip().booleanValue());
+			this.isMaster(defaultSecs1OnTcpIpCommunicatorConfig.isMaster().booleanValue());
+			
+			{
+				SecsTimeout t = defautlHsmsSsCommunicatorConfig.timeout();
+				this.timeoutT1(t.t1().getSeconds());
+				this.timeoutT2(t.t2().getSeconds());
+				this.timeoutT3(t.t3().getSeconds());
+				this.timeoutT4(t.t4().getSeconds());
+				this.timeoutT5(t.t5().getSeconds());
+				this.timeoutT6(t.t6().getSeconds());
+				this.timeoutT7(t.t7().getSeconds());
+				this.timeoutT8(t.t8().getSeconds());
+			}
+			
+			this.retry(defaultSecs1OnTcpIpCommunicatorConfig.retry().intValue());
+			
+			{
+				ReadOnlyTimeProperty t = defautlHsmsSsCommunicatorConfig.linktest();
+				if ( t.gtZero() ) {
+					this.linktest(t.getSeconds());
+				} else {
+					this.notLinktest();
+				}
+			}
+			
+			this.smlPool.clear();
+			this.macroPool.clear();
+			
+			this.autoOpen.set(defaultAutoOpen);
+			this.autoLogging(defaultAutoLogging);
 		}
-		
-		this.deviceId(10);
-		this.isEquip(false);
-		this.isMaster(true);
-		this.timeoutT1( 1.0F);
-		this.timeoutT2(15.0F);
-		this.timeoutT3(45.0F);
-		this.timeoutT4(45.0F);
-		this.timeoutT5(10.0F);
-		this.timeoutT6( 5.0F);
-		this.timeoutT7(10.0F);
-		this.timeoutT8( 6.0F);
-		this.retry(3);
-		this.notLinktest();
-		
-		this.smlPool.clear();
-		this.macroPool.clear();
-		
-		this.autoOpen.set(false);
-		this.autoLogging(null);
 	}
 	
 	public BooleanProperty autoReply() {
@@ -296,6 +317,7 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 	public boolean load(Path path) throws IOException, JsonHubParseException {
 		synchronized ( this ) {
 			try {
+				this.initialize();
 				this.setByJson(JsonHub.fromFile(path));
 			}
 			catch ( SmlParseException e) {
@@ -388,21 +410,21 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 			SecsTimeout timeout = this.hsmsSsCommunicatorConfig().timeout();
 			
 			JsonHub jht = jhb.object(
-					jhb.pair("t1", timeout.t1().floatValue()),
-					jhb.pair("t2", timeout.t2().floatValue()),
-					jhb.pair("t3", timeout.t3().floatValue()),
-					jhb.pair("t4", timeout.t4().floatValue()),
-					jhb.pair("t5", timeout.t5().floatValue()),
-					jhb.pair("t6", timeout.t6().floatValue()),
-					jhb.pair("t7", timeout.t7().floatValue()),
-					jhb.pair("t8", timeout.t8().floatValue())
+					jhb.pair("t1", timeout.t1().getSeconds()),
+					jhb.pair("t2", timeout.t2().getSeconds()),
+					jhb.pair("t3", timeout.t3().getSeconds()),
+					jhb.pair("t4", timeout.t4().getSeconds()),
+					jhb.pair("t5", timeout.t5().getSeconds()),
+					jhb.pair("t6", timeout.t6().getSeconds()),
+					jhb.pair("t7", timeout.t7().getSeconds()),
+					jhb.pair("t8", timeout.t8().getSeconds())
 					);
 			
 			pairs.add(jhb.pair("timeout", jht));
 		}
 		
 		pairs.add(jhb.pair("retry", this.secs1OnTcpIpCommunicatorConfig().retry().intValue()));
-		pairs.add(jhb.pair("linktest", this.hsmsSsCommunicatorConfig().linktest().floatValue()));
+		pairs.add(jhb.pair("linktest", this.hsmsSsCommunicatorConfig().linktest().getSeconds()));
 		
 		return jhb.object(pairs);
 	}

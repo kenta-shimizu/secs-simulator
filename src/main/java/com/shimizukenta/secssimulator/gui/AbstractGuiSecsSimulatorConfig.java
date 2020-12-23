@@ -5,6 +5,8 @@ import java.nio.file.Path;
 
 import com.shimizukenta.jsonhub.JsonHub;
 import com.shimizukenta.jsonhub.JsonHubBuilder;
+import com.shimizukenta.secs.BooleanProperty;
+import com.shimizukenta.secs.ReadOnlyBooleanProperty;
 import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.AbstractSecsSimulatorConfig;
 import com.shimizukenta.secssimulator.macro.MacroRecipeParseException;
@@ -14,14 +16,14 @@ public abstract class AbstractGuiSecsSimulatorConfig extends AbstractSecsSimulat
 	private static final long serialVersionUID = -5329466667504451983L;
 	
 	private static final boolean defaultFullScreen = false;
-	private static final int defaultScreenWidth = 1080;
-	private static final int defaultScreenHeight = 720;
+	private static final int defaultScreenWidth = 960;
+	private static final int defaultScreenHeight = 540;
 	private static final boolean defaultDarkMode = false;
 	
 	private boolean fullScreen;
 	private int screenWidth;
 	private int screenHeight;
-	private boolean darkMode;
+	private BooleanProperty darkMode = BooleanProperty.newInstance(defaultDarkMode);
 	
 	public AbstractGuiSecsSimulatorConfig() {
 		super();
@@ -29,7 +31,6 @@ public abstract class AbstractGuiSecsSimulatorConfig extends AbstractSecsSimulat
 		this.fullScreen = defaultFullScreen;
 		this.screenWidth = defaultScreenWidth;
 		this.screenHeight = defaultScreenHeight;
-		this.darkMode = defaultDarkMode;
 	}
 	
 	public void initialize() {
@@ -38,7 +39,7 @@ public abstract class AbstractGuiSecsSimulatorConfig extends AbstractSecsSimulat
 		this.fullScreen(defaultFullScreen);
 		this.screenWidth(defaultScreenWidth);
 		this.screenHeight(defaultScreenHeight);
-		this.darkMode = defaultDarkMode;
+		this.darkMode(defaultDarkMode);
 	}
 	
 	public boolean fullScreen() {
@@ -77,7 +78,7 @@ public abstract class AbstractGuiSecsSimulatorConfig extends AbstractSecsSimulat
 		}
 	}
 	
-	public boolean darkMode() {
+	public ReadOnlyBooleanProperty darkMode() {
 		synchronized ( this ) {
 			return this.darkMode;
 		}
@@ -85,7 +86,7 @@ public abstract class AbstractGuiSecsSimulatorConfig extends AbstractSecsSimulat
 	
 	public void darkMode(boolean f) {
 		synchronized ( this ) {
-			this.darkMode = f;
+			this.darkMode.set(f);
 		}
 	}
 	
