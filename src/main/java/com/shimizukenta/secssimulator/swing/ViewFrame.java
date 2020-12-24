@@ -2,7 +2,6 @@ package com.shimizukenta.secssimulator.swing;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.GridLayout;
 import java.util.LinkedList;
 import java.util.stream.Collectors;
 
@@ -36,12 +35,10 @@ public class ViewFrame extends AbstractSwingInnerFrame {
 				(config().screenWidth()  * 50 / 100),
 				(config().screenHeight() * 85 / 100));
 		
-		this.setLayout(new BorderLayout(2, 2));
+		this.setLayout(defaultBorderLayout());
 		
 		{
-			JPanel p = new JPanel();
-			p.setLayout(new GridLayout(1, 3, 2, 2));
-			p.setOpaque(false);
+			JPanel p = gridPanel(1, 3);
 			
 			{
 				communicateStatus.setBorder(new EtchedBorder(EtchedBorder.LOWERED));
@@ -62,6 +59,7 @@ public class ViewFrame extends AbstractSwingInnerFrame {
 		}
 		{
 			this.messageLogTextArea.setEditable(false);
+			this.messageLogTextArea.setLineWrap(false);
 			this.messageLogTextArea.setOpaque(true);
 			
 			this.scrollPane = new JScrollPane(

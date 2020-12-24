@@ -7,15 +7,12 @@ import java.util.Collection;
 import java.util.Vector;
 import java.util.stream.Collectors;
 
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
-import javax.swing.border.EtchedBorder;
-import javax.swing.border.TitledBorder;
 
 import com.shimizukenta.secssimulator.SmlAliasPair;
 
@@ -34,9 +31,6 @@ public class ControlFrame extends AbstractSwingInnerFrame {
 	
 	private final JCheckBox autoReply;
 	
-	private final TitledBorder commBorder;
-	private final TitledBorder smlAliasBorder;
-	
 	public ControlFrame(SwingSecsSimulator parent) {
 		super(parent, "Controller", true, false, true, true);
 		
@@ -45,8 +39,6 @@ public class ControlFrame extends AbstractSwingInnerFrame {
 				(config().screenHeight() *  5 / 100),
 				(config().screenWidth()  * 45 / 100),
 				(config().screenHeight() * 60 / 100));
-		
-		this.setLayout(new BorderLayout(2, 2));
 		
 		this.smlList = new JList<>();
 		this.smlList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -59,7 +51,7 @@ public class ControlFrame extends AbstractSwingInnerFrame {
 				}
 			}
 		});
-
+		
 		this.openButton = new JButton("Open");
 		this.openButton.addActionListener(ev -> {
 			simulator().openCommunicator();
@@ -72,8 +64,7 @@ public class ControlFrame extends AbstractSwingInnerFrame {
 		
 		this.addSmlButton = new JButton("Add...");
 		this.addSmlButton.addActionListener(ev -> {
-			
-			//TODO
+			simulator().showAddSmlDialog();
 		});
 		
 		this.removeSmlButton = new JButton("Remove");
@@ -115,27 +106,19 @@ public class ControlFrame extends AbstractSwingInnerFrame {
 			config().autoReply().set(this.autoReply.isSelected());
 		});
 		
+		
+		this.setLayout(defaultBorderLayout());
+		
 		{
-			JPanel p = new JPanel(new BorderLayout(2, 2));
-			p.setOpaque(false);
+			JPanel p = borderPanel();
+			
+			p.setBorder(defaultTitledBorder("Communicator"));
 			
 			{
-				this.commBorder = new TitledBorder(
-						new EtchedBorder(EtchedBorder.LOWERED),
-						"Communicator",
-						TitledBorder.LEFT,
-						TitledBorder.TOP);
-				
-				p.setBorder(this.commBorder);
-			}
-			{
-				JPanel pp = new JPanel(new BorderLayout(2, 2));
-				pp.setOpaque(false);
+				JPanel pp = borderPanel();
 				
 				{
-					JPanel ppp = new JPanel();
-					ppp.setLayout(new BoxLayout(ppp, BoxLayout.LINE_AXIS));
-					ppp.setOpaque(false);
+					JPanel ppp = lineBoxPanel();
 					
 					ppp.add(this.openButton);
 					ppp.add(this.closeButton);
@@ -149,39 +132,25 @@ public class ControlFrame extends AbstractSwingInnerFrame {
 			this.add(p, BorderLayout.NORTH);
 		}
 		{
-			JPanel p = new JPanel(new BorderLayout(2, 2));
-			p.setOpaque(false);
+			JPanel p = borderPanel();
+			
+			p.setBorder(defaultTitledBorder("SML Alias"));
 			
 			{
-				this.smlAliasBorder = new TitledBorder(
-						new EtchedBorder(EtchedBorder.LOWERED),
-						"SML Alias",
-						TitledBorder.LEFT,
-						TitledBorder.TOP);
-				
-				p.setBorder(this.smlAliasBorder);
-			}
-			{
-				JPanel pp = new JPanel(new BorderLayout(2, 2));
-				pp.setOpaque(false);
+				JPanel pp = borderPanel();
 				
 				{
-					JPanel ppp = new JPanel(new BorderLayout(2, 2));
-					ppp.setOpaque(true);
+					JPanel ppp = borderPanel();
 					
 					{
-						JPanel q = new JPanel();
-						q.setLayout(new BoxLayout(q, BoxLayout.LINE_AXIS));
-						q.setOpaque(false);
+						JPanel q = lineBoxPanel();
 						
 						q.add(this.sendSmlButton);
 						
 						ppp.add(q, BorderLayout.EAST);
 					}
 					{
-						JPanel q = new JPanel();
-						q.setLayout(new BoxLayout(q, BoxLayout.LINE_AXIS));
-						q.setOpaque(false);
+						JPanel q = lineBoxPanel();
 						
 						q.add(this.addSmlButton);
 						q.add(this.removeSmlButton);
@@ -201,8 +170,7 @@ public class ControlFrame extends AbstractSwingInnerFrame {
 					pp.add(scrollPane, BorderLayout.CENTER);
 				}
 				{
-					JPanel ppp = new JPanel(new BorderLayout(2, 2));
-					ppp.setOpaque(false);
+					JPanel ppp = borderPanel();
 					
 					ppp.add(autoReply, BorderLayout.WEST);
 					

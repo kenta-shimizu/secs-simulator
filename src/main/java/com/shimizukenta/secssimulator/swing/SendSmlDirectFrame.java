@@ -31,7 +31,7 @@ public class SendSmlDirectFrame extends AbstractSwingInnerFrame {
 			this.sendSmlDirect();
 		});
 		
-		this.setLayout(new BorderLayout(2, 2));
+		this.setLayout(defaultBorderLayout());
 		
 		{
 			final JScrollPane scrollPane = new JScrollPane(
@@ -42,8 +42,7 @@ public class SendSmlDirectFrame extends AbstractSwingInnerFrame {
 			this.add(scrollPane, BorderLayout.CENTER);
 		}
 		{
-			JPanel p = new JPanel(new BorderLayout(2, 2));
-			p.setOpaque(false);
+			JPanel p = borderPanel();
 			
 			{
 				this.errorMsg.setHorizontalAlignment(JLabel.LEFT);

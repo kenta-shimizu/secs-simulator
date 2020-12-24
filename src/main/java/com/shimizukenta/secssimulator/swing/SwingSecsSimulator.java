@@ -105,8 +105,37 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 		this.frame.setVisible(true);
 	}
 	
+	
+	protected void showSetConfigDialog() {
+		this.frame.showSetConfigDialog();
+	}
+	
+	protected void showLoadConfigDialog() {
+		this.frame.showLoadConfigDialog();
+	}
+	
+	protected void showSaveConfigDialog() {
+		this.frame.showSaveConfigDialog();
+	}
+	
+	protected void showLoggingDialog() {
+		this.frame.showLoggingDialog();
+	}
+	
+	protected void showAddSmlDialog() {
+		this.frame.showAddSmlDialog();
+	}
+	
 	protected void showSendSmlDirectFrame() {
 		this.frame.showSendSmlDirectFrame();
+	}
+	
+	protected void showAddMacroRecipeDiralog() {
+		this.frame.showAddMacroRecipeDiralog();
+	}
+	
+	protected void showMacroFrame() {
+		this.frame.showMacroFrame();
 	}
 	
 	protected void showSml(SmlMessage sm) {

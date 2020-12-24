@@ -1,6 +1,7 @@
 package com.shimizukenta.secssimulator.swing;
 
 import java.awt.event.ActionListener;
+import java.nio.file.Path;
 
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -12,35 +13,31 @@ public class MenuBar extends JMenuBar {
 	
 	private final SwingSecsSimulator simm;
 	
+	private final JMenuItem itemLogging;
+	
 	public MenuBar(SwingSecsSimulator parent) {
 		super();
 		
 		this.simm = parent;
 		
+		this.itemLogging = item("Logging...", ev -> {
+			simulator().showLoggingDialog();
+		});
+		
 		addMenu(
 				menu("File",
 						item("Set Connfig...", ev -> {
-							
-							//TODO
+							simulator().showSetConfigDialog();
 						}),
 						separator(),
 						item("Load Config...", ev -> {
-							
-							//TODO
+							simulator().showLoggingDialog();
 						}),
 						item("Save Config...", ev -> {
-							
-							//TODO
+							simulator().showSaveConfigDialog();
 						}),
 						separator(),
-						item("Start logging...", ev -> {
-							
-							//TODO
-						}),
-						item("Stop logging", ev -> {
-							
-							//TODO
-						}),
+						itemLogging,
 						separator(),
 						item("Quit", ev -> {
 							simulator().notifyApplicationQuit();
@@ -55,23 +52,21 @@ public class MenuBar extends JMenuBar {
 						})
 						),
 				menu("SML",
-						item("Add SML...", ev -> {
-							
-							//TODO
-						}),
-						separator(),
 						item("Show Direct Sender", ev -> {
 							simulator().showSendSmlDirectFrame();
+						}),
+						separator(),
+						item("Add SML...", ev -> {
+							simulator().showAddSmlDialog();
 						})
 						),
 				menu("Macro",
 						item("Show Macro window", ev -> {
-							
+							simulator().showMacroFrame();
 						}),
 						separator(),
-						item("Add Macro...", ev -> {
-							
-							//TODO
+						item("Add Macro Recipe...", ev -> {
+							simulator().showAddMacroRecipeDiralog();
 						})
 						)
 				);
@@ -122,6 +117,10 @@ public class MenuBar extends JMenuBar {
 	
 	protected SwingSecsSimulatorConfig config() {
 		return simm.config();
+	}
+	
+	protected void notifyLoggingPropertyChanged(Path path) {
+		this.itemLogging.setEnabled(path == null);
 	}
 	
 }

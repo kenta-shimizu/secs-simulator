@@ -23,7 +23,9 @@ public class SwingMainFrame extends JFrame {
 	private final JDesktopPane desktopPane = new JDesktopPane();
 	private final Collection<AbstractSwingInnerFrame> inners = new ArrayList<>();
 	
+	private final MenuBar menubar;
 	private final SendSmlDirectFrame sendSmlDirectFrame;
+	private final MacroFrame macroFrame;
 	
 	private final SwingSecsSimulator simm;
 	
@@ -32,13 +34,17 @@ public class SwingMainFrame extends JFrame {
 		
 		this.simm = simm;
 		
+		this.menubar = new MenuBar(simm);
 		this.sendSmlDirectFrame = new SendSmlDirectFrame(simm);
+		this.macroFrame = new MacroFrame(simm);
 		
-		this.setJMenuBar(new MenuBar(simm));
+		this.setJMenuBar(this.menubar);
 		
 		this.inners.add(new ViewFrame(simm));
 		this.inners.add(new ControlFrame(simm));
 		this.inners.add(this.sendSmlDirectFrame);
+		this.inners.add(this.macroFrame);
+		this.inners.add(new LoggingFrame(simm));
 		
 		this.inners.forEach(this.desktopPane::add);
 		
@@ -81,9 +87,46 @@ public class SwingMainFrame extends JFrame {
 		return simm.config();
 	}
 	
+	
+	protected void showSetConfigDialog() {
+		
+		//TODO
+	}
+	
+	protected void showSaveConfigDialog() {
+		
+		//TODO
+	}
+	
+	protected void showLoadConfigDialog() {
+		
+		//TODO
+	}
+	
+	protected void showLoggingDialog() {
+		
+		//TODO
+	}
+	
+	protected void showAddSmlDialog() {
+		
+		//TODO
+	}
+	
 	protected void showSendSmlDirectFrame() {
 		this.sendSmlDirectFrame.setVisible(true);
 	}
+	
+	protected void showAddMacroRecipeDiralog() {
+		
+		//TODO
+	}
+	
+	protected void showMacroFrame() {
+		this.macroFrame.setVisible(true);
+	}
+	
+	
 	
 	protected void showSml(SmlMessage sm) {
 		JTextArea textarea = new JTextArea(sm.toString());
@@ -108,6 +151,7 @@ public class SwingMainFrame extends JFrame {
 	
 	protected void notifyLoggingPropertyChanged(Path path) {
 		this.inners.forEach(f -> {f.notifyLoggingPropertyChanged(path);});
+		this.menubar.notifyLoggingPropertyChanged(path);
 	}
 	
 	protected void notifySmlAliasesChanged(Collection<? extends SmlAliasPair> pairs) {
