@@ -550,21 +550,23 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	
 	private Optional<SmlMessage> autoReply(SecsMessage primary) {
 		
-		if ( config.autoReply().booleanValue() ) {
+		if (
+				primary.wbit()
+				&& config.autoReply().booleanValue()
+				) {
 			
 			int strm = primary.getStream();
 			int func = primary.getFunction();
 			
 			if (
-					primary.wbit()
-					&& ((func % 2) == 1)
+					((func % 2) == 1)
 					&& strm >= 0 && strm <= 127
 					&& func >= 0 && func <= 255
 					) {
 				
+				return config.smlAliasPairPool()
+						.optionalOnlyOneStreamFunction(strm, func + 1);
 			}
-			return config.smlAliasPairPool()
-					.optionalOnlyOneStreamFunction(strm, func + 1);
 		}
 		
 		return Optional.empty();
@@ -613,6 +615,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 				}
 			}
 		}
+		
 		return Optional.empty();
 	}
 	

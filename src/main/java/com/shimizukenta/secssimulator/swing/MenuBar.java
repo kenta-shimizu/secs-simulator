@@ -31,7 +31,7 @@ public class MenuBar extends JMenuBar {
 						}),
 						separator(),
 						item("Load Config...", ev -> {
-							simulator().showLoggingDialog();
+							simulator().showLoadConfigDialog();
 						}),
 						item("Save Config...", ev -> {
 							simulator().showSaveConfigDialog();
@@ -52,12 +52,12 @@ public class MenuBar extends JMenuBar {
 						})
 						),
 				menu("SML",
-						item("Show Direct Sender", ev -> {
-							simulator().showSendSmlDirectFrame();
-						}),
-						separator(),
 						item("Add SML...", ev -> {
 							simulator().showAddSmlDialog();
+						}),
+						separator(),
+						item("Show Direct Sender", ev -> {
+							simulator().showSendSmlDirectFrame();
 						})
 						),
 				menu("Macro",

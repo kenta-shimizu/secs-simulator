@@ -112,7 +112,7 @@ public abstract class AbstractGuiSecsSimulatorConfig extends AbstractSecsSimulat
 		
 		return jhb.object(
 				jhb.pair("screen", this.getGuiScreenJsonHub()),
-				jhb.pair("dark", this.darkMode())
+				jhb.pair("dark", this.darkMode().booleanValue())
 				);
 	}
 	

@@ -35,6 +35,19 @@ public class MacroRecipePair implements Serializable {
 		}
 	}
 	
+	@Override
+	public int hashCode() {
+		return this.recipe.alias().hashCode();
+	}
+	
+	@Override
+	public boolean equals(Object other) {
+		if ( other != null && (other instanceof MacroRecipePair) ) {
+			return recipe().alias().equals(((MacroRecipePair)other).recipe().alias());
+		}
+		return false;
+	}
+	
 	public static MacroRecipePair fromFile(CharSequence alias, Path path) throws MacroRecipeParseException, IOException {
 		return new MacroRecipePair(MacroRecipe.fromFile(alias, path), path);
 	}

@@ -1,12 +1,17 @@
 package com.shimizukenta.secssimulator.swing;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+
+import com.shimizukenta.secs.sml.SmlMessage;
+import com.shimizukenta.secs.sml.SmlParseException;
+import com.shimizukenta.secssimulator.extendsml.ExtendSmlMessageParser;
 
 public class SendSmlDirectFrame extends AbstractSwingInnerFrame {
 	
@@ -26,6 +31,9 @@ public class SendSmlDirectFrame extends AbstractSwingInnerFrame {
 				(config().screenHeight() * 10 / 100),
 				(config().screenWidth()  * 40 / 100),
 				(config().screenHeight() * 40 / 100));
+		
+		this.errorMsg.setForeground(Color.RED);
+		this.errorMsg.setOpaque(false);
 		
 		this.sendButton.addActionListener(ev -> {
 			this.sendSmlDirect();
@@ -62,15 +70,38 @@ public class SendSmlDirectFrame extends AbstractSwingInnerFrame {
 	public void setVisible(boolean aFlag) {
 		if ( aFlag ) {
 			this.textArea.setText("");
+			this.errorMsg.setText("");
 		}
 		super.setVisible(aFlag);
 	}
 	
+	private static final ExtendSmlMessageParser parser = ExtendSmlMessageParser.getInstance();
+	
 	private void sendSmlDirect() {
 		
+		String text = this.textArea.getText().trim();
+		if ( ! text.endsWith(".") ) {
+			text += ".";
+		}
 		
-		
-		//TODO
+		try {
+			this.errorMsg.setText("");
+			
+			SmlMessage sm = parser.parse(text);
+			
+			try {
+				simulator().send(sm);
+			}
+			catch ( InterruptedException ignore ) {
+			}
+		}
+		catch ( SmlParseException e ) {
+			
+			String msg = e.getMessage();
+			if ( msg != null ) {
+				this.errorMsg.setText(msg);
+			}
+		}
 	}
 	
 	@Override

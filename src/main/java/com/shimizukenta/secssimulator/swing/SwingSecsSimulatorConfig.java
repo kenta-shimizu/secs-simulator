@@ -2,6 +2,8 @@ package com.shimizukenta.secssimulator.swing;
 
 import java.awt.Color;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 import com.shimizukenta.jsonhub.JsonHub;
 import com.shimizukenta.jsonhub.JsonHubBuilder;
@@ -13,6 +15,7 @@ public class SwingSecsSimulatorConfig extends AbstractGuiSecsSimulatorConfig {
 	
 	private static final long serialVersionUID = -528323152735952588L;
 	
+	private static final SocketAddress defaultSocketAddress = new InetSocketAddress("127.0.0.1", 5000);
 	private static final int defaultViewerSize = 500;
 	
 	private int viewerSize;
@@ -20,6 +23,7 @@ public class SwingSecsSimulatorConfig extends AbstractGuiSecsSimulatorConfig {
 	public SwingSecsSimulatorConfig() {
 		super();
 		
+		this.socketAddress(defaultSocketAddress);
 		this.viewerSize = defaultViewerSize;
 	}
 	
@@ -59,7 +63,7 @@ public class SwingSecsSimulatorConfig extends AbstractGuiSecsSimulatorConfig {
 		
 		return jhb.object(
 				jhb.pair("screen", this.getGuiScreenJsonHub()),
-				jhb.pair("dark", this.darkMode()),
+				jhb.pair("dark", this.darkMode().booleanValue()),
 				jhb.pair("swing", this.getGuiSwingJsonHub())
 				);
 	}

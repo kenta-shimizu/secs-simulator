@@ -47,7 +47,8 @@ public abstract class AbstractMacroRecipe implements Serializable, MacroRecipe {
 		
 		StringBuilder sb = new StringBuilder("Alias: \"")
 				.append(alias)
-				.append("\", TaskCount: ");
+				.append("\", TaskCount: ")
+				.append(tasks.size());
 		
 		int n = 0;
 		for ( MacroTask task : tasks ) {

@@ -11,7 +11,7 @@ import com.shimizukenta.secs.PropertyChangeListener;
  * @author kenta-shimizu
  *
  */
-public interface MacroWorker extends Future<Void> {
+public interface MacroWorker extends Future<Void>, Comparable<MacroWorker> {
 	
 	/**
 	 * Returns {@code true} if macro failed.

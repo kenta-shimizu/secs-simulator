@@ -83,8 +83,6 @@ public class ViewFrame extends AbstractSwingInnerFrame {
 				//HOOK
 			}
 		});
-		
-		this.setVisible(true);
 	}
 	
 	private static final String BR = System.lineSeparator();

@@ -3,7 +3,12 @@ package com.shimizukenta.secssimulator.swing;
 import java.awt.BorderLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Vector;
+import java.util.stream.Collectors;
 
 import javax.swing.JButton;
 import javax.swing.JList;
@@ -29,8 +34,14 @@ public class MacroFrame extends AbstractSwingInnerFrame {
 	private final JButton eraseWorkerButton;
 	private final JButton cancelWorkerButton;
 	
+	private boolean recipesUpdated;
+	private boolean workersUpdated;
+	
 	public MacroFrame(SwingSecsSimulator parent) {
 		super(parent, "Macro", true, true, true, true);
+		
+		this.recipesUpdated = false;
+		this.workersUpdated = false;
 		
 		this.recipeList = new JList<>();
 		this.recipeList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -46,6 +57,15 @@ public class MacroFrame extends AbstractSwingInnerFrame {
 		
 		this.workerList = new JList<>();
 		this.workerList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		this.workerList.addMouseListener(new MouseAdapter() {
+			
+			@Override
+			public void mouseClicked(MouseEvent ev) {
+				if ( ev.getClickCount() == 2 ) {
+					eraseWorkerButton.doClick();
+				}
+			}
+		});
 		
 		this.addRecipeButton = new JButton("Add...");
 		this.addRecipeButton.addActionListener(ev -> {
@@ -54,32 +74,44 @@ public class MacroFrame extends AbstractSwingInnerFrame {
 		
 		this.removeRecipeButton = new JButton("Remove");
 		this.removeRecipeButton.addActionListener(ev -> {
-			
-			//TODO
+			String alias = this.recipeList.getSelectedValue();
+			if ( alias != null ) {
+				simulator().removeMacroRecipe(alias);
+			}
 		});
 		
 		this.showRecipeButton = new JButton("Show");
 		this.showRecipeButton.addActionListener(ev -> {
-			
-			//TODO
+			String alias = this.recipeList.getSelectedValue();
+			if ( alias != null ) {
+				simulator().optionalMacroRecipeAlias(alias).ifPresent(r -> {
+					simulator().showMacroRecipe(r);
+				});
+			}
 		});
 		
 		this.runRecipeButton = new JButton("Run");
 		this.runRecipeButton.addActionListener(ev -> {
-			
-			//TODO
+			String alias = this.recipeList.getSelectedValue();
+			if ( alias != null ) {
+				simulator().optionalMacroRecipeAlias(alias).ifPresent(r -> {
+					try {
+						simulator().startMacro(r);
+					}
+					catch ( InterruptedException ignore ) {
+					}
+				});
+			}
 		});
 		
 		this.eraseWorkerButton = new JButton("Erase");
 		this.eraseWorkerButton.addActionListener(ev -> {
-			
-			//TODO
+			this.eraseMacroWorker();
 		});
 		
 		this.cancelWorkerButton = new JButton("Cancel");
 		this.cancelWorkerButton.addActionListener(ev -> {
-			
-			//TODO
+			this.cancelMacroWorker();
 		});
 		
 		this.setDefaultCloseOperation(HIDE_ON_CLOSE);
@@ -166,20 +198,95 @@ public class MacroFrame extends AbstractSwingInnerFrame {
 			
 			this.add(p);
 		}
-		
 	}
+	
+	private final Object syncRecipes = new Object();
 	
 	@Override
 	protected void notifyMacroRecipeChanged(Collection<? extends MacroRecipePair> pairs) {
-		
-		//TODO
+		synchronized ( this.syncRecipes ) {
+			this.recipesUpdated = true;
+			this.updateRecipeListView();
+		}
 	}
+	
+	private final List<MacroWorker> workers = new ArrayList<>();
 	
 	@Override
 	protected void notifyMacroWorkerStateChanged(MacroWorker w) {
-		
-		//TODO
+		synchronized ( this.workers ) {
+			
+			if ( ! this.workers.contains(w) ) {
+				this.workers.add(w);
+				Collections.sort(this.workers);
+			}
+			
+			this.workersUpdated = true;
+			this.updateWorkerListView();
+		}
 	}
-
-
+	
+	private void eraseMacroWorker() {
+		synchronized ( this.workers ) {
+			int index = this.workerList.getSelectedIndex();
+			if ( index >= 0 ) {
+				MacroWorker w = this.workers.get(index);
+				if ( w.isDone() ) {
+					this.workers.remove(w);
+					this.workersUpdated = true;
+					this.updateWorkerListView();
+				}
+			}
+		}
+	}
+	
+	private void cancelMacroWorker() {
+		synchronized ( this.workers ) {
+			int index = this.workerList.getSelectedIndex();
+			if ( index >= 0 ) {
+				this.workers.get(index).cancel(true);
+			}
+		}
+	}
+	
+	@Override
+	public void setVisible(boolean aFlag) {
+		
+		super.setVisible(aFlag);
+		
+		if ( aFlag ) {
+			this.updateRecipeListView();
+			this.updateWorkerListView();
+		}
+	}
+	
+	private void updateRecipeListView() {
+		synchronized ( this.syncRecipes ) {
+			if ( this.isVisible() && this.recipesUpdated ) {
+				this.recipeList.setListData(
+						new Vector<>(simulator().macroRecipeAliases())
+						);
+				this.recipesUpdated = false;
+				this.recipeList.repaint();
+			}
+		}
+	}
+	
+	private void updateWorkerListView() {
+		synchronized ( this.workers ) {
+			if ( this.isVisible() && this.workersUpdated ) {
+				this.workerList.setListData(
+						new Vector<>(
+								this.workers.stream()
+								.sorted()
+								.map(w -> w.toString())
+								.collect(Collectors.toList()))
+						);
+				
+				this.workersUpdated = false;
+				this.workerList.repaint();
+			}
+		}
+	}
+	
 }

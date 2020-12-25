@@ -239,10 +239,15 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 	
 	@Override
 	public boolean equals(Object other) {
-		if ( other != null && (other instanceof AbstractMacroWorker)) {
-			return ((AbstractMacroWorker)other).id == id;
+		if ( other != null && (other instanceof MacroWorker)) {
+			return ((MacroWorker)other).id() == this.id();
 		}
 		return false;
+	}
+	
+	@Override
+	public int compareTo(MacroWorker other) {
+		return Integer.valueOf(this.id()).compareTo(Integer.valueOf(other.id()));
 	}
 	
 	@Override
@@ -296,4 +301,5 @@ public abstract class AbstractMacroWorker implements MacroWorker {
 			return sb.toString();
 		}
 	}
+	
 }

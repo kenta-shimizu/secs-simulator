@@ -20,6 +20,7 @@ import com.shimizukenta.secs.SecsMessage;
 import com.shimizukenta.secs.sml.SmlMessage;
 import com.shimizukenta.secssimulator.SecsSimulatorException;
 import com.shimizukenta.secssimulator.gui.AbstractGuiSecsSimulator;
+import com.shimizukenta.secssimulator.macro.MacroRecipe;
 
 public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 	
@@ -56,6 +57,12 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 	}
 	
 	@Override
+	protected Optional<MacroRecipe> optionalMacroRecipeAlias(CharSequence alias) {
+		return super.optionalMacroRecipeAlias(alias);
+	}
+
+	
+	@Override
 	public void quitApplication() {
 		
 		this.frame.setVisible(false);
@@ -73,7 +80,9 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 		try {
 			return super.openCommunicator();
 		}
-		catch ( IOException giveup ) {
+		catch ( IOException e ) {
+			
+			//TODO
 		}
 		return null;
 	}
@@ -83,7 +92,9 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 		try {
 			super.closeCommunicator();
 		}
-		catch ( IOException giveup ) {
+		catch ( IOException e ) {
+			
+			//TODO
 		}
 	}
 	
@@ -93,6 +104,8 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 			return super.send(sm);
 		}
 		catch ( SecsSimulatorException e ) {
+			
+			//TODO
 		}
 		return Optional.empty();
 	}
@@ -139,7 +152,11 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 	}
 	
 	protected void showSml(SmlMessage sm) {
-		this.frame.showSml(sm);
+		this.frame.showSmlMessage(sm);
+	}
+	
+	protected void showMacroRecipe(MacroRecipe recipe) {
+		this.frame.showMacroRecipeMessage(recipe);
 	}
 	
 	
@@ -191,6 +208,9 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 				
 				if ( configLoaded ) {
 					
+					simm.frame.showViewFrame();
+					simm.frame.showControlFrame();
+					
 					config.autoLogging().ifPresent(path -> {
 						try {
 							simm.startLogging(path);
@@ -209,6 +229,10 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 					
 					//TODO
 					//show-dialog.
+					
+					
+					simm.frame.showViewFrame();
+					simm.frame.showControlFrame();
 				}
 				
 				synchronized ( SwingSecsSimulator.class ) {

@@ -196,8 +196,6 @@ public class ControlFrame extends AbstractSwingInnerFrame {
 		});
 		
 		config().autoReply().addChangeListener(this.autoReply::setSelected);
-		
-		this.setVisible(true);
 	}
 	
 	@Override
