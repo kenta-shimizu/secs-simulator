@@ -30,7 +30,8 @@ public class SwingMainFrame extends JFrame {
 	private static final long serialVersionUID = 4147107959994828227L;
 	
 	private final JDesktopPane desktopPane = new JDesktopPane();
-	private final Collection<AbstractSwingInnerFrame> inners = new ArrayList<>();
+	private final Collection<AbstractSwingInternalFrame> inners = new ArrayList<>();
+	private final Collection<AbstractSwingDialog> dialogs = new ArrayList<>();
 	
 	private final JFileChooser loadConfigFileChooser = new JFileChooser();
 	private final JFileChooser saveConfigFileChooser = new JFileChooser();
@@ -45,6 +46,8 @@ public class SwingMainFrame extends JFrame {
 	private final ControlFrame controlFrame;
 	private final SmlEditorFrame smlEditorFrame;
 	private final MacroFrame macroFrame;
+	
+	private final SetConfigDialog setConfigDialog;
 	
 	private final SwingSecsSimulator simm;
 	
@@ -115,6 +118,8 @@ public class SwingMainFrame extends JFrame {
 		this.smlEditorFrame = new SmlEditorFrame(simm);
 		this.macroFrame = new MacroFrame(simm);
 		
+		this.setConfigDialog = new SetConfigDialog(this, simm);
+		
 		this.setJMenuBar(this.menubar);
 		
 		this.inners.add(this.viewFrame);
@@ -126,6 +131,8 @@ public class SwingMainFrame extends JFrame {
 		this.inners.forEach(this.desktopPane::add);
 		
 		this.add(desktopPane);
+		
+		this.dialogs.add(this.setConfigDialog);
 		
 		if ( config().fullScreen() ) {
 			
@@ -152,7 +159,8 @@ public class SwingMainFrame extends JFrame {
 	
 	@Override
 	public void dispose() {
-		inners.forEach(AbstractSwingInnerFrame::dispose);
+		inners.forEach(AbstractSwingInternalFrame::dispose);
+		dialogs.forEach(AbstractSwingDialog::dispose);
 		super.dispose();
 	}
 	
@@ -173,8 +181,7 @@ public class SwingMainFrame extends JFrame {
 	}
 	
 	protected void showSetConfigDialog() {
-		
-		//TODO
+		this.setConfigDialog.setVisible(true);
 	}
 	
 	protected void showLoadConfigDialog() {
@@ -379,27 +386,33 @@ public class SwingMainFrame extends JFrame {
 	
 	protected void putMessageLog(SecsSimulatorLog log) {
 		this.inners.forEach(f -> {f.putMessageLog(log);});
+		this.dialogs.forEach(d -> {d.putMessageLog(log);});
 	}
 	
 	protected void notifyCommunicateStateChanged(boolean communicated) {
 		this.inners.forEach(f -> {f.notifyCommunicateStateChanged(communicated);});
+		this.dialogs.forEach(d -> {d.notifyCommunicateStateChanged(communicated);});
 	}
 	
 	protected void notifyLoggingPropertyChanged(Path path) {
 		this.inners.forEach(f -> {f.notifyLoggingPropertyChanged(path);});
+		this.dialogs.forEach(d -> {d.notifyLoggingPropertyChanged(path);});
 		this.menubar.notifyLoggingPropertyChanged(path);
 	}
 	
 	protected void notifySmlAliasesChanged(Collection<? extends SmlAliasPair> pairs) {
 		this.inners.forEach(f -> {f.notifySmlAliasesChanged(pairs);});
+		this.dialogs.forEach(d -> {d.notifySmlAliasesChanged(pairs);});
 	}
 	
 	protected void notifyMacroRecipeChanged(Collection<? extends MacroRecipePair> pairs) {
 		this.inners.forEach(f -> {f.notifyMacroRecipeChanged(pairs);});
+		this.dialogs.forEach(d -> {d.notifyMacroRecipeChanged(pairs);});
 	}
 	
 	protected void notifyMacroWorkerStateChanged(MacroWorker w) {
 		this.inners.forEach(f -> {f.notifyMacroWorkerStateChanged(w);});
+		this.dialogs.forEach(d -> {d.notifyMacroWorkerStateChanged(w);});
 	}
 	
 }

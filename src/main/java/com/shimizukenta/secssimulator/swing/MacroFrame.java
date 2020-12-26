@@ -19,7 +19,7 @@ import javax.swing.ListSelectionModel;
 import com.shimizukenta.secssimulator.MacroRecipePair;
 import com.shimizukenta.secssimulator.macro.MacroWorker;
 
-public class MacroFrame extends AbstractSwingInnerFrame {
+public class MacroFrame extends AbstractSwingInternalFrame {
 	
 	private static final long serialVersionUID = 9163669972439175262L;
 	

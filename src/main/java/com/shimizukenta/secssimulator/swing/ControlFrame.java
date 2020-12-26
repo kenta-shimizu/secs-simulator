@@ -17,7 +17,7 @@ import javax.swing.ListSelectionModel;
 import com.shimizukenta.secs.BooleanProperty;
 import com.shimizukenta.secssimulator.SmlAliasPair;
 
-public class ControlFrame extends AbstractSwingInnerFrame {
+public class ControlFrame extends AbstractSwingInternalFrame {
 	
 	private static final long serialVersionUID = 1369410578401942391L;
 	

@@ -17,23 +17,23 @@ import com.shimizukenta.secssimulator.SecsSimulatorLog;
 import com.shimizukenta.secssimulator.SmlAliasPair;
 import com.shimizukenta.secssimulator.macro.MacroWorker;
 
-public class AbstractSwingInnerFrame extends JInternalFrame {
+public class AbstractSwingInternalFrame extends JInternalFrame {
 	
 	private static final long serialVersionUID = -2705517943548868191L;
 	
 	private final SwingSecsSimulator simm;
 	
-	public AbstractSwingInnerFrame(SwingSecsSimulator parent) {
+	public AbstractSwingInternalFrame(SwingSecsSimulator parent) {
 		super();
 		this.simm = parent;
 	}
 
-	public AbstractSwingInnerFrame(SwingSecsSimulator parent, String title) {
+	public AbstractSwingInternalFrame(SwingSecsSimulator parent, String title) {
 		super(title);
 		this.simm = parent;
 	}
 
-	public AbstractSwingInnerFrame(
+	public AbstractSwingInternalFrame(
 			SwingSecsSimulator parent,
 			String title,
 			boolean resizable) {
@@ -42,7 +42,7 @@ public class AbstractSwingInnerFrame extends JInternalFrame {
 		this.simm = parent;
 	}
 
-	public AbstractSwingInnerFrame(
+	public AbstractSwingInternalFrame(
 			SwingSecsSimulator parent,
 			String title,
 			boolean resizable,
@@ -52,7 +52,7 @@ public class AbstractSwingInnerFrame extends JInternalFrame {
 		this.simm = parent;
 	}
 
-	public AbstractSwingInnerFrame(
+	public AbstractSwingInternalFrame(
 			SwingSecsSimulator parent,
 			String title,
 			boolean resizable,
@@ -63,7 +63,7 @@ public class AbstractSwingInnerFrame extends JInternalFrame {
 		this.simm = parent;
 	}
 
-	public AbstractSwingInnerFrame(
+	public AbstractSwingInternalFrame(
 			SwingSecsSimulator parent,
 			String title,
 			boolean resizable,

@@ -19,7 +19,7 @@ import com.shimizukenta.secs.sml.SmlMessage;
 import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.SmlAliasPair;
 
-public class SmlEditorFrame extends AbstractSwingInnerFrame {
+public class SmlEditorFrame extends AbstractSwingInternalFrame {
 	
 	private static final long serialVersionUID = -5437511057134301556L;
 	

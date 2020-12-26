@@ -15,7 +15,7 @@ import javax.swing.border.EtchedBorder;
 
 import com.shimizukenta.secssimulator.SecsSimulatorLog;
 
-public class ViewFrame extends AbstractSwingInnerFrame {
+public class ViewFrame extends AbstractSwingInternalFrame {
 	
 	private static final long serialVersionUID = 4744049507304871891L;
 	

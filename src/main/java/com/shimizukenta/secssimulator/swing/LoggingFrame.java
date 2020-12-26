@@ -9,7 +9,7 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 
-public class LoggingFrame extends AbstractSwingInnerFrame {
+public class LoggingFrame extends AbstractSwingInternalFrame {
 	
 	private static final long serialVersionUID = -903877971739628916L;
 	
@@ -42,7 +42,7 @@ public class LoggingFrame extends AbstractSwingInnerFrame {
 		}
 		
 		this.stopButton.addActionListener(ev -> {
-			
+		
 			try {
 				simulator().stopLogging();
 			}

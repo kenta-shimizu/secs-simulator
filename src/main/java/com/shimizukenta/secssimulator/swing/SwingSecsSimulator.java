@@ -60,6 +60,10 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 		this.addSmlAliasesChangeListener(frame::notifySmlAliasesChanged);
 		this.addMacroRecipeChangeListener(frame::notifyMacroRecipeChanged);
 		this.addMacroWorkerStateChangeListener(frame::notifyMacroWorkerStateChanged);
+		
+		this.config.protocol().addChangeListener(protocol -> {
+			this.closeCommunicator();
+		});
 	}
 	
 	
