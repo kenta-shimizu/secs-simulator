@@ -13,15 +13,15 @@ public abstract class AbstractGuiSecsSimulator extends AbstractSecsSimulator {
 	
 	private final Collection<ApplicationQuitListener> quitListeners = new CopyOnWriteArrayList<>();
 	
-	protected boolean addApplicationQuitListener(ApplicationQuitListener l) {
+	public boolean addApplicationQuitListener(ApplicationQuitListener l) {
 		return quitListeners.add(l);
 	}
 	
-	protected boolean removeApplicationQuitListener(ApplicationQuitListener l) {
+	public boolean removeApplicationQuitListener(ApplicationQuitListener l) {
 		return quitListeners.remove(l);
 	}
 	
-	protected void notifyApplicationQuit() {
+	public void notifyApplicationQuit() {
 		quitListeners.forEach(l -> {
 			l.quit(this);
 		});

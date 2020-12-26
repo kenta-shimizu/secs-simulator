@@ -1,6 +1,7 @@
 package com.shimizukenta.secssimulator;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -8,6 +9,7 @@ import java.util.stream.Collectors;
 
 import com.shimizukenta.jsonhub.JsonHub;
 import com.shimizukenta.jsonhub.JsonHubBuilder;
+import com.shimizukenta.secs.AbstractCollectionProperty;
 import com.shimizukenta.secs.CollectionProperty;
 import com.shimizukenta.secs.PropertyChangeListener;
 import com.shimizukenta.secs.sml.SmlMessage;
@@ -20,7 +22,22 @@ import com.shimizukenta.secs.sml.SmlMessage;
  */
 public class SmlAliasPairPool {
 	
-	private final CollectionProperty<SmlAliasPair> pairs = CollectionProperty.newSet();
+	private static class ReplaceHashSet<T> extends HashSet<T> {
+		
+		private static final long serialVersionUID = -6967200029653722085L;
+		
+		@Override
+		public boolean add(T v) {
+			remove(v);
+			return super.add(v);
+		}
+	};
+	
+	private final CollectionProperty<SmlAliasPair> pairs = new AbstractCollectionProperty<SmlAliasPair>(new ReplaceHashSet<>()){
+		
+		private static final long serialVersionUID = 7117184932555495310L;
+	};;
+	
 	
 	public SmlAliasPairPool() {
 	}

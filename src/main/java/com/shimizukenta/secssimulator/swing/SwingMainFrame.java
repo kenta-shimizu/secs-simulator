@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Optional;
 
 import javax.swing.JDesktopPane;
 import javax.swing.JFileChooser;
@@ -35,12 +36,14 @@ public class SwingMainFrame extends JFrame {
 	private final JFileChooser saveConfigFileChooser = new JFileChooser();
 	private final JFileChooser loggingFileChooser = new JFileChooser();
 	private final JFileChooser addSmlFileChooser = new JFileChooser();
+	private final JFileChooser loadSmlFileChooser = new JFileChooser();
+	private final JFileChooser saveSmlFileChooser = new JFileChooser();
 	private final JFileChooser addMacroRecipeFileChooser = new JFileChooser();
 	
 	private final MenuBar menubar;
 	private final ViewFrame viewFrame;
 	private final ControlFrame controlFrame;
-	private final SendSmlDirectFrame sendSmlDirectFrame;
+	private final SmlEditorFrame smlEditorFrame;
 	private final MacroFrame macroFrame;
 	
 	private final SwingSecsSimulator simm;
@@ -63,12 +66,12 @@ public class SwingMainFrame extends JFrame {
 			this.loadConfigFileChooser.setFileFilter(filter);
 		}
 		
-		this.saveConfigFileChooser.setDialogTitle("Save config to file");
+		this.saveConfigFileChooser.setDialogTitle("Save config file");
 		
-		this.loggingFileChooser.setDialogTitle("Logging file");
+		this.loggingFileChooser.setDialogTitle("Start Logging to file");
 		
 		this.addSmlFileChooser.setDialogTitle("Add SML from files");
-		this.addSmlFileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+		this.addSmlFileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 		this.addSmlFileChooser.setMultiSelectionEnabled(true);
 		{
 			this.addSmlFileChooser.setAcceptAllFileFilterUsed(true);
@@ -79,8 +82,22 @@ public class SwingMainFrame extends JFrame {
 			this.addSmlFileChooser.setFileFilter(filter);
 		}
 		
+		this.loadSmlFileChooser.setDialogTitle("Load SML from file");
+		this.loadSmlFileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		this.loadSmlFileChooser.setMultiSelectionEnabled(false);
+		{
+			this.loadSmlFileChooser.setAcceptAllFileFilterUsed(true);
+			
+			final FileFilter filter = new FileNameExtensionFilter("SML File", "sml", "SML");
+			this.loadSmlFileChooser.addChoosableFileFilter(filter);
+			
+			this.loadSmlFileChooser.setFileFilter(filter);
+		}
+		
+		this.saveSmlFileChooser.setDialogTitle("Save SML file");
+		
 		this.addMacroRecipeFileChooser.setDialogTitle("Add Macro-Recipe from files");
-		this.addMacroRecipeFileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+		this.addMacroRecipeFileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 		this.addMacroRecipeFileChooser.setMultiSelectionEnabled(true);
 		{
 			this.addMacroRecipeFileChooser.setAcceptAllFileFilterUsed(true);
@@ -95,14 +112,14 @@ public class SwingMainFrame extends JFrame {
 		this.menubar = new MenuBar(simm);
 		this.viewFrame = new ViewFrame(simm);
 		this.controlFrame = new ControlFrame(simm);
-		this.sendSmlDirectFrame = new SendSmlDirectFrame(simm);
+		this.smlEditorFrame = new SmlEditorFrame(simm);
 		this.macroFrame = new MacroFrame(simm);
 		
 		this.setJMenuBar(this.menubar);
 		
 		this.inners.add(this.viewFrame);
 		this.inners.add(this.controlFrame);
-		this.inners.add(this.sendSmlDirectFrame);
+		this.inners.add(this.smlEditorFrame);
 		this.inners.add(this.macroFrame);
 		this.inners.add(new LoggingFrame(simm));
 		
@@ -170,6 +187,7 @@ public class SwingMainFrame extends JFrame {
 				simulator().loadConfig(file.toPath());
 			}
 			catch ( IOException e ) {
+				
 				//TODO
 			}
 			break;
@@ -223,10 +241,9 @@ public class SwingMainFrame extends JFrame {
 		case JFileChooser.CANCEL_OPTION:
 		case JFileChooser.ERROR_OPTION:
 		default: {
-				
+			/* Nothing */
 		}
 		}
-		//TODO
 	}
 	
 	protected void showAddSmlDialog() {
@@ -257,8 +274,48 @@ public class SwingMainFrame extends JFrame {
 		}
 	}
 	
-	protected void showSendSmlDirectFrame() {
-		this.sendSmlDirectFrame.setVisible(true);
+	protected void showSmlEditorFrame() {
+		this.smlEditorFrame.setVisible(true);
+	}
+	
+	protected Optional<SmlMessage> showLoadSmlFileDialog() throws SmlParseException, IOException {
+		
+		switch ( this.loadSmlFileChooser.showOpenDialog(this) ) {
+		case JFileChooser.APPROVE_OPTION: {
+			
+			File file = this.loadSmlFileChooser.getSelectedFile();
+			
+			return Optional.of(SmlAliasPair.fromFile(file.toPath()).sml());
+			/* break; */
+		}
+		case JFileChooser.CANCEL_OPTION:
+		case JFileChooser.ERROR_OPTION:
+		default :{
+			/* Nothing */
+		}
+		}
+		
+		return Optional.empty();
+	}
+	
+	protected Optional<Path> showSaveSmlFileDialog() {
+		
+		switch ( this.saveSmlFileChooser.showSaveDialog(this) ) {
+		case JFileChooser.APPROVE_OPTION: {
+			
+			File file = this.saveSmlFileChooser.getSelectedFile();
+			return Optional.of(file.toPath());
+			
+			/* break; */
+		}
+		case JFileChooser.CANCEL_OPTION:
+		case JFileChooser.ERROR_OPTION:
+		default :{
+			/* Nothing */
+		}
+		}
+		
+		return Optional.empty();
 	}
 	
 	protected void showAddMacroRecipeDiralog() {

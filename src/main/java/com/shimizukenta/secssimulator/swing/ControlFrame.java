@@ -14,11 +14,14 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
 
+import com.shimizukenta.secs.BooleanProperty;
 import com.shimizukenta.secssimulator.SmlAliasPair;
 
 public class ControlFrame extends AbstractSwingInnerFrame {
 	
 	private static final long serialVersionUID = 1369410578401942391L;
+	
+	private final BooleanProperty communicateState = BooleanProperty.newInstance(false);
 	
 	private final JList<String> smlList;
 	
@@ -28,6 +31,7 @@ public class ControlFrame extends AbstractSwingInnerFrame {
 	private final JButton removeSmlButton;
 	private final JButton showSmlButton;
 	private final JButton sendSmlButton;
+	private final JButton linktestButton;
 	
 	private final JCheckBox autoReply;
 	
@@ -81,7 +85,7 @@ public class ControlFrame extends AbstractSwingInnerFrame {
 			String alias = this.smlList.getSelectedValue();
 			if ( alias != null ) {
 				simulator().optionalSmlAlias(alias).ifPresent(sm -> {
-					simulator().showSml(sm);
+					simulator().showSmlMessage(sm);
 				});
 			}
 		});
@@ -92,13 +96,14 @@ public class ControlFrame extends AbstractSwingInnerFrame {
 			String alias = this.smlList.getSelectedValue();
 			if ( alias != null ) {
 				simulator().optionalSmlAlias(alias).ifPresent(sm -> {
-					try {
-						simulator().send(sm);
-					}
-					catch ( InterruptedException ignore ) {
-					}
+					simulator().asyncSend(sm);
 				});
 			}
+		});
+		
+		this.linktestButton = new JButton("Linktest");
+		this.linktestButton.addActionListener(ev -> {
+			simulator().asyncLinktest();
 		});
 		
 		this.autoReply = new JCheckBox("Auto-reply");
@@ -172,7 +177,12 @@ public class ControlFrame extends AbstractSwingInnerFrame {
 				{
 					JPanel ppp = borderPanel();
 					
-					ppp.add(autoReply, BorderLayout.WEST);
+					{
+						ppp.add(autoReply, BorderLayout.WEST);
+					}
+					{
+						ppp.add(linktestButton, BorderLayout.EAST);
+					}
 					
 					pp.add(ppp, BorderLayout.SOUTH);
 				}
@@ -196,12 +206,22 @@ public class ControlFrame extends AbstractSwingInnerFrame {
 		});
 		
 		config().autoReply().addChangeListener(this.autoReply::setSelected);
+		
+		config().protocol().addChangeListener(protocol -> {
+			setLinktestEnable();
+		});
+		
+		this.communicateState.addChangeListener(f -> {
+			setLinktestEnable();
+		});
 	}
 	
 	@Override
 	protected void notifyCommunicateStateChanged(boolean communicated) {
 		this.sendSmlButton.setEnabled(communicated);
 		this.sendSmlButton.repaint();
+		
+		this.communicateState.set(communicated);
 	}
 	
 	@Override
@@ -218,5 +238,12 @@ public class ControlFrame extends AbstractSwingInnerFrame {
 		
 		this.smlList.repaint();
 	}
-
+	
+	private void setLinktestEnable() {
+		this.linktestButton.setEnabled(
+				config().protocol().get().isHsmsSs()
+				&& this.communicateState.booleanValue()
+				);
+	}
+	
 }

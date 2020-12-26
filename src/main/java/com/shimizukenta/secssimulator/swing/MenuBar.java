@@ -56,8 +56,8 @@ public class MenuBar extends JMenuBar {
 							simulator().showAddSmlDialog();
 						}),
 						separator(),
-						item("Show Direct Sender", ev -> {
-							simulator().showSendSmlDirectFrame();
+						item("Show SML Editor", ev -> {
+							simulator().showSmlEditorFrame();
 						})
 						),
 				menu("Macro",
@@ -113,10 +113,6 @@ public class MenuBar extends JMenuBar {
 	
 	protected SwingSecsSimulator simulator() {
 		return simm;
-	}
-	
-	protected SwingSecsSimulatorConfig config() {
-		return simm.config();
 	}
 	
 	protected void notifyLoggingPropertyChanged(Path path) {

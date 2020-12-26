@@ -124,15 +124,15 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	/* log-listener */
 	private final Collection<SecsSimulatorLogListener> logListeners = new CopyOnWriteArrayList<>();
 	
-	protected boolean addLogListener(SecsSimulatorLogListener lstnr) {
+	public boolean addLogListener(SecsSimulatorLogListener lstnr) {
 		return logListeners.add(lstnr);
 	}
 	
-	protected boolean removeLogListener(SecsSimulatorLogListener lstnr) {
+	public boolean removeLogListener(SecsSimulatorLogListener lstnr) {
 		return logListeners.remove(lstnr);
 	}
 	
-	protected void notifyLog(SecsSimulatorLog log) {
+	public void notifyLog(SecsSimulatorLog log) {
 		logListeners.forEach(l -> {l.received(log);});
 	}
 	
@@ -386,7 +386,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return false;
 	}
 	
-	protected SmlMessage parseSml(CharSequence sml) throws SmlParseException {
+	public SmlMessage parseSml(CharSequence sml) throws SmlParseException {
 		return ExtendSmlMessageParser.getInstance().parse(sml);
 	}
 	
@@ -441,11 +441,11 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return config.smlAliasPairPool().remove(alias);
 	}
 	
-	protected boolean addSmlPairs(Collection<? extends SmlAliasPair> pairs) {
+	public boolean addSmlPairs(Collection<? extends SmlAliasPair> pairs) {
 		return config.smlAliasPairPool().addAll(pairs);
 	}
 	
-	protected List<String> smlAliases() {
+	public List<String> smlAliases() {
 		return config.smlAliasPairPool().aliases();
 	}
 	
@@ -453,11 +453,11 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return config.smlAliasPairPool().optionalAlias(alias);
 	}
 	
-	protected boolean addSmlAliasesChangeListener(PropertyChangeListener<? super Collection<? extends SmlAliasPair>> l) {
+	public boolean addSmlAliasesChangeListener(PropertyChangeListener<? super Collection<? extends SmlAliasPair>> l) {
 		return config.smlAliasPairPool().addChangeListener(l);
 	}
 	
-	protected boolean removeSmlAliasesChangeListener(PropertyChangeListener<? super Collection<? extends SmlAliasPair>> l) {
+	public boolean removeSmlAliasesChangeListener(PropertyChangeListener<? super Collection<? extends SmlAliasPair>> l) {
 		return config.smlAliasPairPool().removeChangeListener(l);
 	}
 	
@@ -658,7 +658,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return this.loggingEngine.stop();
 	}
 	
-	protected ReadOnlyProperty<Path> loggingProperty() {
+	public ReadOnlyProperty<Path> loggingProperty() {
 		return this.loggingEngine.loggingProperty();
 	}
 	
@@ -747,23 +747,23 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		return Optional.empty();
 	}
 	
-	protected Optional<MacroRecipe> optionalMacroRecipeAlias(CharSequence alias) {
+	public Optional<MacroRecipe> optionalMacroRecipeAlias(CharSequence alias) {
 		return this.config.macroRecipePairPool().optionalAlias(alias);
 	}
 	
-	protected boolean addMacroRecipeChangeListener(PropertyChangeListener<? super Collection<? extends MacroRecipePair>> l) {
+	public boolean addMacroRecipeChangeListener(PropertyChangeListener<? super Collection<? extends MacroRecipePair>> l) {
 		return this.config.macroRecipePairPool().addChangeListener(l);
 	}
 	
-	protected boolean removeMacroRecipeChangeListener(PropertyChangeListener<? super Collection<? extends MacroRecipePair>> l) {
+	public boolean removeMacroRecipeChangeListener(PropertyChangeListener<? super Collection<? extends MacroRecipePair>> l) {
 		return this.config.macroRecipePairPool().removeChangeListener(l);
 	}
 	
-	protected boolean addMacroWorkerStateChangeListener(PropertyChangeListener<? super MacroWorker> l) {
+	public boolean addMacroWorkerStateChangeListener(PropertyChangeListener<? super MacroWorker> l) {
 		return this.macroEngine.addStateChangeListener(l);
 	}
 	
-	protected boolean removeMacroWorkerStateChangeListener(PropertyChangeListener<? super MacroWorker> l) {
+	public boolean removeMacroWorkerStateChangeListener(PropertyChangeListener<? super MacroWorker> l) {
 		return this.macroEngine.removeStateChangeListener(l);
 	}
 	

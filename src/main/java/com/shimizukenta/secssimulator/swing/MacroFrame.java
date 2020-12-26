@@ -85,7 +85,7 @@ public class MacroFrame extends AbstractSwingInnerFrame {
 			String alias = this.recipeList.getSelectedValue();
 			if ( alias != null ) {
 				simulator().optionalMacroRecipeAlias(alias).ifPresent(r -> {
-					simulator().showMacroRecipe(r);
+					simulator().showMacroRecipeMessage(r);
 				});
 			}
 		});
@@ -105,11 +105,13 @@ public class MacroFrame extends AbstractSwingInnerFrame {
 		});
 		
 		this.eraseWorkerButton = new JButton("Erase");
+		this.eraseWorkerButton.setEnabled(false);
 		this.eraseWorkerButton.addActionListener(ev -> {
 			this.eraseMacroWorker();
 		});
 		
 		this.cancelWorkerButton = new JButton("Cancel");
+		this.cancelWorkerButton.setEnabled(false);
 		this.cancelWorkerButton.addActionListener(ev -> {
 			this.cancelMacroWorker();
 		});
@@ -263,11 +265,26 @@ public class MacroFrame extends AbstractSwingInnerFrame {
 	private void updateRecipeListView() {
 		synchronized ( this.syncRecipes ) {
 			if ( this.isVisible() && this.recipesUpdated ) {
-				this.recipeList.setListData(
-						new Vector<>(simulator().macroRecipeAliases())
-						);
+				
+				boolean hasRecipes = ! simulator().macroRecipeAliases().isEmpty();
+				
+				if ( hasRecipes ) {
+					
+					this.recipeList.setListData(
+							new Vector<>(simulator().macroRecipeAliases())
+							);
+					
+				} else {
+					
+					this.recipeList.setListData(new Vector<>());
+				}
+				
+				this.removeRecipeButton.setEnabled(hasRecipes);
+				this.showRecipeButton.setEnabled(hasRecipes);
+				this.runRecipeButton.setEnabled(hasRecipes);
+				
 				this.recipesUpdated = false;
-				this.recipeList.repaint();
+				this.repaint();
 			}
 		}
 	}
@@ -275,16 +292,29 @@ public class MacroFrame extends AbstractSwingInnerFrame {
 	private void updateWorkerListView() {
 		synchronized ( this.workers ) {
 			if ( this.isVisible() && this.workersUpdated ) {
-				this.workerList.setListData(
-						new Vector<>(
-								this.workers.stream()
-								.sorted()
-								.map(w -> w.toString())
-								.collect(Collectors.toList()))
-						);
+				
+				boolean hasWorkers = ! this.workers.isEmpty();
+				
+				if ( hasWorkers ) {
+					
+					this.workerList.setListData(
+							new Vector<>(
+									this.workers.stream()
+									.sorted()
+									.map(w -> w.toString())
+									.collect(Collectors.toList()))
+							);
+				
+				} else {
+					
+					this.workerList.setListData(new Vector<>());
+				}
+				
+				this.eraseWorkerButton.setEnabled(hasWorkers);
+				this.cancelWorkerButton.setEnabled(hasWorkers);
 				
 				this.workersUpdated = false;
-				this.workerList.repaint();
+				this.repaint();
 			}
 		}
 	}

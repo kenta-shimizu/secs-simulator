@@ -4,6 +4,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,6 +12,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import javax.swing.JFrame;
 
@@ -18,11 +22,18 @@ import com.shimizukenta.jsonhub.JsonHubParseException;
 import com.shimizukenta.secs.SecsCommunicator;
 import com.shimizukenta.secs.SecsMessage;
 import com.shimizukenta.secs.sml.SmlMessage;
+import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.SecsSimulatorException;
 import com.shimizukenta.secssimulator.gui.AbstractGuiSecsSimulator;
 import com.shimizukenta.secssimulator.macro.MacroRecipe;
 
 public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
+	
+	private final ExecutorService execServ = Executors.newCachedThreadPool(r -> {
+		Thread th = new Thread(r);
+		th.setDaemon(true);
+		return th;
+	});
 	
 	private final SwingSecsSimulatorConfig config;
 	private final SwingMainFrame frame;
@@ -51,19 +62,21 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 		this.addMacroWorkerStateChangeListener(frame::notifyMacroWorkerStateChanged);
 	}
 	
-	@Override
-	protected void notifyApplicationQuit() {
-		super.notifyApplicationQuit();
-	}
-	
-	@Override
-	protected Optional<MacroRecipe> optionalMacroRecipeAlias(CharSequence alias) {
-		return super.optionalMacroRecipeAlias(alias);
-	}
-
 	
 	@Override
 	public void quitApplication() {
+		
+		try {
+			execServ.shutdown();
+			if ( ! execServ.awaitTermination(1L, TimeUnit.MILLISECONDS) ) {
+				execServ.shutdownNow();
+				if ( ! execServ.awaitTermination(10L, TimeUnit.SECONDS) ) {
+					/* giveup */
+				}
+			}
+		}
+		catch ( InterruptedException giveup ) {
+		}
 		
 		this.frame.setVisible(false);
 		this.frame.dispose();
@@ -110,11 +123,31 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 		return Optional.empty();
 	}
 	
+	public void asyncSend(SmlMessage sm) {
+		execServ.execute(() -> {
+			try {
+				send(sm);
+			}
+			catch ( InterruptedException ignore ) {
+			}
+		});
+	}
+	
+	public void asyncLinktest() {
+		execServ.execute(() -> {
+			try {
+				linktest();
+			}
+			catch ( InterruptedException ignore ) {
+			}
+		});
+	}
+	
 	protected SwingSecsSimulatorConfig config() {
 		return config;
 	}
 	
-	private void showWindow() {
+	private void showMainFrame() {
 		this.frame.setVisible(true);
 	}
 	
@@ -139,8 +172,16 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 		this.frame.showAddSmlDialog();
 	}
 	
-	protected void showSendSmlDirectFrame() {
-		this.frame.showSendSmlDirectFrame();
+	protected void showSmlEditorFrame() {
+		this.frame.showSmlEditorFrame();
+	}
+	
+	protected Optional<SmlMessage> showLoadSmlDialog() throws SmlParseException, IOException {
+		return this.frame.showLoadSmlFileDialog();
+	}
+	
+	protected Optional<Path> showSaveSmlDialog() {
+		return this.frame.showSaveSmlFileDialog();
 	}
 	
 	protected void showAddMacroRecipeDiralog() {
@@ -151,11 +192,11 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 		this.frame.showMacroFrame();
 	}
 	
-	protected void showSml(SmlMessage sm) {
+	protected void showSmlMessage(SmlMessage sm) {
 		this.frame.showSmlMessage(sm);
 	}
 	
-	protected void showMacroRecipe(MacroRecipe recipe) {
+	protected void showMacroRecipeMessage(MacroRecipe recipe) {
 		this.frame.showMacroRecipeMessage(recipe);
 	}
 	
@@ -204,7 +245,7 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 					}
 				});
 				
-				simm.showWindow();
+				simm.showMainFrame();
 				
 				if ( configLoaded ) {
 					
