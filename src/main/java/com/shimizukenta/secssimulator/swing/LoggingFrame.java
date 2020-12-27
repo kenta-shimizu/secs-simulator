@@ -19,12 +19,6 @@ public class LoggingFrame extends AbstractSwingInternalFrame {
 	public LoggingFrame(SwingSecsSimulator parent) {
 		super(parent, "Logging", true, false, true, true);
 		
-		this.setBounds(
-				(config().screenWidth()  * 30 / 100),
-				(config().screenHeight() * 10 / 100),
-				(config().screenWidth()  * 40 / 100),
-				(config().screenHeight() * 40 / 100));
-		
 		this.textarea.setEditable(false);
 		this.textarea.setLineWrap(true);
 		
@@ -51,6 +45,22 @@ public class LoggingFrame extends AbstractSwingInternalFrame {
 			catch ( InterruptedException ignore ) {
 			}
 		});
+	}
+	
+	@Override
+	public void setVisible(boolean aFlag) {
+		if ( aFlag ) {
+			
+			int w = this.getDesktopPane().getWidth();
+			int h = this.getDesktopPane().getHeight();
+			
+			this.setBounds(
+					(w * 30 / 100),
+					(h * 10 / 100),
+					(w * 40 / 100),
+					(h * 40 / 100));
+		}
+		super.setVisible(aFlag);
 	}
 	
 	@Override

@@ -118,12 +118,6 @@ public class MacroFrame extends AbstractSwingInternalFrame {
 		
 		this.setDefaultCloseOperation(HIDE_ON_CLOSE);
 		
-		this.setBounds(
-				(config().screenWidth()  * 20 / 100),
-				(config().screenHeight() * 10 / 100),
-				(config().screenWidth()  * 50 / 100),
-				(config().screenHeight() * 70 / 100));
-		
 		this.setLayout(defaultGridLayout(2, 1));
 		
 		{
@@ -254,7 +248,20 @@ public class MacroFrame extends AbstractSwingInternalFrame {
 	@Override
 	public void setVisible(boolean aFlag) {
 		
+		if ( aFlag ) {
+			
+			int w = this.getDesktopPane().getWidth();
+			int h = this.getDesktopPane().getHeight();
+			
+			this.setBounds(
+					(w * 25 / 100),
+					(h * 10 / 100),
+					(w * 50 / 100),
+					(h * 70 / 100));
+		}
+		
 		super.setVisible(aFlag);
+		this.moveToFront();
 		
 		if ( aFlag ) {
 			this.updateRecipeListView();

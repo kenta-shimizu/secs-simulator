@@ -10,9 +10,6 @@ import java.util.Optional;
 import javax.swing.JDesktopPane;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
@@ -47,7 +44,10 @@ public class SwingMainFrame extends JFrame {
 	private final SmlEditorFrame smlEditorFrame;
 	private final MacroFrame macroFrame;
 	
+	private final EntryDialog entryDialog;
 	private final SetConfigDialog setConfigDialog;
+	private final TextViewDialog showSmlMessageDialog;
+	private final TextViewDialog showMacroRecipeMessageDialog;
 	
 	private final SwingSecsSimulator simm;
 	
@@ -118,7 +118,10 @@ public class SwingMainFrame extends JFrame {
 		this.smlEditorFrame = new SmlEditorFrame(simm);
 		this.macroFrame = new MacroFrame(simm);
 		
+		this.entryDialog = new EntryDialog(this, simm);
 		this.setConfigDialog = new SetConfigDialog(this, simm);
+		this.showSmlMessageDialog = new TextViewDialog(this, "Show SML", simm);
+		this.showMacroRecipeMessageDialog = new TextViewDialog(this, "Show Macro Recipe", simm);
 		
 		this.setJMenuBar(this.menubar);
 		
@@ -132,7 +135,11 @@ public class SwingMainFrame extends JFrame {
 		
 		this.add(desktopPane);
 		
+		this.dialogs.add(this.entryDialog);
 		this.dialogs.add(this.setConfigDialog);
+		this.dialogs.add(this.showSmlMessageDialog);
+		this.dialogs.add(this.showMacroRecipeMessageDialog);
+		
 		
 		if ( config().fullScreen() ) {
 			
@@ -172,6 +179,10 @@ public class SwingMainFrame extends JFrame {
 		return simm.config();
 	}
 	
+	protected void showEntryDialog() {
+		this.entryDialog.setVisible(true);
+	}
+	
 	protected void showViewFrame() {
 		this.viewFrame.setVisible(true);
 	}
@@ -184,14 +195,14 @@ public class SwingMainFrame extends JFrame {
 		this.setConfigDialog.setVisible(true);
 	}
 	
-	protected void showLoadConfigDialog() {
+	protected boolean showLoadConfigDialog() {
 		
 		switch ( this.loadConfigFileChooser.showOpenDialog(this) ) {
 		case JFileChooser.APPROVE_OPTION: {
 			
 			File file = this.loadConfigFileChooser.getSelectedFile();
 			try {
-				simulator().loadConfig(file.toPath());
+				return simulator().loadConfig(file.toPath());
 			}
 			catch ( IOException e ) {
 				
@@ -205,6 +216,8 @@ public class SwingMainFrame extends JFrame {
 			/* Nothing */
 		}
 		}
+		
+		return false;
 	}
 	
 	protected void showSaveConfigDialog() {
@@ -217,6 +230,7 @@ public class SwingMainFrame extends JFrame {
 				simulator().saveConfig(file.toPath());
 			}
 			catch ( IOException e ) {
+				
 				//TODO
 			}
 			break;
@@ -338,7 +352,7 @@ public class SwingMainFrame extends JFrame {
 				catch ( MacroRecipeParseException e ) {
 					//TODO
 				}
-				catch ( IOException r ) {
+				catch ( IOException e ) {
 					//TODO
 				}
 			}
@@ -359,28 +373,11 @@ public class SwingMainFrame extends JFrame {
 	
 	
 	protected void showSmlMessage(SmlMessage sm) {
-		JTextArea textarea = new JTextArea(sm.toString());
-		textarea.setEditable(false);
-		
-		final JScrollPane scrollPane = new JScrollPane(
-				textarea,
-				JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-				JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-
-		JOptionPane.showMessageDialog(this, scrollPane, "Show SML", JOptionPane.PLAIN_MESSAGE);
+		this.showSmlMessageDialog.showText(sm);
 	}
 	
 	protected void showMacroRecipeMessage(MacroRecipe recipe) {
-		
-		JTextArea textarea = new JTextArea(recipe.toString());
-		textarea.setEditable(false);
-		
-		final JScrollPane scrollPane = new JScrollPane(
-				textarea,
-				JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-				JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-
-		JOptionPane.showMessageDialog(this, scrollPane, "Show Macro Recipe", JOptionPane.PLAIN_MESSAGE);
+		this.showMacroRecipeMessageDialog.showText(recipe);
 	}
 	
 	

@@ -160,8 +160,8 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 		this.frame.showSetConfigDialog();
 	}
 	
-	protected void showLoadConfigDialog() {
-		this.frame.showLoadConfigDialog();
+	protected boolean showLoadConfigDialog() {
+		return this.frame.showLoadConfigDialog();
 	}
 	
 	protected void showSaveConfigDialog() {
@@ -217,7 +217,8 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 				final Map<String, List<String>> map = new HashMap<>();
 				
 				for ( int i = 0, m = args.length; i < m; i += 2 ) {
-					map.computeIfAbsent(args[i], k -> new ArrayList<>()).add(args[i + 1]);
+					String key = args[i].toLowerCase();
+					map.computeIfAbsent(key, k -> new ArrayList<>()).add(args[i + 1]);
 				}
 				
 				for ( String v : map.getOrDefault("--config", Collections.emptyList()) ) {
@@ -272,9 +273,7 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 					
 				} else {
 					
-					//TODO
-					//show-dialog.
-					
+					simm.frame.showEntryDialog();
 					
 					simm.frame.showViewFrame();
 					simm.frame.showControlFrame();

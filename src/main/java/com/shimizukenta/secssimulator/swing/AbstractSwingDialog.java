@@ -209,7 +209,7 @@ public abstract class AbstractSwingDialog extends JDialog {
 		return innerCompactStackPanel(new LinkedList<>(comps), borderStack, borderAlign);
 	}
 	
-	protected static Component innerCompactStackPanel(LinkedList<Component> ll, Object borderStack, Object borderAlign) {
+	private static Component innerCompactStackPanel(LinkedList<Component> ll, Object borderStack, Object borderAlign) {
 		if ( ll.isEmpty() ) {
 			return emptyPanel();
 		} else {

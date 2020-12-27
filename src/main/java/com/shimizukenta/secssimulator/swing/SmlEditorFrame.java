@@ -34,12 +34,6 @@ public class SmlEditorFrame extends AbstractSwingInternalFrame {
 		
 		this.setDefaultCloseOperation(HIDE_ON_CLOSE);
 		
-		this.setBounds(
-				(config().screenWidth()  * 25 / 100),
-				(config().screenHeight() * 10 / 100),
-				(config().screenWidth()  * 50 / 100),
-				(config().screenHeight() * 40 / 100));
-		
 		this.errorMsg.setHorizontalAlignment(JLabel.LEFT);
 		this.errorMsg.setVerticalAlignment(JLabel.CENTER);
 		this.errorMsg.setForeground(Color.RED);
@@ -152,10 +146,23 @@ public class SmlEditorFrame extends AbstractSwingInternalFrame {
 	@Override
 	public void setVisible(boolean aFlag) {
 		if ( aFlag ) {
+			
+			int w = this.getDesktopPane().getWidth();
+			int h = this.getDesktopPane().getHeight();
+			
+			this.setBounds(
+					(w * 25 / 100),
+					(h * 10 / 100),
+					(w * 50 / 100),
+					(h * 40 / 100));
+
+			
 			this.textArea.setText("");
 			this.errorMsg.setText("");
 		}
+		
 		super.setVisible(aFlag);
+		this.moveToFront();
 	}
 	
 	private void sendSmlDirect() {

@@ -29,12 +29,6 @@ public class ViewFrame extends AbstractSwingInternalFrame {
 	public ViewFrame(SwingSecsSimulator parent) {
 		super(parent, "Viewer", true, false, true, true);
 		
-		this.setBounds(
-				(config().screenWidth()  *  1 / 100),
-				(config().screenHeight() *  1 / 100),
-				(config().screenWidth()  * 50 / 100),
-				(config().screenHeight() * 85 / 100));
-		
 		this.setLayout(defaultBorderLayout());
 		
 		{
@@ -83,6 +77,23 @@ public class ViewFrame extends AbstractSwingInternalFrame {
 				//HOOK
 			}
 		});
+	}
+	
+	@Override
+	public void setVisible(boolean aFlag) {
+		if ( aFlag ) {
+			
+			int w = this.getDesktopPane().getWidth();
+			int h = this.getDesktopPane().getHeight();
+			
+			this.setBounds(
+					(w *  1 / 100),
+					(h *  1 / 100),
+					(w * 50 / 100),
+					(h * 85 / 100));
+		}
+		
+		super.setVisible(aFlag);
 	}
 	
 	private static final String BR = System.lineSeparator();

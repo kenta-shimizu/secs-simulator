@@ -17,6 +17,7 @@ public class SwingSecsSimulatorConfig extends AbstractGuiSecsSimulatorConfig {
 	
 	private static final SocketAddress defaultSocketAddress = new InetSocketAddress("127.0.0.1", 5000);
 	private static final int defaultViewerSize = 500;
+	private static final boolean defaultOverrideIsEquip = true;
 	
 	private int viewerSize;
 	
@@ -25,6 +26,7 @@ public class SwingSecsSimulatorConfig extends AbstractGuiSecsSimulatorConfig {
 		
 		this.socketAddress(defaultSocketAddress);
 		this.viewerSize = defaultViewerSize;
+		this.isEquip(defaultOverrideIsEquip);
 	}
 	
 	@Override
@@ -32,6 +34,7 @@ public class SwingSecsSimulatorConfig extends AbstractGuiSecsSimulatorConfig {
 		super.initialize();
 		
 		this.viewerSize = defaultViewerSize;
+		this.isEquip(defaultOverrideIsEquip);
 	}
 	
 	public int viewerSize() {

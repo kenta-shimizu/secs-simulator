@@ -38,12 +38,6 @@ public class ControlFrame extends AbstractSwingInternalFrame {
 	public ControlFrame(SwingSecsSimulator parent) {
 		super(parent, "Controller", true, false, true, true);
 		
-		this.setBounds(
-				(config().screenWidth()  * 50 / 100),
-				(config().screenHeight() *  5 / 100),
-				(config().screenWidth()  * 45 / 100),
-				(config().screenHeight() * 60 / 100));
-		
 		this.smlList = new JList<>();
 		this.smlList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		this.smlList.addMouseListener(new MouseAdapter() {
@@ -214,6 +208,23 @@ public class ControlFrame extends AbstractSwingInternalFrame {
 		this.communicateState.addChangeListener(f -> {
 			setLinktestEnable();
 		});
+	}
+	
+	@Override
+	public void setVisible(boolean aFlag) {
+		if ( aFlag ) {
+			
+			int w = this.getDesktopPane().getWidth();
+			int h = this.getDesktopPane().getHeight();
+			
+			this.setBounds(
+					(w * 50 / 100),
+					(h *  5 / 100),
+					(w * 45 / 100),
+					(h * 60 / 100));
+		}
+		
+		super.setVisible(aFlag);
 	}
 	
 	@Override
