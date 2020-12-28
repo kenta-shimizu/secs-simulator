@@ -9,12 +9,12 @@ This is SECS-Simulator Java application.
 ### Run Swing-SECS-Simulator
 
 ```java
-java -jar SwingSecsSimualtor.jar
+java -jar SwingSecsSimulator.jar
 ```
 
 ### Run CLI-SECS-Simulator (Command Line)
 
 ```java
-java -jar CliSecsSimualtor.jar
+java -jar CliSecsSimulator.jar
 ```
 
