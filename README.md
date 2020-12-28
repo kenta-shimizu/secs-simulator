@@ -4,7 +4,7 @@ This is SECS-Simulator Java application.
 
 [github.io](https://kenta-shimizu.github.io/secs-simulator/index.html)
 
-## Run
+## How to use
 
 ### Run Swing-SECS-Simulator
 
