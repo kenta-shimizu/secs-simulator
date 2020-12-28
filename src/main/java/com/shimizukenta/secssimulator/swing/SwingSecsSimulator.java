@@ -62,7 +62,9 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 		this.addMacroWorkerStateChangeListener(frame::notifyMacroWorkerStateChanged);
 		
 		this.config.protocol().addChangeListener(protocol -> {
-			this.closeCommunicator();
+			execServ.execute(() -> {
+				this.closeCommunicator();
+			});
 		});
 	}
 	
@@ -98,8 +100,7 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 			return super.openCommunicator();
 		}
 		catch ( IOException e ) {
-			
-			//TODO
+			putFailure(e);
 		}
 		return null;
 	}
@@ -110,8 +111,7 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 			super.closeCommunicator();
 		}
 		catch ( IOException e ) {
-			
-			//TODO
+			putFailure(e);
 		}
 	}
 	
@@ -121,8 +121,7 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 			return super.send(sm);
 		}
 		catch ( SecsSimulatorException e ) {
-			
-			//TODO
+			putFailure(e);
 		}
 		return Optional.empty();
 	}
@@ -156,8 +155,8 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 	}
 	
 	
-	protected void showSetConfigDialog() {
-		this.frame.showSetConfigDialog();
+	protected boolean showSetConfigDialog() {
+		return this.frame.showSetConfigDialog();
 	}
 	
 	protected boolean showLoadConfigDialog() {
@@ -204,6 +203,9 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 		this.frame.showMacroRecipeMessage(recipe);
 	}
 	
+	protected void putFailure(Throwable t) {
+		this.frame.putFailure(t);
+	}
 	
 	public static void main(String[] args) {
 		

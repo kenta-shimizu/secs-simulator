@@ -43,6 +43,7 @@ public class SwingMainFrame extends JFrame {
 	private final ControlFrame controlFrame;
 	private final SmlEditorFrame smlEditorFrame;
 	private final MacroFrame macroFrame;
+	private final FailureFrame failureFrame;
 	
 	private final EntryDialog entryDialog;
 	private final SetConfigDialog setConfigDialog;
@@ -117,6 +118,7 @@ public class SwingMainFrame extends JFrame {
 		this.controlFrame = new ControlFrame(simm);
 		this.smlEditorFrame = new SmlEditorFrame(simm);
 		this.macroFrame = new MacroFrame(simm);
+		this.failureFrame = new FailureFrame(simm);
 		
 		this.entryDialog = new EntryDialog(this, simm);
 		this.setConfigDialog = new SetConfigDialog(this, simm);
@@ -130,6 +132,7 @@ public class SwingMainFrame extends JFrame {
 		this.inners.add(this.smlEditorFrame);
 		this.inners.add(this.macroFrame);
 		this.inners.add(new LoggingFrame(simm));
+		this.inners.add(this.failureFrame);
 		
 		this.inners.forEach(this.desktopPane::add);
 		
@@ -191,8 +194,9 @@ public class SwingMainFrame extends JFrame {
 		this.controlFrame.setVisible(true);
 	}
 	
-	protected void showSetConfigDialog() {
+	protected boolean showSetConfigDialog() {
 		this.setConfigDialog.setVisible(true);
+		return setConfigDialog.getResult();
 	}
 	
 	protected boolean showLoadConfigDialog() {
@@ -205,8 +209,7 @@ public class SwingMainFrame extends JFrame {
 				return simulator().loadConfig(file.toPath());
 			}
 			catch ( IOException e ) {
-				
-				//TODO
+				simulator().putFailure(e);
 			}
 			break;
 		}
@@ -230,8 +233,7 @@ public class SwingMainFrame extends JFrame {
 				simulator().saveConfig(file.toPath());
 			}
 			catch ( IOException e ) {
-				
-				//TODO
+				simulator().putFailure(e);
 			}
 			break;
 		}
@@ -252,8 +254,7 @@ public class SwingMainFrame extends JFrame {
 				simulator().startLogging(file.toPath());
 			}
 			catch ( IOException e ) {
-				
-				//TODO
+				simulator().putFailure(e);
 			}
 			catch ( InterruptedException ignore ) {
 			}
@@ -278,10 +279,10 @@ public class SwingMainFrame extends JFrame {
 					simulator().addSml(file.toPath());
 				}
 				catch ( SmlParseException e ) {
-					//TODO
+					simulator().putFailure(e);
 				}
 				catch ( IOException e ) {
-					//TODO
+					simulator().putFailure(e);
 				}
 			}
 			
@@ -350,10 +351,10 @@ public class SwingMainFrame extends JFrame {
 					simulator().addMacroRecipe(file.toPath());
 				}
 				catch ( MacroRecipeParseException e ) {
-					//TODO
+					simulator().putFailure(e);
 				}
 				catch ( IOException e ) {
-					//TODO
+					simulator().putFailure(e);
 				}
 			}
 			
@@ -378,6 +379,10 @@ public class SwingMainFrame extends JFrame {
 	
 	protected void showMacroRecipeMessage(MacroRecipe recipe) {
 		this.showMacroRecipeMessageDialog.showText(recipe);
+	}
+	
+	protected void putFailure(Throwable t) {
+		this.failureFrame.put(t);
 	}
 	
 	

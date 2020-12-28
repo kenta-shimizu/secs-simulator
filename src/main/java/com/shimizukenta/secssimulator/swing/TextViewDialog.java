@@ -7,7 +7,6 @@ import java.util.Objects;
 
 import javax.swing.JButton;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
 public class TextViewDialog extends AbstractSwingDialog {
@@ -31,12 +30,7 @@ public class TextViewDialog extends AbstractSwingDialog {
 		this.setLayout(defaultBorderLayout());
 		
 		{
-			JScrollPane scrollPane = new JScrollPane(
-					this.textarea,
-					JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-					JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-			
-			this.add(scrollPane, BorderLayout.CENTER);
+			this.add(defaultScrollPane(this.textarea), BorderLayout.CENTER);
 		}
 		{
 			JPanel p = flowPanel(FlowLayout.CENTER);

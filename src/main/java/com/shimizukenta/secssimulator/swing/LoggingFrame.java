@@ -25,7 +25,7 @@ public class LoggingFrame extends AbstractSwingInternalFrame {
 		this.setLayout(defaultBorderLayout());
 		
 		{
-			this.add(textarea, BorderLayout.CENTER);
+			this.add(defaultScrollPane(textarea), BorderLayout.CENTER);
 		}
 		{
 			JPanel p = flowPanel(FlowLayout.CENTER);

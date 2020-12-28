@@ -56,11 +56,7 @@ public class ViewFrame extends AbstractSwingInternalFrame {
 			this.messageLogTextArea.setLineWrap(false);
 			this.messageLogTextArea.setOpaque(true);
 			
-			this.scrollPane = new JScrollPane(
-					this.messageLogTextArea,
-					JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-					JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-			
+			this.scrollPane = defaultScrollPane(this.messageLogTextArea);
 			this.vScrollBar = this.scrollPane.getVerticalScrollBar();
 			
 			this.add(scrollPane, BorderLayout.CENTER);

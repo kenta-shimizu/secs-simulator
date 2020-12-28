@@ -11,7 +11,6 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JList;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
 
 import com.shimizukenta.secs.BooleanProperty;
@@ -161,12 +160,7 @@ public class ControlFrame extends AbstractSwingInternalFrame {
 					pp.add(ppp, BorderLayout.NORTH);
 				}
 				{
-					final JScrollPane scrollPane = new JScrollPane(
-							this.smlList,
-							JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-							JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-					
-					pp.add(scrollPane, BorderLayout.CENTER);
+					pp.add(defaultScrollPane(this.smlList), BorderLayout.CENTER);
 				}
 				{
 					JPanel ppp = borderPanel();

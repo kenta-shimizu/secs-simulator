@@ -1,6 +1,7 @@
 package com.shimizukenta.secssimulator.swing;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.nio.file.Path;
@@ -9,6 +10,7 @@ import java.util.Collection;
 import javax.swing.BoxLayout;
 import javax.swing.JInternalFrame;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 
@@ -107,6 +109,10 @@ public class AbstractSwingInternalFrame extends JInternalFrame {
 		/* Override-if-use */
 	}
 	
+	protected void putFailure(Throwable t) {
+		simulator().putFailure(t);
+	}
+	
 	
 	protected static BorderLayout defaultBorderLayout() {
 		return new BorderLayout(2, 2);
@@ -166,6 +172,13 @@ public class AbstractSwingInternalFrame extends JInternalFrame {
 				title,
 				TitledBorder.LEFT,
 				TitledBorder.TOP);
+	}
+	
+	protected static final JScrollPane defaultScrollPane(Component view) {
+		return new JScrollPane(
+				view,
+			JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 	}
 	
 }

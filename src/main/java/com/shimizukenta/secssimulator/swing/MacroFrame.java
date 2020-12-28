@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import javax.swing.JButton;
 import javax.swing.JList;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
 
 import com.shimizukenta.secssimulator.MacroRecipePair;
@@ -31,8 +30,8 @@ public class MacroFrame extends AbstractSwingInternalFrame {
 	private final JButton showRecipeButton;
 	private final JButton runRecipeButton;
 	
-	private final JButton eraseWorkerButton;
-	private final JButton cancelWorkerButton;
+	private final JButton removeWorkerButton;
+	private final JButton abortWorkerButton;
 	
 	private boolean recipesUpdated;
 	private boolean workersUpdated;
@@ -62,7 +61,7 @@ public class MacroFrame extends AbstractSwingInternalFrame {
 			@Override
 			public void mouseClicked(MouseEvent ev) {
 				if ( ev.getClickCount() == 2 ) {
-					eraseWorkerButton.doClick();
+					removeWorkerButton.doClick();
 				}
 			}
 		});
@@ -104,16 +103,16 @@ public class MacroFrame extends AbstractSwingInternalFrame {
 			}
 		});
 		
-		this.eraseWorkerButton = new JButton("Erase");
-		this.eraseWorkerButton.setEnabled(false);
-		this.eraseWorkerButton.addActionListener(ev -> {
-			this.eraseMacroWorker();
+		this.removeWorkerButton = new JButton("Remove");
+		this.removeWorkerButton.setEnabled(false);
+		this.removeWorkerButton.addActionListener(ev -> {
+			this.removeMacroWorker();
 		});
 		
-		this.cancelWorkerButton = new JButton("Cancel");
-		this.cancelWorkerButton.setEnabled(false);
-		this.cancelWorkerButton.addActionListener(ev -> {
-			this.cancelMacroWorker();
+		this.abortWorkerButton = new JButton("Abort");
+		this.abortWorkerButton.setEnabled(false);
+		this.abortWorkerButton.addActionListener(ev -> {
+			this.abortMacroWorker();
 		});
 		
 		this.setDefaultCloseOperation(HIDE_ON_CLOSE);
@@ -148,12 +147,7 @@ public class MacroFrame extends AbstractSwingInternalFrame {
 				p.add(pp, BorderLayout.NORTH);
 			}
 			{
-				final JScrollPane scrollPane = new JScrollPane(
-						this.recipeList,
-						JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-						JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-				
-				p.add(scrollPane, BorderLayout.CENTER);
+				p.add(defaultScrollPane(this.recipeList), BorderLayout.CENTER);
 			}
 			
 			this.add(p);
@@ -169,14 +163,14 @@ public class MacroFrame extends AbstractSwingInternalFrame {
 				{
 					JPanel ppp = lineBoxPanel();
 					
-					ppp.add(this.cancelWorkerButton);
+					ppp.add(this.abortWorkerButton);
 					
 					pp.add(ppp, BorderLayout.EAST);
 				}
 				{
 					JPanel ppp = lineBoxPanel();
 					
-					ppp.add(this.eraseWorkerButton);
+					ppp.add(this.removeWorkerButton);
 					
 					pp.add(ppp, BorderLayout.WEST);
 				}
@@ -184,12 +178,7 @@ public class MacroFrame extends AbstractSwingInternalFrame {
 				p.add(pp, BorderLayout.NORTH);
 			}
 			{
-				final JScrollPane scrollPane = new JScrollPane(
-						this.workerList,
-						JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-						JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-				
-				p.add(scrollPane, BorderLayout.CENTER);
+				p.add(defaultScrollPane(this.workerList), BorderLayout.CENTER);
 			}
 			
 			this.add(p);
@@ -222,7 +211,7 @@ public class MacroFrame extends AbstractSwingInternalFrame {
 		}
 	}
 	
-	private void eraseMacroWorker() {
+	private void removeMacroWorker() {
 		synchronized ( this.workers ) {
 			int index = this.workerList.getSelectedIndex();
 			if ( index >= 0 ) {
@@ -236,7 +225,7 @@ public class MacroFrame extends AbstractSwingInternalFrame {
 		}
 	}
 	
-	private void cancelMacroWorker() {
+	private void abortMacroWorker() {
 		synchronized ( this.workers ) {
 			int index = this.workerList.getSelectedIndex();
 			if ( index >= 0 ) {
@@ -317,8 +306,8 @@ public class MacroFrame extends AbstractSwingInternalFrame {
 					this.workerList.setListData(new Vector<>());
 				}
 				
-				this.eraseWorkerButton.setEnabled(hasWorkers);
-				this.cancelWorkerButton.setEnabled(hasWorkers);
+				this.removeWorkerButton.setEnabled(hasWorkers);
+				this.abortWorkerButton.setEnabled(hasWorkers);
 				
 				this.workersUpdated = false;
 				this.repaint();

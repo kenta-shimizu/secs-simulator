@@ -85,7 +85,12 @@ public class MacroTaskBuilder {
 			return tasks;
 		}
 		catch ( JsonHubParseException e ) {
-			throw new MacroRecipeParseException(e);
+			String msg = e.getMessage();
+			if ( msg == null ) {
+				throw new MacroRecipeParseException(e.getClass().getSimpleName(), e);
+			} else {
+				throw new MacroRecipeParseException(msg, e);
+			}
 		}
 	}
 	
@@ -173,7 +178,12 @@ public class MacroTaskBuilder {
 			};
 		}
 		catch ( SmlParseException e ) {
-			throw new MacroRecipeParseException(e);
+			String msg = e.getMessage();
+			if ( msg == null ) {
+				throw new MacroRecipeParseException(e.getClass().getSimpleName(), e);
+			} else {
+				throw new MacroRecipeParseException(msg, e);
+			}
 		}
 	}
 	

@@ -12,7 +12,6 @@ import java.util.Optional;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
 import com.shimizukenta.secs.sml.SmlMessage;
@@ -107,12 +106,7 @@ public class SmlEditorFrame extends AbstractSwingInternalFrame {
 			JPanel p = borderPanel();
 			
 			{
-				final JScrollPane scrollPane = new JScrollPane(
-						this.textArea,
-						JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-						JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-				
-				p.add(scrollPane, BorderLayout.CENTER);
+				p.add(defaultScrollPane(this.textArea), BorderLayout.CENTER);
 			}
 			{
 				p.add(this.errorMsg, BorderLayout.SOUTH);
@@ -154,7 +148,7 @@ public class SmlEditorFrame extends AbstractSwingInternalFrame {
 					(w * 25 / 100),
 					(h * 10 / 100),
 					(w * 50 / 100),
-					(h * 40 / 100));
+					(h * 50 / 100));
 
 			
 			this.textArea.setText("");

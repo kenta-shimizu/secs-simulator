@@ -3,6 +3,7 @@ package com.shimizukenta.secssimulator.swing;
 import java.awt.Frame;
 
 import javax.swing.JButton;
+import javax.swing.JDialog;
 
 public class EntryDialog extends AbstractSwingDialog {
 	
@@ -12,9 +13,9 @@ public class EntryDialog extends AbstractSwingDialog {
 	private final JButton toSetConfig;
 	
 	public EntryDialog(Frame owner, SwingSecsSimulator simm) {
-		super(simm, owner, "Entry", true);
+		super(simm, owner, "Welcome", true);
 		
-		this.setUndecorated(true);
+		this.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
 		
 		this.setLayout(defaultGridLayout(2, 1));
 		
@@ -28,8 +29,10 @@ public class EntryDialog extends AbstractSwingDialog {
 		
 		this.toSetConfig = new JButton("Set config");
 		this.toSetConfig.addActionListener(ev -> {
-			simulator().showSetConfigDialog();
-			setVisible(false);
+			boolean f = simulator().showSetConfigDialog();
+			if ( f ) {
+				setVisible(false);
+			}
 		});
 		
 		this.add(this.toLoadConfig);

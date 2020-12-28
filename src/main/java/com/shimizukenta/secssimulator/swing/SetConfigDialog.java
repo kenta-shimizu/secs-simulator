@@ -4,6 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Frame;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalDouble;
@@ -75,11 +77,16 @@ public class SetConfigDialog extends AbstractSwingDialog {
 		}
 	};
 	
+	private static final float defaultLinktestTime = 180.0F;
+	
 	private final ButtonGroup protocolGroup;
 	private final JRadioButton hsmsSsPassiveRadio;
 	private final JRadioButton hsmsSsActiveRadio;
 	private final JRadioButton secs1OnTcpIpRadio;
 	private final JRadioButton secs1OnTcpIpRecvRadio;
+	
+	private final JTextField ipText;
+	private final NumberTextField portText;
 	
 	private final NumberTextField deviceIdText;
 	
@@ -98,7 +105,7 @@ public class SetConfigDialog extends AbstractSwingDialog {
 	private final NumberTextField t7Text;
 	private final NumberTextField t8Text;
 	private final NumberTextField retryText;
-	private final JCheckBox linktest;
+	private final JCheckBox linktestCheck;
 	private final NumberTextField linktestText;
 
 	private final JCheckBox autoReply;
@@ -107,9 +114,12 @@ public class SetConfigDialog extends AbstractSwingDialog {
 	
 	private final JButton okButton;
 	
+	private boolean result;
 	
 	public SetConfigDialog(Frame owner, SwingSecsSimulator simm) {
 		super(simm, owner, "Set Config", true);
+		
+		this.result = false;
 		
 		this.setDefaultCloseOperation(JDialog.HIDE_ON_CLOSE);
 		
@@ -122,6 +132,9 @@ public class SetConfigDialog extends AbstractSwingDialog {
 		this.protocolGroup.add(this.hsmsSsActiveRadio);
 		this.protocolGroup.add(this.secs1OnTcpIpRadio);
 		this.protocolGroup.add(this.secs1OnTcpIpRecvRadio);
+		
+		this.ipText = new JTextField("", 15);
+		this.portText = new NumberTextField("5000", 5);
 		
 		this.deviceIdText = new NumberTextField("10", 5);
 		
@@ -141,9 +154,15 @@ public class SetConfigDialog extends AbstractSwingDialog {
 		this.t6Text = new NumberTextField("1", 4);
 		this.t7Text = new NumberTextField("1", 4);
 		this.t8Text = new NumberTextField("1", 4);
-		this.retryText = new NumberTextField("3", 2);
-		this.linktest = new JCheckBox();
+		
+		this.retryText = new NumberTextField("3", 3);
+		
 		this.linktestText = new NumberTextField("1", 4);
+		this.linktestCheck = new JCheckBox("Linktest (HSMS-SS): ", false);
+		this.linktestCheck.addChangeListener(ev -> {
+			this.linktestText.setEditable(this.linktestCheck.isSelected());
+			this.linktestText.setEnabled(this.linktestCheck.isSelected());
+		});
 		
 		this.autoReply = new JCheckBox("Auto-reply", true);
 		this.autoReplyS9Fy = new JCheckBox("Auto-reply-S9Fy", false);
@@ -153,6 +172,7 @@ public class SetConfigDialog extends AbstractSwingDialog {
 		this.okButton.addActionListener(ev -> {
 			synchronized ( this ) {
 				setConfig();
+				this.result = true;
 				this.setVisible(false);
 			}
 		});
@@ -166,37 +186,88 @@ public class SetConfigDialog extends AbstractSwingDialog {
 				List<Component> comps = new ArrayList<>();
 				
 				{
-					JPanel p = gridPanel(4, 1);
+					JPanel p = borderPanel();
 					p.setBorder(defaultTitledBorder("Protocol"));
-					p.add(this.hsmsSsPassiveRadio);
-					p.add(this.hsmsSsActiveRadio);
-					p.add(this.secs1OnTcpIpRadio);
-					p.add(this.secs1OnTcpIpRecvRadio);
+					
+					{
+						JPanel pp = gridPanel(4, 1);
+						
+						pp.add(this.hsmsSsPassiveRadio);
+						pp.add(this.hsmsSsActiveRadio);
+						pp.add(this.secs1OnTcpIpRadio);
+						pp.add(this.secs1OnTcpIpRecvRadio);
+						
+						p.add(pp, BorderLayout.WEST);
+					}
+					
 					comps.add(p);
 				}
 				{
-					//TODO
-					//socket-address
+					JPanel p = borderPanel();
+					p.setBorder(defaultTitledBorder("Socket-Address"));
+					
+					{
+						List<Component> ll = new ArrayList<>();
+						
+						{
+							JPanel pp = gridPanel(2, 1);
+							pp.add(new JLabel("IP: ", JLabel.RIGHT));
+							pp.add(new JLabel("Port: ", JLabel.RIGHT));
+							ll.add(pp);
+						}
+						{
+							JPanel pp = gridPanel(2, 1);
+							
+							{
+								JPanel ppp = flowPanel(FlowLayout.LEFT);
+								ppp.add(this.ipText);
+								pp.add(ppp);
+							}
+							{
+								JPanel ppp = flowPanel(FlowLayout.LEFT);
+								ppp.add(this.portText);
+								pp.add(ppp);
+							}
+							
+							ll.add(pp);
+						}
+						
+						p.add(compactStackPanel(BorderLayout.WEST, ll));
+					}
+					
+					comps.add(p);
 				}
 				{
 					JPanel p = flowPanel(FlowLayout.LEFT);
-					p.add(new JLabel("Device-ID: "));
+					p.add(new JLabel("Device-ID: ", JLabel.RIGHT));
 					p.add(this.deviceIdText);
 					comps.add(p);
 				}
 				{
-					JPanel p = gridPanel(2, 1);
+					JPanel p = borderPanel();
 					p.setBorder(defaultTitledBorder("Equip/Host"));
-					p.add(this.equipRadio);
-					p.add(this.hostRadio);
+					
+					{
+						JPanel pp = gridPanel(2, 1);
+						
+						pp.add(this.equipRadio);
+						pp.add(this.hostRadio);
+						
+						p.add(pp, BorderLayout.WEST);
+					}
+					
 					comps.add(p);
 				}
 				{
-					comps.add(this.masterMode);
+					JPanel p = flowPanel(FlowLayout.LEFT);
+					p.add(this.masterMode);
+					comps.add(p);
 				}
 				
-				Component p = compactStackPanel(comps, BorderLayout.NORTH, BorderLayout.NORTH);
-				tabbedpane.add("General", p);
+				JPanel p = compactStackPanel(BorderLayout.NORTH, comps);
+				p.setOpaque(true);
+				
+				tabbedpane.add("General", defaultScrollPane(p));
 			}
 			{
 				List<Component> comps = new ArrayList<>();
@@ -206,70 +277,67 @@ public class SetConfigDialog extends AbstractSwingDialog {
 					JPanel p = borderPanel();
 					p.setBorder(defaultTitledBorder("Timeout"));
 					
-					List<Component> ll = new ArrayList<>();
-					
 					{
 						JPanel pp = gridPanel(8, 1);
 						
-						for ( int i = 1; i <= 8; ++i ) {
-							JLabel l = new JLabel("T" + i + ":");
-							l.setHorizontalAlignment(JLabel.LEFT);
-							l.setVerticalAlignment(JLabel.CENTER);
-							
-							pp.add(l);
-						}
+						pp.add(timeoutPanel(t1Text, "T1: ", "sec."));
+						pp.add(timeoutPanel(t2Text, "T2: ", "sec."));
+						pp.add(timeoutPanel(t3Text, "T3: ", "sec."));
+						pp.add(timeoutPanel(t4Text, "T4: ", "sec."));
+						pp.add(timeoutPanel(t5Text, "T5: ", "sec."));
+						pp.add(timeoutPanel(t6Text, "T6: ", "sec."));
+						pp.add(timeoutPanel(t7Text, "T7: ", "sec."));
+						pp.add(timeoutPanel(t8Text, "T8: ", "sec."));
 						
-						ll.add(pp);
+						p.add(pp, BorderLayout.WEST);
 					}
-					{
-						JPanel pp = gridPanel(8, 1);
-						
-						pp.add(t1Text);
-						pp.add(t2Text);
-						pp.add(t3Text);
-						pp.add(t4Text);
-						pp.add(t5Text);
-						pp.add(t6Text);
-						pp.add(t7Text);
-						pp.add(t8Text);
-						
-						ll.add(pp);
-					}
-					
-					Component cc = compactStackPanel(ll, BorderLayout.WEST, BorderLayout.WEST);
-					p.add(cc, BorderLayout.CENTER);
 					
 					comps.add(p);
 				}
 				{
 					JPanel p = flowPanel(FlowLayout.LEFT);
-					{
-						JLabel l = new JLabel("Retry (SECS-I): ");
-						l.setHorizontalAlignment(JLabel.RIGHT);
-						p.add(l);
-					}
 					
+					p.add(new JLabel("Retry (SECS-I): ", JLabel.RIGHT));
 					p.add(this.retryText);
 					
 					comps.add(p);
 				}
 				{
-					//TODO
-					//linktest
+					JPanel p = flowPanel(FlowLayout.LEFT);
+					
+					p.add(linktestCheck);
+					p.add(linktestText);
+					p.add(new JLabel("sec.", JLabel.LEFT));
+					
+					comps.add(p);
 				}
 				
-				Component c = compactStackPanel(comps, BorderLayout.NORTH, BorderLayout.WEST);
-				tabbedpane.add("Timer", c);
+				JPanel p = compactStackPanel(BorderLayout.NORTH, comps);
+				p.setOpaque(true);
+				tabbedpane.add("Timer", defaultScrollPane(p));
 			}
 			{
 				List<Component> comps = new ArrayList<>();
 				
-				comps.add(this.autoReply);
-				comps.add(this.autoReplyS9Fy);
-				comps.add(this.autoReplySxF0);
+				{
+					JPanel p = flowPanel(FlowLayout.LEFT);
+					p.add(this.autoReply);
+					comps.add(p);
+				}
+				{
+					JPanel p = flowPanel(FlowLayout.LEFT);
+					p.add(this.autoReplyS9Fy);
+					comps.add(p);
+				}
+				{
+					JPanel p = flowPanel(FlowLayout.LEFT);
+					p.add(this.autoReplySxF0);
+					comps.add(p);
+				}
 				
-				Component c = compactStackPanel(comps, BorderLayout.NORTH, BorderLayout.NORTH);
-				tabbedpane.add("Other", c);
+				JPanel p = compactStackPanel(BorderLayout.NORTH, comps);
+				p.setOpaque(true);
+				tabbedpane.add("Other", defaultScrollPane(p));
 			}
 			
 			this.add(tabbedpane, BorderLayout.CENTER);
@@ -283,9 +351,19 @@ public class SetConfigDialog extends AbstractSwingDialog {
 		}
 	}
 	
+	private JPanel timeoutPanel(Component comp, String header, String footer) {
+		JPanel p = flowPanel(FlowLayout.RIGHT);
+		p.add(new JLabel(header, JLabel.RIGHT));
+		p.add(comp);
+		p.add(new JLabel(footer, JLabel.LEFT));
+		return p;
+	}
+	
 	@Override
 	public void setVisible(boolean aFlag) {
 		if ( aFlag ) {
+			this.result = false;
+			
 			updateView();
 			
 			this.setSize(
@@ -294,9 +372,20 @@ public class SetConfigDialog extends AbstractSwingDialog {
 					);
 			
 			this.setLocationRelativeTo(this.getOwner());
+			
+			this.repaint();
 		}
 		
 		super.setVisible(aFlag);
+	}
+	
+	/**
+	 * Returns {@code true} if set success.
+	 * 
+	 * @return {@code true} if set success
+	 */
+	public boolean getResult() {
+		return result;
 	}
 	
 	private void updateView() {
@@ -326,8 +415,19 @@ public class SetConfigDialog extends AbstractSwingDialog {
 		}
 		}
 		
-		//TODO
-		//socketaddress
+		try {
+			this.ipText.setText("");
+			this.portText.setValue(5000);
+			
+			SocketAddress a = hsmsSs.socketAddress().getSocketAddress();
+			if ( a instanceof InetSocketAddress ) {
+				InetSocketAddress i = (InetSocketAddress)a;
+				this.ipText.setText(i.getAddress().getHostAddress());
+				this.portText.setValue(i.getPort());
+			}
+		}
+		catch (IllegalStateException giveup) {
+		}
 		
 		this.deviceIdText.setValue(hsmsSs.deviceId().intValue());
 		
@@ -350,16 +450,33 @@ public class SetConfigDialog extends AbstractSwingDialog {
 		
 		this.retryText.setValue(secs1.retry().intValue());
 		
-		//TODO
-		//linktest
-		
+		{
+			float v = hsmsSs.linktest().floatValue();
+			if ( v > 0.0F ) {
+				
+				this.linktestCheck.setSelected(true);
+				this.linktestText.setValue(v);
+				this.linktestText.setEditable(true);
+				this.linktestText.setEnabled(true);
+				
+			} else {
+				
+				this.linktestCheck.setSelected(false);
+				this.linktestText.setValue(defaultLinktestTime);
+				this.linktestText.setEditable(false);
+				this.linktestText.setEnabled(false);
+			}
+		}
 		
 		this.autoReply.setSelected(config().autoReply().booleanValue());
 		this.autoReplyS9Fy.setSelected(config().autoReplyS9Fy().booleanValue());
 		this.autoReplySxF0.setSelected(config().autoReplySxF0().booleanValue());
 	}
 	
-	private void setConfig() {
+	private boolean setConfig() {
+		
+		boolean f = true;
+		
 		if ( this.hsmsSsPassiveRadio.isSelected() ) {
 			
 			config().protocol(SecsSimulatorProtocol.HSMS_SS_PASSIVE);
@@ -377,26 +494,42 @@ public class SetConfigDialog extends AbstractSwingDialog {
 			config().protocol(SecsSimulatorProtocol.SECS1_ON_TCP_IP_RECEIVER);
 		}
 		
-		//TODO
-		//socketaddress
+		try {
+			String ip = this.ipText.getText().trim();
+			if ( ip.isEmpty() ) {
+				throw new SecsSimulatorException("Config Socket-Address IP is empty");
+			}
+			
+			int port = this.portText.optionalInt()
+					.orElseThrow(() -> new SecsSimulatorException("Config Socket-Address Port invalid"));
+			
+			if ( port <= 0 || port >= 65536 ) {
+				throw new SecsSimulatorException("Config Socket-Address Port(" + port + ") invalid");
+			}
+			
+			try {
+				config().socketAddress(new InetSocketAddress(ip, port));
+			}
+			catch ( IllegalArgumentException e ) {
+				throw new SecsSimulatorException("Config Socket-Address parse failed", e);
+			}
+		}
+		catch ( SecsSimulatorException e ) {
+			simulator().putFailure(e);
+		}
 		
 		try {
-			
-			//TODO
 			int v = this.deviceIdText.optionalInt()
-					.orElseThrow(() -> new SecsSimulatorException(""));
+					.orElseThrow(() -> new SecsSimulatorException("Config Device-ID invalid"));
 			
-			if ( v < 0 || v >= 65536 ) {
-				
-				//TODO
-				throw new SecsSimulatorException("devid x");
+			if ( v < 0 || v >= 32768 ) {
+				throw new SecsSimulatorException("Config Device-ID (" + v + ") invalid");
 			}
 			
 			config().deviceId(v);
 		}
 		catch ( SecsSimulatorException e ) {
-			
-			//TODO
+			simulator().putFailure(e);
 		}
 		
 		if ( this.equipRadio.isSelected() ) {
@@ -410,37 +543,33 @@ public class SetConfigDialog extends AbstractSwingDialog {
 		
 		config().isMaster(this.masterMode.isSelected());
 		
-		setTime(this.t1Text, config()::timeoutT1, "T1");
-		setTime(this.t2Text, config()::timeoutT2, "T2");
-		setTime(this.t3Text, config()::timeoutT3, "T3");
-		setTime(this.t4Text, config()::timeoutT4, "T4");
-		setTime(this.t5Text, config()::timeoutT5, "T5");
-		setTime(this.t6Text, config()::timeoutT6, "T6");
-		setTime(this.t7Text, config()::timeoutT7, "T7");
-		setTime(this.t8Text, config()::timeoutT8, "T8");
+		setTime(this.t1Text, config()::timeoutT1, "Config Timeout-T1");
+		setTime(this.t2Text, config()::timeoutT2, "Config Timeout-T2");
+		setTime(this.t3Text, config()::timeoutT3, "Config Timeout-T3");
+		setTime(this.t4Text, config()::timeoutT4, "Config Timeout-T4");
+		setTime(this.t5Text, config()::timeoutT5, "Config Timeout-T5");
+		setTime(this.t6Text, config()::timeoutT6, "Config Timeout-T6");
+		setTime(this.t7Text, config()::timeoutT7, "Config Timeout-T7");
+		setTime(this.t8Text, config()::timeoutT8, "Config Timeout-T8");
 		
 		try {
-			
-			//TODO
 			int v = this.retryText.optionalInt()
-					.orElseThrow(() -> new SecsSimulatorException(""));
+					.orElseThrow(() -> new SecsSimulatorException("Config Retry invalid"));
 			
 			if ( v < 0 ) {
 				
-				throw new SecsSimulatorException("retry < 0");
+				throw new SecsSimulatorException("Config Retry (" + v + ") invalid < 0");
 			}
 			
 			config().retry(v);
 		}
 		catch ( SecsSimulatorException e ) {
-			
-			//TODO
+			simulator().putFailure(e);
 		}
 		
-		if ( this.linktest.isSelected() ) {
+		if ( this.linktestCheck.isSelected() ) {
 			
-			//TODO
-			//linktest
+			setTime(this.linktestText, config()::linktest, "Config Linktest");
 			
 		} else {
 			
@@ -451,22 +580,23 @@ public class SetConfigDialog extends AbstractSwingDialog {
 		config().autoReplyS9Fy().set(this.autoReplyS9Fy.isSelected());
 		config().autoReplySxF0().set(this.autoReplySxF0.isSelected());
 		
+		return f;
 	}
 	
 	private void setTime(NumberTextField t, Consumer<Float> c, String timeName) {
 		try {
 			double v = t.optionalDouble()
-					.orElseThrow(() -> new SecsSimulatorException(""));
+					.orElseThrow(() -> new SecsSimulatorException(timeName + " invalid"));
 			
 			if ( v <= 0.0D ) {
-				throw new SecsSimulatorException("timeout-x");
+				throw new SecsSimulatorException(timeName + " invalid <= 0.0");
 			}
 			
 			c.accept(Double.valueOf(v).floatValue());
 		}
 		catch ( SecsSimulatorException e ) {
-			
-			//TODO
+			simulator().putFailure(e);
 		}
 	}
+	
 }

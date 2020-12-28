@@ -591,7 +591,9 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 		this.macroPool.addAll(pairs);
 	}
 	
-	protected static SocketAddress parseSocketAddress(CharSequence cs) {
+	protected static SocketAddress parseSocketAddress(CharSequence cs)
+			throws NumberFormatException, IllegalArgumentException, IndexOutOfBoundsException {
+		
 		String[] ss = cs.toString().split(":", 2);
 		int port = Integer.parseInt(ss[1]);
 		return new InetSocketAddress(ss[0], port);

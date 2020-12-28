@@ -34,7 +34,7 @@ public abstract class AbstractMacroRecipe implements Serializable, MacroRecipe {
 	
 	@Override
 	public boolean equals(Object other) {
-		if ( other != null && (other instanceof MacroRecipe)) {
+		if ((other != null) && (other instanceof MacroRecipe)) {
 			return ((MacroRecipe)other).alias().equals(alias());
 		}
 		return false;

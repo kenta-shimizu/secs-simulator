@@ -27,7 +27,7 @@ import com.shimizukenta.secssimulator.macro.MacroWorker;
  * @author kenta-shimizu
  *
  */
-public class SecsSimulatorLog {
+public class SecsSimulatorLog implements Comparable<SecsSimulatorLog> {
 	
 	private final String subject;
 	private final LocalDateTime timestamp;
@@ -153,6 +153,11 @@ public class SecsSimulatorLog {
 	
 	private String toStringTimestamp() {
 		return timestamp.format(DATETIME);
+	}
+	
+	@Override
+	public int compareTo(SecsSimulatorLog other) {
+		return this.timestamp.compareTo(other.timestamp);
 	}
 	
 }

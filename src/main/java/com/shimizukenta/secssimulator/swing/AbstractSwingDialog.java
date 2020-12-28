@@ -9,6 +9,7 @@ import java.awt.GraphicsConfiguration;
 import java.awt.GridLayout;
 import java.awt.Window;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.List;
 import javax.swing.BoxLayout;
 import javax.swing.JDialog;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 
@@ -144,6 +146,10 @@ public abstract class AbstractSwingDialog extends JDialog {
 		/* Override-if-use */
 	}
 	
+	protected void putFailure(Throwable t) {
+		simulator().putFailure(t);
+	}
+
 	
 	protected static BorderLayout defaultBorderLayout() {
 		return new BorderLayout(2, 2);
@@ -205,20 +211,29 @@ public abstract class AbstractSwingDialog extends JDialog {
 				TitledBorder.TOP);
 	}
 	
-	protected static Component compactStackPanel(List<Component> comps, Object borderStack, Object borderAlign) {
-		return innerCompactStackPanel(new LinkedList<>(comps), borderStack, borderAlign);
+	protected static final JScrollPane defaultScrollPane(Component view) {
+		return new JScrollPane(
+				view,
+				JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+				JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 	}
 	
-	private static Component innerCompactStackPanel(LinkedList<Component> ll, Object borderStack, Object borderAlign) {
+	protected static JPanel compactStackPanel(Object borderStack, Component... comps) {
+		return compactStackPanel(borderStack, Arrays.asList(comps));
+	}
+	
+	protected static JPanel compactStackPanel(Object borderStack, List<? extends Component> comps) {
+		return innerCompactStackPanel(new LinkedList<>(comps), borderStack);
+	}
+	
+	private static JPanel innerCompactStackPanel(LinkedList<? extends Component> ll, Object borderStack) {
 		if ( ll.isEmpty() ) {
 			return emptyPanel();
 		} else {
 			Component c = ll.removeFirst();
 			JPanel p = borderPanel();
-			JPanel pp = borderPanel();
-			pp.add(c, borderAlign);
-			p.add(pp, borderStack);
-			p.add(innerCompactStackPanel(ll, borderStack, borderAlign), BorderLayout.CENTER);
+			p.add(c, borderStack);
+			p.add(innerCompactStackPanel(ll, borderStack), BorderLayout.CENTER);
 			return p;
 		}
 	}
