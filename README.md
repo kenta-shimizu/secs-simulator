@@ -1,20 +1,30 @@
 # secs-simulator
 
+![image](https://github.com/kenta-shimizu/secs-simulator/tree/master/docs/swing.png)
+
 This is SECS-Simulator Java application.
 
 [github.io](https://kenta-shimizu.github.io/secs-simulator/index.html)
 
-## How to use
+## Extend SML
 
-### Run Swing-SECS-Simulator
+### Now
 
-```java
-java -jar SwingSecsSimulator.jar
-```
+- `<NOW[16]>`
 
-### Run CLI-SECS-Simulator (Command Line)
+  ```
+  LocalDateTime.now().format(DateTimeFormatter.ofPattern("uuuuMMddHHmmssSS");
+  ```
 
-```java
-java -jar CliSecsSimulator.jar
-```
+- `<NOW[12]>`
 
+  ```
+  LocalDateTime.now().format(DateTimeFormatter.ofPattern("uuMMddHHmmss");
+  ```
+
+### Auto number
+
+- `<U4AUTO>`
+- `<U8AUTO>`
+- `<I4AUTO>`
+- `<I8AUTO>`
