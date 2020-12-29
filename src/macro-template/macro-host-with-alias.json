@@ -38,6 +38,21 @@
             "comment": "Delete All Report"
         },
         {
+            "command": "send-sml-alias",
+            "option": "s2f33-define-example",
+            "comment": "Define Report"
+        },
+        {
+            "command": "send-sml-alias",
+            "option": "s2f35-example",
+            "comment": "Link Event Report"
+        },
+        {
+            "command": "send-sml-alias",
+            "option": "s2f37-enables-example",
+            "comment": "Enable Event Report"
+        },
+        {
             "command": "sleep",
             "timeout": 2.0
         },

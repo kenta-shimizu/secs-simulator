@@ -7,12 +7,53 @@
 <body>
     <h1>SECS-Simulator</h1>
     <img src="./swing.png" />
+    <p><a href="https://github.com/kenta-shimizu/secs-simulator">github repository</a></p>
+
     <h2>Download (Swing version)</h2>
     <p>
         <a href="./SwingSecsSimulator.jar">SwingSecsSimulator.jar</a>
     </p>
+
     <h2>Run Application</h2>
     <pre>java -jar SwingSecsSimulator.jar</pre>
+
+    <h2>Set config (protocol, ip-address, device-id, timeout, ...)</h2>
+    <p>[File] -&gt; [Set Config...]</p>
+
+    <h2>Open Communicator</h2>
+    <p>[Communicator] -&gt; [Open Communicator]</p>
+
+    <h2>Send SML</h2>
+    <h3>Direct write SML and send</h3>
+    <ol>
+        <li>[SML] -&gt; [Show SML Editor]</li>
+        <li>Write SML</li>
+        <li>Click "Send" button</li>
+    </ol>
+
+    <h2>Load SML file and send</h2>
+    <ol>
+        <li>[SML] -&gt; [Add SML...]</li>
+        <li>Choose SML file(s)</li>
+        <li>Select SML, Click "Send" button in "Coltrol" frame</li>
+    </ol>
+    <p>Donwnload <a href="./sml-template.zip">SML-template</a></p>
+
+    <h2>Save/Load config</h2>
+    <ul>
+        <li>Save: [File] -&gt; [Save Config...]</li>
+        <li>Load: [File] -&gt; [Load Config...]</li>
+    </ul>
+
+    <h2>Command-Line Arguments</h2>
+    <h3>Load-config</h3>
+    <pre>java -jar SwingSecsSimulator.jar --config /path/of/config.json</pre>
+
+    <h3>Auto-open</h3>
+    <pre>java -jar SwingSecsSimulator.jar --auto-open true</pre>
+
+    <h3>Auto-logging</h3>
+    <pre>java -jar SwingSecsSimulator.jar --auto-logging /path/to/log.log</pre>
 
     <h1>CLI version</h1>
     <h2>Download</h2>

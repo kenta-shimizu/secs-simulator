@@ -26,7 +26,7 @@ public class MenuBar extends JMenuBar {
 		
 		addMenu(
 				menu("File",
-						item("Set Connfig...", ev -> {
+						item("Set Config...", ev -> {
 							simulator().showSetConfigDialog();
 						}),
 						separator(),
