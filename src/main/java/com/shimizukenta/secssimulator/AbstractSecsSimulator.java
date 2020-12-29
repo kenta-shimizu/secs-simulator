@@ -295,7 +295,11 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	}
 	
 	@Override
-	public Optional<SecsMessage> send(SmlMessage sml) throws SecsSimulatorException, InterruptedException {
+	public Optional<SecsMessage> send(SmlMessage sml)
+			throws SecsSimulatorSendException,
+			SecsSimulatorWaitReplyException,
+			SecsSimulatorException,
+			InterruptedException {
 		
 		SecsMessage primaryMsg = waitPrimaryMessage(sml).orElse(null);
 		
@@ -332,7 +336,12 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	}
 	
 	@Override
-	public Optional<SecsMessage> send(SecsMessage primaryMsg, SmlMessage replySml) throws SecsSimulatorException, InterruptedException {
+	public Optional<SecsMessage> send(SecsMessage primaryMsg, SmlMessage replySml)
+			throws SecsSimulatorSendException,
+			SecsSimulatorWaitReplyException,
+			SecsSimulatorException,
+			InterruptedException {
+		
 		try {
 			return getCommunicator()
 					.orElseThrow(SecsSimulatorNotOpenException::new)
@@ -343,7 +352,11 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		}
 	}
 	
-	private Optional<SecsMessage> send(LocalSecsMessage msg) throws SecsSimulatorException, InterruptedException {
+	private Optional<SecsMessage> send(LocalSecsMessage msg)
+			throws SecsSimulatorSendException,
+			SecsSimulatorWaitReplyException,
+			SecsSimulatorException,
+			InterruptedException {
 		
 		try {
 			return getCommunicator()
@@ -361,7 +374,11 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		}
 	}
 	
-	private Optional<SecsMessage> send(SecsMessage primaryMsg, LocalSecsMessage reply) throws SecsSimulatorException, InterruptedException {
+	private Optional<SecsMessage> send(SecsMessage primaryMsg, LocalSecsMessage reply)
+			throws SecsSimulatorSendException,
+			SecsSimulatorWaitReplyException,
+			SecsSimulatorException,
+			InterruptedException {
 		
 		try {
 			return getCommunicator()

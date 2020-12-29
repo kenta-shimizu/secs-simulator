@@ -43,8 +43,8 @@ public class EntryDialog extends AbstractSwingDialog {
 	public void setVisible(boolean aFlag) {
 		if ( aFlag ) {
 			this.setSize(
-					(this.getOwner().getWidth()  * 20 / 100),
-					(this.getOwner().getHeight() * 20 / 100)
+					(this.getOwner().getWidth()  * 25 / 100),
+					(this.getOwner().getHeight() * 25 / 100)
 					);
 			
 			this.setLocationRelativeTo(this.getOwner());

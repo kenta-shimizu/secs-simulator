@@ -294,26 +294,32 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 				catch ( InterruptedException ignore ) {
 				}
 				
-				return PollCircuitControl.RETRY;
+				return null;
 			};
 			
 			try {
 				return executeInvokeAny(task, secs1Config().timeout().t2());
 			}
-			catch ( TimeoutException giveup ) {
+			catch ( TimeoutException e ) {
+				
+				return PollCircuitControl.RETRY;
 			}
 			catch ( ExecutionException e ) {
 				
 				Throwable t = e.getCause();
 				
+				if ( t instanceof Error ) {
+					throw (Error)t;
+				}
+				
 				if ( t instanceof RuntimeException ) {
 					throw (RuntimeException)t;
 				}
 				
-				notifyLog(e);
+				notifyLog(t);
+				
+				return PollCircuitControl.RETRY;
 			}
-			
-			return PollCircuitControl.RETRY;
 		}
 		
 		private void circuitControl() throws SecsException, InterruptedException {
@@ -322,7 +328,13 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 				
 				sendByte(ENQ);
 				
-				switch ( pollCircuitControl() ) {
+				PollCircuitControl p = pollCircuitControl();
+				
+				if ( p == null ) {
+					throw new InterruptedException("Circuit-control-Interrupted");
+				}
+				
+				switch ( p ) {
 				case RX: {
 					
 					receiveBlock();

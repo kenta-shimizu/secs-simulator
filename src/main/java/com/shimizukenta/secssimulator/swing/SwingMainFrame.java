@@ -1,5 +1,6 @@
 package com.shimizukenta.secssimulator.swing;
 
+import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -146,7 +147,9 @@ public class SwingMainFrame extends JFrame {
 		
 		if ( config().fullScreen() ) {
 			
-			//HOOK
+			GraphicsEnvironment.getLocalGraphicsEnvironment()
+			.getDefaultScreenDevice()
+			.setFullScreenWindow(this);
 			
 		} else {
 			

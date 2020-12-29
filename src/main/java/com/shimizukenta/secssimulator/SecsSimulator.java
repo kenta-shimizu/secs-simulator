@@ -88,10 +88,16 @@ public interface SecsSimulator {
 	 * 
 	 * @param sml
 	 * @return Reply-Message if exist
+	 * @throws SecsSimulatorSendException
+	 * @throws SecsSimulatorWaitReplyException
 	 * @throws SecsSimulatorException
 	 * @throws InterruptedException
 	 */
-	public Optional<SecsMessage> send(SmlMessage sml) throws SecsSimulatorException, InterruptedException;
+	public Optional<SecsMessage> send(SmlMessage sml)
+			throws SecsSimulatorSendException,
+			SecsSimulatorWaitReplyException,
+			SecsSimulatorException,
+			InterruptedException;
 	
 	/**
 	 * Send Reply-Message.
@@ -103,10 +109,16 @@ public interface SecsSimulator {
 	 * @param primaryMsg
 	 * @param replySml
 	 * @return {@code Optional.empty()}
+	 * @throws SecsSimulatorSendException
+	 * @throws SecsSimulatorWaitReplyException
 	 * @throws SecsSimulatorException
 	 * @throws InterruptedException
 	 */
-	public Optional<SecsMessage> send(SecsMessage primaryMsg, SmlMessage replySml) throws SecsSimulatorException, InterruptedException;
+	public Optional<SecsMessage> send(SecsMessage primaryMsg, SmlMessage replySml)
+			throws SecsSimulatorSendException,
+			SecsSimulatorWaitReplyException,
+			SecsSimulatorException,
+			InterruptedException;
 	
 	/**
 	 * Linktest.

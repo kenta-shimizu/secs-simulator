@@ -1,0 +1,58 @@
+{
+    "tasks": [
+        {
+            "command": "open",
+            "comment": "Open-Communicator"
+        },
+        {
+            "command": "send-sml-direct",
+            "option": "S1F17 W.",
+            "comment": "Request ON-LINE"
+        },
+        {
+            "command": "sleep",
+            "timeout": 2.0
+        },
+        {
+            "command": "send-sml-direct",
+            "option": "S1F1 W.",
+            "comment": "Are you ONLINE ?"
+        },
+        {
+            "command": "send-sml-direct",
+            "option": "S2F31 W <NOW[16]>.",
+            "comment": "Datetime Set Request"
+        },
+        {
+            "command": "sleep",
+            "timeout": 2.0
+        },
+        {
+            "command": "send-sml-direct",
+            "option": "S2F37 W <L <BOOLEAN FALSE><L >>.",
+            "comment": "Disable All Event Report"
+        },
+        {
+            "command": "send-sml-direct",
+            "option": "S2F33 W <L <U4AUTO ><L >>.",
+            "comment": "Delete All Report"
+        },
+        {
+            "command": "sleep",
+            "timeout": 2.0
+        },
+        {
+            "command": "send-sml-direct",
+            "option": "S1F15 W.",
+            "comment": "Request OFF-LINE"
+        },
+        {
+            "command": "sleep",
+            "timeout": 2.0
+        },
+        {
+            "command": "close",
+            "comment": "Close-Communicator"
+        }
+    ]
+}

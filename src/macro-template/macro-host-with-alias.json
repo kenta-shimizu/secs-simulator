@@ -1,0 +1,58 @@
+{
+    "tasks": [
+        {
+            "command": "open",
+            "comment": "Open-Communicator"
+        },
+        {
+            "command": "send-sml-alias",
+            "option": "s1f17",
+            "comment": "Request ON-LINE"
+        },
+        {
+            "command": "sleep",
+            "timeout": 2.0
+        },
+        {
+            "command": "send-sml-alias",
+            "option": "s1f1",
+            "comment": "Are you ONLINE ?"
+        },
+        {
+            "command": "send-sml-alias",
+            "option": "s2f31",
+            "comment": "Datetime Set Request"
+        },
+        {
+            "command": "sleep",
+            "timeout": 2.0
+        },
+        {
+            "command": "send-sml-alias",
+            "option": "s2f37-disable-all",
+            "comment": "Disable All Event Report"
+        },
+        {
+            "command": "send-sml-alias",
+            "option": "s2f33-delete-all",
+            "comment": "Delete All Report"
+        },
+        {
+            "command": "sleep",
+            "timeout": 2.0
+        },
+        {
+            "command": "send-sml-alias",
+            "option": "s1f15",
+            "comment": "Request OFF-LINE"
+        },
+        {
+            "command": "sleep",
+            "timeout": 2.0
+        },
+        {
+            "command": "close",
+            "comment": "Close-Communicator"
+        }
+    ]
+}

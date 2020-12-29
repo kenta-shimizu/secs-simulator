@@ -112,7 +112,7 @@ public class SecsSimulatorLog implements Comparable<SecsSimulatorLog> {
 	}
 	
 	private static final String BR = System.lineSeparator();
-	private static final String SPACE = "\t";
+	private static final String SPACE = "  ";
 	private static DateTimeFormatter DATETIME = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 	
 	@Override

@@ -51,12 +51,16 @@ public class ControlFrame extends AbstractSwingInternalFrame {
 		
 		this.openButton = new JButton("Open");
 		this.openButton.addActionListener(ev -> {
-			simulator().openCommunicator();
+			simulator().executorService().execute(() -> {
+				simulator().openCommunicator();
+			});
 		});
 		
 		this.closeButton = new JButton("Close");
 		this.closeButton.addActionListener(ev -> {
-			simulator().closeCommunicator();
+			simulator().executorService().execute(() -> {
+				simulator().closeCommunicator();
+			});
 		});
 		
 		this.addSmlButton = new JButton("Add...");
@@ -132,7 +136,7 @@ public class ControlFrame extends AbstractSwingInternalFrame {
 		{
 			JPanel p = borderPanel();
 			
-			p.setBorder(defaultTitledBorder("SML Alias"));
+			p.setBorder(defaultTitledBorder("SML"));
 			
 			{
 				JPanel pp = borderPanel();
@@ -196,11 +200,12 @@ public class ControlFrame extends AbstractSwingInternalFrame {
 		config().autoReply().addChangeListener(this.autoReply::setSelected);
 		
 		config().protocol().addChangeListener(protocol -> {
-			setLinktestEnable();
+			setLinktestEnabled();
 		});
 		
 		this.communicateState.addChangeListener(f -> {
-			setLinktestEnable();
+			setSendSmlEnabled();
+			setLinktestEnabled();
 		});
 	}
 	
@@ -219,6 +224,7 @@ public class ControlFrame extends AbstractSwingInternalFrame {
 		}
 		
 		super.setVisible(aFlag);
+		this.moveToBack();
 	}
 	
 	@Override
@@ -241,10 +247,29 @@ public class ControlFrame extends AbstractSwingInternalFrame {
 						)
 				);
 		
+		setRemoveSmlEnabled();
+		setShowSmlEnabled();
+		setSendSmlEnabled();
+		
 		this.smlList.repaint();
 	}
 	
-	private void setLinktestEnable() {
+	private void setRemoveSmlEnabled() {
+		this.removeSmlButton.setEnabled(this.smlList.getModel().getSize() > 0);
+	}
+	
+	private void setShowSmlEnabled() {
+		this.showSmlButton.setEnabled(this.smlList.getModel().getSize() > 0);
+	}
+	
+	private void setSendSmlEnabled() {
+		this.sendSmlButton.setEnabled(
+				(this.smlList.getModel().getSize() > 0)
+				&& this.communicateState.booleanValue()
+				);
+	}
+	
+	private void setLinktestEnabled() {
 		this.linktestButton.setEnabled(
 				config().protocol().get().isHsmsSs()
 				&& this.communicateState.booleanValue()

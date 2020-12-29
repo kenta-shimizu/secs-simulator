@@ -24,6 +24,8 @@ import com.shimizukenta.secs.SecsMessage;
 import com.shimizukenta.secs.sml.SmlMessage;
 import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.SecsSimulatorException;
+import com.shimizukenta.secssimulator.SecsSimulatorSendException;
+import com.shimizukenta.secssimulator.SecsSimulatorWaitReplyException;
 import com.shimizukenta.secssimulator.gui.AbstractGuiSecsSimulator;
 import com.shimizukenta.secssimulator.macro.MacroRecipe;
 
@@ -34,6 +36,10 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 		th.setDaemon(true);
 		return th;
 	});
+	
+	protected ExecutorService executorService() {
+		return execServ;
+	}
 	
 	private final SwingSecsSimulatorConfig config;
 	private final SwingMainFrame frame;
@@ -62,7 +68,13 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 		this.addMacroWorkerStateChangeListener(frame::notifyMacroWorkerStateChanged);
 		
 		this.config.protocol().addChangeListener(protocol -> {
-			execServ.execute(() -> {
+			executorService().execute(() -> {
+				this.closeCommunicator();
+			});
+		});
+		
+		this.config.hsmsSsCommunicatorConfig().socketAddress().addChangeListener(a -> {
+			executorService().execute(() -> {
 				this.closeCommunicator();
 			});
 		});
@@ -120,6 +132,10 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 		try {
 			return super.send(sm);
 		}
+		catch ( SecsSimulatorSendException ignore ) {
+		}
+		catch ( SecsSimulatorWaitReplyException ignore ) {
+		}
 		catch ( SecsSimulatorException e ) {
 			putFailure(e);
 		}
@@ -127,7 +143,7 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 	}
 	
 	public void asyncSend(SmlMessage sm) {
-		execServ.execute(() -> {
+		executorService().execute(() -> {
 			try {
 				send(sm);
 			}
@@ -137,7 +153,7 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 	}
 	
 	public void asyncLinktest() {
-		execServ.execute(() -> {
+		executorService().execute(() -> {
 			try {
 				linktest();
 			}

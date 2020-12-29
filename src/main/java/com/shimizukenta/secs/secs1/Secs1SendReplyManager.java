@@ -77,7 +77,7 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 				synchronized ( packs ) {
 					for ( ;; ) {
 						if ( p.isSended() ) {
-							break;
+							return p;
 						}
 						packs.wait();
 					}
@@ -86,7 +86,7 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 			catch ( InterruptedException ignore ) {
 			}
 			
-			return p;
+			return null;
 		};
 		
 		final Callable<Pack> failedTask = () -> {
@@ -94,7 +94,7 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 				synchronized ( packs ) {
 					for ( ;; ) {
 						if ( p.failedCause() != null ) {
-							break;
+							return p;
 						}
 						packs.wait();
 					}
@@ -103,7 +103,7 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 			catch ( InterruptedException ignore ) {
 			}
 			
-			return p;
+			return null;
 		};
 		
 		final Callable<Pack> terminateTask = () -> {
@@ -111,7 +111,7 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 				synchronized ( packs ) {
 					for ( ;; ) {
 						if ( packs.isEmpty() ) {
-							break;
+							return null;
 						}
 						packs.wait();
 					}

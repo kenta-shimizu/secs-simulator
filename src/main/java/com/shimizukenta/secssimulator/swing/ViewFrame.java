@@ -90,6 +90,7 @@ public class ViewFrame extends AbstractSwingInternalFrame {
 		}
 		
 		super.setVisible(aFlag);
+		this.moveToBack();
 	}
 	
 	private static final String BR = System.lineSeparator();

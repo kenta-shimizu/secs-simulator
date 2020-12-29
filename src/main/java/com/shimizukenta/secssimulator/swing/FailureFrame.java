@@ -16,7 +16,7 @@ public class FailureFrame extends AbstractSwingInternalFrame {
 	
 	private static final long serialVersionUID = 2858548529315956501L;
 	
-	private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SS");
+	private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSS");
 	
 	private static class ThrowablePair implements Comparable<ThrowablePair> {
 		
