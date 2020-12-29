@@ -15,13 +15,13 @@ This is SECS-Simulator Java application.
 - `<NOW[16]>`
 
   ```
-  LocalDateTime.now().format(DateTimeFormatter.ofPattern("uuuuMMddHHmmssSS");
+  LocalDateTime.now().format(DateTimeFormatter.ofPattern("uuuuMMddHHmmssSS"));
   ```
 
 - `<NOW[12]>`
 
   ```
-  LocalDateTime.now().format(DateTimeFormatter.ofPattern("uuMMddHHmmss");
+  LocalDateTime.now().format(DateTimeFormatter.ofPattern("uuMMddHHmmss"));
   ```
 
 ### Auto number
