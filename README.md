@@ -2,11 +2,14 @@
 
 ![image](https://kenta-shimizu.github.io/secs-simulator/swing.png)
 
-This is SECS-Simulator Java application.
+This is SEMI-SECS-Simulator Java application.
 
 ## Get Application, How to use
 
 [github.io](https://kenta-shimizu.github.io/secs-simulator/index.html)
+
+## Relation repository
+
 
 ## Extend SML
 
