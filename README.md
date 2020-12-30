@@ -8,20 +8,22 @@ This is SEMI-SECS-Simulator Java application.
 
 [github.io](https://kenta-shimizu.github.io/secs-simulator/index.html)
 
-## Relation repository
-
+## Related repositories
+ 
+ - [secs4java8](https://github.com/kenta-shimizu/secs4java8)
+ - [json4java8](https://github.com/kenta-shimizu/json4java8)
 
 ## Extend SML
 
 ### Now
 
-- `<NOW[16]>`
+- &lt;NOW[16]&gt;
 
   ```
   LocalDateTime.now().format(DateTimeFormatter.ofPattern("uuuuMMddHHmmssSS"));
   ```
 
-- `<NOW[12]>`
+- &lt;NOW[12]&gt;
 
   ```
   LocalDateTime.now().format(DateTimeFormatter.ofPattern("uuMMddHHmmss"));
@@ -29,7 +31,9 @@ This is SEMI-SECS-Simulator Java application.
 
 ### Auto number
 
-- `<U4AUTO>`
-- `<U8AUTO>`
-- `<I4AUTO>`
-- `<I8AUTO>`
+using `AtomicLong#incrementAndGet`
+
+- &lt;U4AUTO&gt;
+- &lt;U8AUTO&gt;
+- &lt;I4AUTO&gt;
+- &lt;I8AUTO&gt;
