@@ -29,7 +29,7 @@ This is SEMI-SECS-Simulator Java application.
   LocalDateTime.now().format(DateTimeFormatter.ofPattern("uuMMddHHmmss"));
   ```
 
-  See also [s2f17.sml](/src/sml-template/equip/s2f17.sml), [s2f31.sml](/src/sml-template/host/s2f31.sml)
+  See also [s2f18.sml](/src/sml-template/host/s2f18.sml), [s2f31.sml](/src/sml-template/host/s2f31.sml)
 
 ### Auto number
 

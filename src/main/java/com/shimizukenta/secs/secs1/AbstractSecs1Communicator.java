@@ -300,9 +300,7 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 			try {
 				return executeInvokeAny(task, secs1Config().timeout().t2());
 			}
-			catch ( TimeoutException e ) {
-				
-				return PollCircuitControl.RETRY;
+			catch ( TimeoutException giveup ) {
 			}
 			catch ( ExecutionException e ) {
 				
@@ -317,9 +315,9 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 				}
 				
 				notifyLog(t);
-				
-				return PollCircuitControl.RETRY;
 			}
+			
+			return PollCircuitControl.RETRY;
 		}
 		
 		private void circuitControl() throws SecsException, InterruptedException {
