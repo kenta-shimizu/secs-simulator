@@ -16,33 +16,39 @@
     <h2>Run Application</h2>
     <pre>java -jar SwingSecsSimulator.jar</pre>
 
-    <h2>Set config (protocol, ip-address, device-id, timeout, ...)</h2>
+    <h2>Set config (protocol, IP-address, device-id, timeout, ...)</h2>
     <p>[File] &rarr; [Set Config...]</p>
 
     <h2>Open Communicator</h2>
-    <p>[Communicator] &rarr; [Open Communicator]</p>
+    <p>Has 2 ways</p>
+    <ul>
+        <li>[File] &rarr; [Open Communicator]</li>
+        <li>Click "Open" button in "Control" frame.</li>
+    </ul>
+    <p>If already opened, Closing Communicator and re-open.</p>
 
     <h2>Send SML</h2>
     <h3>Direct write SML and send</h3>
     <ol>
         <li>[SML] &rarr; [Show SML Editor]</li>
-        <li>Write SML</li>
-        <li>Click "Send" button</li>
+        <li>Write SML.</li>
+        <li>Click "Send" button.</li>
     </ol>
 
     <h2>Load SML file and send</h2>
     <ol>
-        <li>[SML] &rarr; [Add SML...]</li>
-        <li>Choose SML file(s)</li>
-        <li>Select SML, Click "Send" button in "Coltrol" frame</li>
+        <li>[SML] &rarr; [Add SML...], or click "Add..." button in "Control" frame.</li>
+        <li>Choose SML file(s).</li>
+        <li>Select SML, Click "Send" button in "Coltrol" frame.</li>
     </ol>
-    <p>Donwnload <a href="./sml-template.zip">SML-template</a></p>
+    <p>Download and see <a href="./sml-template.zip">SML-template</a></p>
 
     <h2>Save/Load config</h2>
     <ul>
         <li>Save: [File] &rarr; [Save Config...]</li>
         <li>Load: [File] &rarr; [Load Config...]</li>
     </ul>
+    <p>Config file format is JSON(RFC 8259), editable directly.</p>
 
     <h2>Command-Line Arguments</h2>
     <h3>Load-config</h3>
@@ -64,10 +70,7 @@
     <hr />
     
     <h1>CLI version</h1>
-    <h2>Download</h2>
-    <p>
-        <a href="./CliSecsSimulator.jar">CliSecsSimulator.jar</a>
-    </p>
+    <p><a href="./reference-cli.html">Download, How to use</a></p>
 
 </body>
 </html>

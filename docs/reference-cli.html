@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>CLI-SECS-Simulator</title>
+<meta charset="utf-8">
+</head>
+<body>
+    <h1>CLI-SECS-Simulator</h1>
+    <p>This is SEMI-SECS-Simulator Java application. Works with Java8 or later.</p>
+    <p><a href="https://github.com/kenta-shimizu/secs-simulator">github repository</a></p>
+
+    <h2>Download (CLI version)</h2>
+    <p> <a href="./CliSecsSimulator.jar">CliSecsSimulator.jar</a></p>
+
+    <h2>Run Application</h2>
+    <pre>java -jar CliSecsSimulator.jar</pre>
+
+    <h2>Command Manual</h2>
+    <dl>
+        <dt>?, man</dt>
+        <dd>show manuals</dd>
+        <dt>open</dt>
+        <dd>Open communicator.<br />If already opened, closing communicator and re-open.</dd>
+        <dt>close</dt>
+        <dd>Close communicator.</dd>
+        <dt>send</dt>
+        <dd>send SML alias.</dd>
+        <dt>save</dt>
+        <dd>Save config to file.</dd>
+        <dt>load</dt>
+        <dd>Load config from file.</dd>
+    </dl>
+<!--
+
+    <h2>Open Communicator</h2>
+
+    <h2>Send SML</h2>
+
+    <h2>send Loaded SML</h2>
+    <ol>
+        <li>[SML] &rarr; [Add SML...]</li>
+        <li>Choose SML file(s)</li>
+        <li>Select SML, Click "Send" button in "Coltrol" frame</li>
+    </ol>
+    <p>Download <a href="./sml-template.zip">SML-template</a></p>
+
+    <h2>Save/Load config</h2>
+    <ul>
+        <li>Save: [File] &rarr; [Save Config...]</li>
+        <li>Load: [File] &rarr; [Load Config...]</li>
+    </ul>
+
+-->
+
+    <h2>Command-Line Arguments</h2>
+    <h3>Load-config</h3>
+    <pre>java -jar CliSecsSimulator.jar --config /path/of/config.json</pre>
+
+    <h3>Auto-open</h3>
+    <pre>java -jar CliSecsSimulator.jar --auto-open true</pre>
+
+    <h3>Auto-logging</h3>
+    <pre>java -jar CliSecsSimulator.jar --auto-logging /path/to/log.log</pre>
+    
+</body>
+</html>
