@@ -7,12 +7,12 @@ public enum CliCommandManual {
 	MANUAL("Show Commands, Show Manual with option"),
 	
 	OPEN("Open communicator",
-			"if already opened, close and reopen."),
+			"if already opened, close communicator and reopen."),
 	CLOSE("Close communicator"),
 	QUIT("Quit application"),
 	
 	LOAD("Load config",
-			"option is path/to/config.json"),
+			"option is path/from/config.json"),
 	SAVE("Save config",
 			"option is path/to/config.json"),
 	STATUS("Show status"),
@@ -34,7 +34,7 @@ public enum CliCommandManual {
 			"Linktest if protocol is HSMS-SS"),
 	
 	LIST_SML("List SMLs",
-			"List is SML entries"),
+			"List is added SMLs"),
 	SHOW_SML("Show SML",
 			"option is Alias-Name of SML"),
 	ADD_SML("Add SML",
@@ -58,10 +58,10 @@ public enum CliCommandManual {
 			"if has no option, toggle value"),
 	
 	MACRO("Macro start/stop",
-			"if has option (path/to/file.macro), macro start.",
+			"if has option (Alias-name of Macro), macro start.",
 			"if has not option, macro stop.",
 			"if already started, stop and restart."),
-	MACROS("Macro Macros"),
+	MACROS("List Macros"),
 	SHOW_MACRO("Show Macro tasks",
 			"option is Alias-Name of Macro"),
 	ADD_MACRO("Add Macro",

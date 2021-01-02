@@ -18,40 +18,85 @@
     <h2>Command Manual</h2>
     <dl>
         <dt>?, man</dt>
-        <dd>show manuals</dd>
+        <dd>Show manuals.<br />If has no option, show all commands.<br />If has option, Show command description.</dd>
+        
+        <dt>quit, exit</dt>
+        <dd>Quit application.</dd>
+        
         <dt>open</dt>
-        <dd>Open communicator.<br />If already opened, closing communicator and re-open.</dd>
+        <dd>Open communicator.<br />If already opened, close communicator and re-open.</dd>
+        
         <dt>close</dt>
         <dd>Close communicator.</dd>
-        <dt>send</dt>
-        <dd>send SML alias.</dd>
-        <dt>save</dt>
-        <dd>Save config to file.</dd>
-        <dt>load</dt>
-        <dd>Load config from file.</dd>
+        
+        <dt>load, load-config</dt>
+        <dd>Load config.<br />Option is "path/from/config.json"</dd>
+
+        <dt>save, save-config</dt>
+        <dd>Save config.<br />Option is "path/to/config.json"</dd>
+
+        <dt>status</dt>
+        <dd>Show status.</dd>
+
+        <dt>send, ss, sendsml, send-sml</dt>
+        <dd>Send SML.<br />Option is Alias-Name of SML.</dd>
+
+        <dt>linktest</dt>
+        <dd>Linktest if protocol is HSMS-SS</dd>
+
+        <dt>list, list-sml</dt>
+        <dd>List SMLs.<br />List is added SMLs.</dd>
+
+        <dt>show, show-sml</dt>
+        <dd>Show SML.<br />Option is Alias-Name of SML.</dd>
+
+        <dt>add-sml, addsml</dt>
+        <dd>Add SML.<br />Option is "path/of/file.sml"<br />Download <a href="./sml-template.zip">SML-template</a>.</dd>
+
+        <dt>remove-sml, removesml</dt>
+        <dd>Remove SML.<br />Option is Alias-Name of SML.</dd>
+
+        <dt>pwd</dt>
+        <dd>Show present working directory.</dd>
+        
+        <dt>ls</dt>
+        <dd>List directory files.</dd>
+
+        <dt>cd</dt>
+        <dd>Change directory.<br />Option is "path/destination/directory"</dd>
+
+        <dt>mkdir</dt>
+        <dd>Make directory.<br />Option is "path/to/new/directory"</dd>
+
+        <dt>log</dt>
+        <dd>Logging start/stop.<br />If has option ("path/to/file.log"), logging start.<br />If has no option, logging stop.<br />If already started, stop and restart.</dd>
+
+        <dt>auto-reply, autoreply</dt>
+        <dd>Switch Auto Reply.<br />If has option (true/false), set option value.<br />If has no option, toggle value.</dd>
+
+        <dt>auto-reply-s9fy, autoreplys9fy, auto-s9fy, autos9fy</dt>
+        <dd>Switch Auto Reply-S9Fy.<br />If has option (true/false), set option value.<br />If has no option, toggle value.</dd>
+
+        <dt>auto-reply-sxf0, autoreplysxf0, auto-sxf0, autosxf0</dt>
+        <dd>Switch Auto Reply-SxF0.<br />If has option (true/false), set option value.<br />If has no option, toggle value.</dd>
+
+        <dt>macro</dt>
+        <dd>Macro start/stop.<br />If has option (Alias-Name of Macro), macro start.<br />If has not option, macro stop.<br />If already started, stop and restart.</dd>
+
+        <dt>list-macro, listmacro, macros</dt>
+        <dd>List added Macros</dd>
+
+        <dt>show-macro, showmacro</dt>
+        <dd>Show Macro tasks.<br />Option is Alias-Name of Macro.</dd>
+
+        <dt>add-macro, addmacro</dt>
+        <dd>Add Macro.<br />Option is "path/of/macro.json"</dd>
+
+        <dt>remove-macro, removemacro</dt>
+        <dd>Remove Macro.<br />Option is Alias-Name of Macro.</dd>
+
     </dl>
-<!--
-
-    <h2>Open Communicator</h2>
-
-    <h2>Send SML</h2>
-
-    <h2>send Loaded SML</h2>
-    <ol>
-        <li>[SML] &rarr; [Add SML...]</li>
-        <li>Choose SML file(s)</li>
-        <li>Select SML, Click "Send" button in "Coltrol" frame</li>
-    </ol>
-    <p>Download <a href="./sml-template.zip">SML-template</a></p>
-
-    <h2>Save/Load config</h2>
-    <ul>
-        <li>Save: [File] &rarr; [Save Config...]</li>
-        <li>Load: [File] &rarr; [Load Config...]</li>
-    </ul>
-
--->
-
+    
     <h2>Command-Line Arguments</h2>
     <h3>Load-config</h3>
     <pre>java -jar CliSecsSimulator.jar --config /path/of/config.json</pre>
