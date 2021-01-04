@@ -61,7 +61,7 @@ public class MenuBar extends JMenuBar {
 						})
 						),
 				menu("Macro",
-						item("Show Macro window", ev -> {
+						item("Show Macro Frame", ev -> {
 							simulator().showMacroFrame();
 						}),
 						separator(),
