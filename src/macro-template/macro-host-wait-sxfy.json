@@ -1,0 +1,40 @@
+{
+    "tasks": [
+        {
+            "command": "open",
+            "comment": "Open-Communicator"
+        },
+        {
+            "command": "wait-sxfy",
+            "option": "S1F13",
+            "timeout": 20.0,
+            "comment": "Waiting until received S1F13"
+        },
+        {
+            "command": "sleep",
+            "timeout": 2.0
+        },
+        {
+            "command": "send-sml-direct",
+            "option": "S1F17 W.",
+            "comment": "Request ON-LINE"
+        },
+        {
+            "command": "sleep",
+            "timeout": 2.0
+        },
+        {
+            "command": "send-sml-direct",
+            "option": "S1F1 W.",
+            "comment": "Are you ONLINE ?"
+        },
+        {
+            "command": "sleep",
+            "timeout": 2.0
+        },
+        {
+            "command": "close",
+            "comment": "Close-Communicator"
+        }
+    ]
+}

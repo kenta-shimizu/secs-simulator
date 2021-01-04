@@ -22,7 +22,7 @@ public enum CliCommandManual {
 	CD("Change directory",
 			"option is path/destination/directory"),
 	MKDIR("Make directory",
-			"option is path/to/new/directory"),
+			"option is path/of/new/directory"),
 	
 	SEND_SML("Send SML",
 			"option is Alias-Name of SML"),
@@ -61,13 +61,13 @@ public enum CliCommandManual {
 			"if has option (Alias-name of Macro), macro start.",
 			"if has not option, macro stop.",
 			"if already started, stop and restart."),
-	MACROS("List Macros"),
-	SHOW_MACRO("Show Macro tasks",
-			"option is Alias-Name of Macro"),
-	ADD_MACRO("Add Macro",
-			"option is path/to/macro.json"),
-	REMOVE_MACRO("Remove Macro",
-			"option is Alias-Name of Macro"),
+	MACROS("List Macro recipes"),
+	SHOW_MACRO("Show Macro recipe tasks",
+			"option is Alias-Name of Macro recipe"),
+	ADD_MACRO("Add Macro recipe",
+			"option is path/of/macro-recipe.json"),
+	REMOVE_MACRO("Remove Macro recipe",
+			"option is Alias-Name of Macro recipe"),
 	
 	;
 	

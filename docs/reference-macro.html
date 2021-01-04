@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>SECS-Simulator Macro reference</title>
+    <link rel="stylesheet" href="./default.css">
+</head>
+<body>
+    <h1>SECS-Simulator Macro reference</h1>
+    
+    <h2>Macro Recipe Format</h2>
+    <p>Format is JSON(RFC 8259), write directly.</p>
+
+    <pre>{
+  "tasks": [
+    {
+        "command": string,
+        "option": string,
+        "timeout": number
+    },
+    ...
+  ]
+}</pre>
+
+    <p>See also <a href="./macro-template.zip">macro-examples</a>.</p>
+
+    <h2>Command Manual</h2>
+    <dl>
+        <dt>open</dt>
+        <dd>Open communicator and blocking until communicating.<br />If already opened, close communicator and re-open.</dd>
+
+        <dt>close</dt>
+        <dd>Close communicator.</dd>
+
+        <dt>send-sml-alias, sendsmlalias</dt>
+        <dd>Send by alias-name of added SMLs.<br />Require "option", alias-name of added SML string.<br /></dd>
+
+        <dt>send-sml-direct, sendsmldirect</dt>
+        <dd>Send option SML.<br />Require "option", send SML string.</dd>
+
+        <dt>wait-sxfy, wait, waitsxfy</dt>
+        <dd>Waiting until received option "SxFy"<br />Require "option", waiting "SxFy" format string.<br />If "timeout" setted &gt; 0.0, waiting received "SxFy" until timeout, breaking macro task if timeout.</dd>
+
+        <dt>sleep</dt>
+        <dd>Sleep timeout seconds.<br />Require "timeout", sleeping seconds.</dd>
+    </dl>
+</body>
+</html>
