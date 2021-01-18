@@ -257,6 +257,10 @@ public class SwingSecsSimulator extends AbstractGuiSecsSimulator {
 				for ( String v : map.getOrDefault("--auto-logging", Collections.emptyList()) ) {
 					config.autoLogging(Paths.get(v));
 				}
+				
+				for ( String v : map.getOrDefault("--dark", Collections.emptyList()) ) {
+					config.darkMode(Boolean.parseBoolean(v));
+				}
 			}
 			
 			final SwingSecsSimulator simm = new SwingSecsSimulator(config);

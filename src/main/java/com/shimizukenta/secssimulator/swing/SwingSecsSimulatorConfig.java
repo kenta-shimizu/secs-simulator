@@ -49,11 +49,32 @@ public class SwingSecsSimulatorConfig extends AbstractGuiSecsSimulatorConfig {
 		}
 	}
 	
-	private final Color communicatingColor = Color.GREEN;
+	private static final Color defaultDarkAreaForeGroundColor = Color.WHITE;
+	private static final Color defaultDarkAreaBackGroundColor = Color.BLACK;
+	private static final Color defaultDarkPanelBackGroundColor = Color.BLACK;
+	private static final Color defaultDarkDesktopBackGroundColor = Color.BLACK;
+	private static final Color communicatingColor = Color.GREEN;
 	
 	public Color communicatingColor() {
 		return communicatingColor;
 	}
+	
+	public Color defaultDarkAreaForeGroundColor() {
+		return defaultDarkAreaForeGroundColor;
+	}
+	
+	public Color defaultDarkAreaBackGroundColor() {
+		return defaultDarkAreaBackGroundColor;
+	}
+	
+	public Color defaultDarkPanelBackGroundColor() {
+		return defaultDarkPanelBackGroundColor;
+	}
+	
+	public Color defaultDarkDesktopBackGroundColor() {
+		return defaultDarkDesktopBackGroundColor;
+	}
+
 	
 	@Override
 	public JsonHub getJsonHub() {

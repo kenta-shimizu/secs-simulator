@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import com.shimizukenta.jsonhub.JsonHub;
 import com.shimizukenta.jsonhub.JsonHubBuilder;
 import com.shimizukenta.secs.BooleanProperty;
-import com.shimizukenta.secs.ReadOnlyBooleanProperty;
 import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.AbstractSecsSimulatorConfig;
 import com.shimizukenta.secssimulator.macro.MacroRecipeParseException;
@@ -78,7 +77,7 @@ public abstract class AbstractGuiSecsSimulatorConfig extends AbstractSecsSimulat
 		}
 	}
 	
-	public ReadOnlyBooleanProperty darkMode() {
+	public BooleanProperty darkMode() {
 		synchronized ( this ) {
 			return this.darkMode;
 		}

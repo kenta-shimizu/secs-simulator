@@ -1,6 +1,7 @@
 package com.shimizukenta.secssimulator.swing;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedList;
@@ -67,7 +68,22 @@ public class FailureFrame extends AbstractSwingInternalFrame {
 	public FailureFrame(SwingSecsSimulator parent) {
 		super(parent, "Failure", true, true, true, true);
 		
-		this.list = new JList<>();
+		{
+			this.list = new JList<>();
+			
+			final Color bgColor = this.list.getBackground();
+			final Color fgColor = this.list.getForeground();
+			this.config().darkMode().addChangeListener(dark -> {
+				if ( dark ) {
+					this.list.setBackground(this.config().defaultDarkAreaBackGroundColor());
+					this.list.setForeground(this.config().defaultDarkAreaForeGroundColor());
+				} else {
+					this.list.setBackground(bgColor);
+					this.list.setForeground(fgColor);
+				}
+			});
+		}
+		
 		this.clearButton = new JButton("Clear All");
 		this.clearButton.addActionListener(ev -> {
 			this.clear();
@@ -90,6 +106,17 @@ public class FailureFrame extends AbstractSwingInternalFrame {
 			}
 			
 			this.add(p, BorderLayout.EAST);
+		}
+		
+		{
+			final Color bgColor = this.getContentPane().getBackground();
+			this.config().darkMode().addChangeListener(dark -> {
+				if ( dark ) {
+					this.getContentPane().setBackground(this.config().defaultDarkPanelBackGroundColor());
+				} else {
+					this.getContentPane().setBackground(bgColor);
+				}
+			});
 		}
 	}
 	

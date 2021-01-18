@@ -19,60 +19,83 @@ public class ViewFrame extends AbstractSwingInternalFrame {
 	
 	private static final long serialVersionUID = 4744049507304871891L;
 	
-	private final JLabel communicateStatus = new JLabel(" ");
-	private final Color communicateStatusDefaultBgColor = communicateStatus.getBackground();
+	private final JLabel communicateStatus;
+	private final Color communicateStatusDefaultBgColor;
 	
-	private final JTextArea messageLogTextArea = new JTextArea("");
+	private final JTextArea messageLogTextArea;
 	private final JScrollPane scrollPane;
 	private final JScrollBar vScrollBar;
 	
 	public ViewFrame(SwingSecsSimulator parent) {
 		super(parent, "Viewer", true, false, true, true);
 		
+		{
+			this.communicateStatus = new JLabel(" ");
+			this.communicateStatus.setBorder(new EtchedBorder(EtchedBorder.LOWERED));
+			this.communicateStatus.setHorizontalAlignment(JLabel.CENTER);
+			this.communicateStatus.setVerticalAlignment(JLabel.CENTER);
+			this.communicateStatus.setOpaque(false);
+			
+			this.communicateStatusDefaultBgColor = communicateStatus.getBackground();
+			
+			final Color fgColor = this.communicateStatus.getForeground();
+			
+			config().darkMode().addChangeListener(dark -> {
+				if ( dark ) {
+					this.communicateStatus.setForeground(this.config().defaultDarkAreaForeGroundColor());
+				} else {
+					this.communicateStatus.setForeground(fgColor);
+				}
+			});
+		}
+		{
+			this.messageLogTextArea = new JTextArea("");
+			this.messageLogTextArea.setEditable(false);
+			this.messageLogTextArea.setLineWrap(false);
+			this.messageLogTextArea.setOpaque(true);
+			
+			final Color fgColor = this.messageLogTextArea.getForeground();
+			final Color bgColor = this.messageLogTextArea.getBackground();
+			
+			config().darkMode().addChangeListener(dark -> {
+				if ( dark ) {
+					this.messageLogTextArea.setBackground(this.config().defaultDarkAreaBackGroundColor());
+					this.messageLogTextArea.setForeground(this.config().defaultDarkAreaForeGroundColor());
+				} else {
+					this.messageLogTextArea.setBackground(bgColor);
+					this.messageLogTextArea.setForeground(fgColor);
+				}
+			});
+		}
+		
 		this.setLayout(defaultBorderLayout());
 		
 		{
 			JPanel p = gridPanel(1, 3);
 			
-			{
-				communicateStatus.setBorder(new EtchedBorder(EtchedBorder.LOWERED));
-				communicateStatus.setHorizontalAlignment(JLabel.CENTER);
-				communicateStatus.setVerticalAlignment(JLabel.CENTER);
-				communicateStatus.setOpaque(false);
-				
-				p.add(communicateStatus);
-			}
-			{
-				p.add(emptyPanel());
-			}
-			{
-				p.add(emptyPanel());
-			}
+			p.add(communicateStatus);
+			p.add(emptyPanel());
+			p.add(emptyPanel());
 			
 			this.add(p, BorderLayout.NORTH);
 		}
 		{
-			this.messageLogTextArea.setEditable(false);
-			this.messageLogTextArea.setLineWrap(false);
-			this.messageLogTextArea.setOpaque(true);
-			
 			this.scrollPane = defaultScrollPane(this.messageLogTextArea);
 			this.vScrollBar = this.scrollPane.getVerticalScrollBar();
 			
 			this.add(scrollPane, BorderLayout.CENTER);
 		}
 		
-		config().darkMode().addChangeListener(dark -> {
-			
-			if ( dark ) {
-				
-				//HOOK
-				
-			} else {
-				
-				//HOOK
-			}
-		});
+		{
+			final Color bgColor = this.getBackground();
+			config().darkMode().addChangeListener(dark -> {
+				if ( dark ) {
+					this.getContentPane().setBackground(this.config().defaultDarkPanelBackGroundColor());
+				} else {
+					this.getContentPane().setBackground(bgColor);
+				}
+			});
+		}
 	}
 	
 	@Override

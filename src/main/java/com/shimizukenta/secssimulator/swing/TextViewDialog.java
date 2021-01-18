@@ -1,6 +1,7 @@
 package com.shimizukenta.secssimulator.swing;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.Frame;
 import java.util.Objects;
@@ -19,8 +20,23 @@ public class TextViewDialog extends AbstractSwingDialog {
 	public TextViewDialog(Frame owner, String title, SwingSecsSimulator simm) {
 		super(simm, owner, title, true);
 		
-		this.textarea = new JTextArea("");
-		this.textarea.setEditable(false);
+		{
+			this.textarea = new JTextArea("");
+			this.textarea.setEditable(false);
+			
+			final Color bgColor = textarea.getBackground();
+			final Color fgColor = textarea.getForeground();
+			
+			this.config().darkMode().addChangeListener(dark -> {
+				if ( dark ) {
+					this.textarea.setBackground(this.config().defaultDarkAreaBackGroundColor());
+					this.textarea.setForeground(this.config().defaultDarkAreaForeGroundColor());
+				} else {
+					this.textarea.setBackground(bgColor);
+					this.textarea.setForeground(fgColor);
+				}
+			});
+		}
 		
 		this.okButton = new JButton("OK");
 		this.okButton.addActionListener(ev -> {
@@ -36,6 +52,17 @@ public class TextViewDialog extends AbstractSwingDialog {
 			JPanel p = flowPanel(FlowLayout.CENTER);
 			p.add(okButton);
 			this.add(p, BorderLayout.SOUTH);
+		}
+		
+		{
+			final Color bgColor = this.getContentPane().getBackground();
+			this.config().darkMode().addChangeListener(dark -> {
+				if ( dark ) {
+					this.getContentPane().setBackground(this.config().defaultDarkPanelBackGroundColor());
+				} else {
+					this.getContentPane().setBackground(bgColor);
+				}
+			});
 		}
 	}
 	

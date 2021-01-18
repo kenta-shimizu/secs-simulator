@@ -1,6 +1,7 @@
 package com.shimizukenta.secssimulator.swing;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import javax.swing.JButton;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.ListSelectionModel;
+import javax.swing.border.TitledBorder;
 
 import com.shimizukenta.secssimulator.MacroRecipePair;
 import com.shimizukenta.secssimulator.macro.MacroWorker;
@@ -42,29 +44,59 @@ public class MacroFrame extends AbstractSwingInternalFrame {
 		this.recipesUpdated = false;
 		this.workersUpdated = false;
 		
-		this.recipeList = new JList<>();
-		this.recipeList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		this.recipeList.addMouseListener(new MouseAdapter() {
-			
-			@Override
-			public void mouseClicked(MouseEvent ev) {
-				if ( ev.getClickCount() == 2 ) {
-					runRecipeButton.doClick();
+		{
+			this.recipeList = new JList<>();
+			this.recipeList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+			this.recipeList.addMouseListener(new MouseAdapter() {
+				
+				@Override
+				public void mouseClicked(MouseEvent ev) {
+					if ( ev.getClickCount() == 2 ) {
+						runRecipeButton.doClick();
+					}
 				}
-			}
-		});
+			});
+			
+			final Color bgColor = this.recipeList.getBackground();
+			final Color fgColor = this.recipeList.getForeground();
+			
+			this.config().darkMode().addChangeListener(dark -> {
+				if ( dark ) {
+					this.recipeList.setBackground(this.config().defaultDarkAreaBackGroundColor());
+					this.recipeList.setForeground(this.config().defaultDarkAreaForeGroundColor());
+				} else {
+					this.recipeList.setBackground(bgColor);
+					this.recipeList.setForeground(fgColor);
+				}
+			});
+		}
 		
-		this.workerList = new JList<>();
-		this.workerList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		this.workerList.addMouseListener(new MouseAdapter() {
-			
-			@Override
-			public void mouseClicked(MouseEvent ev) {
-				if ( ev.getClickCount() == 2 ) {
-					removeWorkerButton.doClick();
+		{
+			this.workerList = new JList<>();
+			this.workerList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+			this.workerList.addMouseListener(new MouseAdapter() {
+				
+				@Override
+				public void mouseClicked(MouseEvent ev) {
+					if ( ev.getClickCount() == 2 ) {
+						removeWorkerButton.doClick();
+					}
 				}
-			}
-		});
+			});
+			
+			final Color bgColor = this.workerList.getBackground();
+			final Color fgColor = this.workerList.getForeground();
+			
+			this.config().darkMode().addChangeListener(dark -> {
+				if ( dark ) {
+					this.workerList.setBackground(this.config().defaultDarkAreaBackGroundColor());
+					this.workerList.setForeground(this.config().defaultDarkAreaForeGroundColor());
+				} else {
+					this.workerList.setBackground(bgColor);
+					this.workerList.setForeground(fgColor);
+				}
+			});
+		}
 		
 		this.addRecipeButton = new JButton("Add...");
 		this.addRecipeButton.addActionListener(ev -> {
@@ -122,7 +154,19 @@ public class MacroFrame extends AbstractSwingInternalFrame {
 		{
 			JPanel p = borderPanel();
 			
-			p.setBorder(defaultTitledBorder("Recipe"));
+			{
+				TitledBorder ttb = defaultTitledBorder("Recipe");
+				p.setBorder(ttb);
+				
+				final Color fgColor = ttb.getTitleColor();
+				config().darkMode().addChangeListener(dark -> {
+					if ( dark ) {
+						ttb.setTitleColor(this.config().defaultDarkAreaForeGroundColor());
+					} else {
+						ttb.setTitleColor(fgColor);
+					}
+				});
+			}
 			
 			{
 				JPanel pp = borderPanel();
@@ -155,7 +199,19 @@ public class MacroFrame extends AbstractSwingInternalFrame {
 		{
 			JPanel p = borderPanel();
 			
-			p.setBorder(defaultTitledBorder("Worker"));
+			{
+				TitledBorder ttb = defaultTitledBorder("Worker");
+				p.setBorder(ttb);
+				
+				final Color fgColor = ttb.getTitleColor();
+				config().darkMode().addChangeListener(dark -> {
+					if ( dark ) {
+						ttb.setTitleColor(this.config().defaultDarkAreaForeGroundColor());
+					} else {
+						ttb.setTitleColor(fgColor);
+					}
+				});
+			}
 			
 			{
 				JPanel pp = borderPanel();
@@ -182,6 +238,17 @@ public class MacroFrame extends AbstractSwingInternalFrame {
 			}
 			
 			this.add(p);
+		}
+		
+		{
+			final Color bgColor = this.getContentPane().getBackground();
+			this.config().darkMode().addChangeListener(dark -> {
+				if ( dark ) {
+					this.getContentPane().setBackground(this.config().defaultDarkPanelBackGroundColor());;
+				} else {
+					this.getContentPane().setBackground(bgColor);
+				}
+			});
 		}
 	}
 	

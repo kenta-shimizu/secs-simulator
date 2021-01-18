@@ -1,6 +1,7 @@
 package com.shimizukenta.secssimulator.swing;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Collection;
@@ -12,6 +13,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.ListSelectionModel;
+import javax.swing.border.TitledBorder;
 
 import com.shimizukenta.secs.BooleanProperty;
 import com.shimizukenta.secssimulator.SmlAliasPair;
@@ -37,17 +39,32 @@ public class ControlFrame extends AbstractSwingInternalFrame {
 	public ControlFrame(SwingSecsSimulator parent) {
 		super(parent, "Controller", true, false, true, true);
 		
-		this.smlList = new JList<>();
-		this.smlList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		this.smlList.addMouseListener(new MouseAdapter() {
-			
-			@Override
-			public void mouseClicked(MouseEvent ev) {
-				if ( ev.getClickCount() == 2 ) {
-					sendSmlButton.doClick();
+		{
+			this.smlList = new JList<>();
+			this.smlList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+			this.smlList.addMouseListener(new MouseAdapter() {
+				
+				@Override
+				public void mouseClicked(MouseEvent ev) {
+					if ( ev.getClickCount() == 2 ) {
+						sendSmlButton.doClick();
+					}
 				}
-			}
-		});
+			});
+			
+			final Color bgColor = this.smlList.getBackground();
+			final Color fgColor = this.smlList.getForeground();
+			
+			config().darkMode().addChangeListener(dark -> {
+				if ( dark ) {
+					this.smlList.setBackground(this.config().defaultDarkAreaBackGroundColor());
+					this.smlList.setForeground(this.config().defaultDarkAreaForeGroundColor());
+				} else {
+					this.smlList.setBackground(bgColor);
+					this.smlList.setForeground(fgColor);
+				}
+			});
+		}
 		
 		this.openButton = new JButton("Open");
 		this.openButton.addActionListener(ev -> {
@@ -103,10 +120,23 @@ public class ControlFrame extends AbstractSwingInternalFrame {
 			simulator().asyncLinktest();
 		});
 		
-		this.autoReply = new JCheckBox("Auto-reply");
-		this.autoReply.addActionListener(ev -> {
-			config().autoReply().set(this.autoReply.isSelected());
-		});
+		{
+			this.autoReply = new JCheckBox("Auto-reply");
+			this.autoReply.setOpaque(false);
+			
+			this.autoReply.addActionListener(ev -> {
+				config().autoReply().set(this.autoReply.isSelected());
+			});
+			
+			final Color fgColor = this.autoReply.getForeground();
+			config().darkMode().addChangeListener(dark -> {
+				if ( dark ) {
+					this.autoReply.setForeground(this.config().defaultDarkAreaForeGroundColor());
+				} else {
+					this.autoReply.setForeground(fgColor);
+				}
+			});
+		}
 		
 		
 		this.setLayout(defaultBorderLayout());
@@ -114,7 +144,19 @@ public class ControlFrame extends AbstractSwingInternalFrame {
 		{
 			JPanel p = borderPanel();
 			
-			p.setBorder(defaultTitledBorder("Communicator"));
+			{
+				final TitledBorder ttb = defaultTitledBorder("Communicator");
+				p.setBorder(ttb);
+				
+				final Color fgColor = ttb.getTitleColor();
+				config().darkMode().addChangeListener(dark -> {
+					if ( dark ) {
+						ttb.setTitleColor(this.config().defaultDarkAreaForeGroundColor());
+					} else {
+						ttb.setTitleColor(fgColor);
+					}
+				});
+			}
 			
 			{
 				JPanel pp = borderPanel();
@@ -136,7 +178,19 @@ public class ControlFrame extends AbstractSwingInternalFrame {
 		{
 			JPanel p = borderPanel();
 			
-			p.setBorder(defaultTitledBorder("SML"));
+			{
+				final TitledBorder ttb = defaultTitledBorder("SML");
+				p.setBorder(ttb);
+				
+				final Color fgColor = ttb.getTitleColor();
+				config().darkMode().addChangeListener(dark -> {
+					if ( dark ) {
+						ttb.setTitleColor(this.config().defaultDarkAreaForeGroundColor());
+					} else {
+						ttb.setTitleColor(fgColor);
+					}
+				});
+			}
 			
 			{
 				JPanel pp = borderPanel();
@@ -185,17 +239,18 @@ public class ControlFrame extends AbstractSwingInternalFrame {
 			this.add(p, BorderLayout.CENTER);
 		}
 		
-		config().darkMode().addChangeListener(dark -> {
-			
-			if ( dark ) {
-				
-				//HOOK
-				
-			} else {
-				
-				//HOOK
-			}
-		});
+		
+		
+		{
+			final Color bgColor = this.getBackground();
+			config().darkMode().addChangeListener(dark -> {
+				if ( dark ) {
+					this.getContentPane().setBackground(this.config().defaultDarkPanelBackGroundColor());
+				} else {
+					this.getContentPane().setBackground(bgColor);
+				}
+			});
+		}
 		
 		config().autoReply().addChangeListener(this.autoReply::setSelected);
 		
@@ -217,7 +272,7 @@ public class ControlFrame extends AbstractSwingInternalFrame {
 			int h = this.getDesktopPane().getHeight();
 			
 			this.setBounds(
-					(w * 50 / 100),
+					(w * 52 / 100),
 					(h *  5 / 100),
 					(w * 45 / 100),
 					(h * 60 / 100));

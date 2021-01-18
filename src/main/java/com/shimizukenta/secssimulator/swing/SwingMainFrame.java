@@ -1,5 +1,6 @@
 package com.shimizukenta.secssimulator.swing;
 
+import java.awt.Color;
 import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.io.IOException;
@@ -157,17 +158,16 @@ public class SwingMainFrame extends JFrame {
 			this.setLocationRelativeTo(null);
 		}
 		
-		config().darkMode().addChangeListener(dark -> {
-			
-			if ( dark ) {
-				
-				//HOOK
-				
-			} else {
-				
-				//HOOK
-			}
-		});
+		{
+			final Color bgColor = this.desktopPane.getBackground();
+			config().darkMode().addChangeListener(dark -> {
+				if ( dark ) {
+					this.desktopPane.setBackground(config().defaultDarkDesktopBackGroundColor());
+				} else {
+					this.desktopPane.setBackground(bgColor);
+				}
+			});
+		}
 	}
 	
 	@Override

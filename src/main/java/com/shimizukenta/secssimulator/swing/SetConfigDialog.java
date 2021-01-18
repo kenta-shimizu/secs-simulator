@@ -112,6 +112,8 @@ public class SetConfigDialog extends AbstractSwingDialog {
 	private final JCheckBox autoReplyS9Fy;
 	private final JCheckBox autoReplySxF0;
 	
+	private final JCheckBox darkMode;
+	
 	private final JButton okButton;
 	
 	private boolean result;
@@ -123,10 +125,10 @@ public class SetConfigDialog extends AbstractSwingDialog {
 		
 		this.setDefaultCloseOperation(JDialog.HIDE_ON_CLOSE);
 		
-		this.hsmsSsPassiveRadio = new JRadioButton("HSMS-SS-Passive", true);
-		this.hsmsSsActiveRadio = new JRadioButton("HSMS-SS-Active", false);
-		this.secs1OnTcpIpRadio = new JRadioButton("SECS-I-on-TCP/IP", false);
-		this.secs1OnTcpIpRecvRadio = new JRadioButton("SECS-I-on-TCP/IP-Receiver", false);
+		this.hsmsSsPassiveRadio = getRadioButton("HSMS-SS-Passive", true);
+		this.hsmsSsActiveRadio = getRadioButton("HSMS-SS-Active", false);
+		this.secs1OnTcpIpRadio = getRadioButton("SECS-I-on-TCP/IP", false);
+		this.secs1OnTcpIpRecvRadio = getRadioButton("SECS-I-on-TCP/IP-Receiver", false);
 		this.protocolGroup = new ButtonGroup();
 		this.protocolGroup.add(this.hsmsSsPassiveRadio);
 		this.protocolGroup.add(this.hsmsSsActiveRadio);
@@ -138,13 +140,13 @@ public class SetConfigDialog extends AbstractSwingDialog {
 		
 		this.deviceIdText = new NumberTextField("10", 5);
 		
-		this.equipRadio = new JRadioButton("Equip", true);
-		this.hostRadio = new JRadioButton("Host", false);
+		this.equipRadio = getRadioButton("Equip", true);
+		this.hostRadio = getRadioButton("Host", false);
 		this.hostEquipGroup = new ButtonGroup();
 		this.hostEquipGroup.add(this.equipRadio);
 		this.hostEquipGroup.add(this.hostRadio);
 		
-		this.masterMode = new JCheckBox("Master-mode (SECS-I)", true);
+		this.masterMode = getCheckBox("Master-mode (SECS-I)", true);
 		
 		this.t1Text = new NumberTextField("1", 4);
 		this.t2Text = new NumberTextField("1", 4);
@@ -158,15 +160,17 @@ public class SetConfigDialog extends AbstractSwingDialog {
 		this.retryText = new NumberTextField("3", 3);
 		
 		this.linktestText = new NumberTextField("1", 4);
-		this.linktestCheck = new JCheckBox("Linktest (HSMS-SS): ", false);
+		this.linktestCheck = getCheckBox("Linktest (HSMS-SS): ", false);
 		this.linktestCheck.addChangeListener(ev -> {
 			this.linktestText.setEditable(this.linktestCheck.isSelected());
 			this.linktestText.setEnabled(this.linktestCheck.isSelected());
 		});
 		
-		this.autoReply = new JCheckBox("Auto-reply", true);
-		this.autoReplyS9Fy = new JCheckBox("Auto-reply-S9Fy", false);
-		this.autoReplySxF0 = new JCheckBox("Auto-reply-SxF0", false);
+		this.autoReply = getCheckBox("Auto-reply", true);
+		this.autoReplyS9Fy = getCheckBox("Auto-reply-S9Fy", false);
+		this.autoReplySxF0 = getCheckBox("Auto-reply-SxF0", false);
+		
+		this.darkMode = getCheckBox("Dark-mode", false);
 		
 		this.okButton = new JButton("OK");
 		this.okButton.addActionListener(ev -> {
@@ -176,6 +180,7 @@ public class SetConfigDialog extends AbstractSwingDialog {
 				this.setVisible(false);
 			}
 		});
+		
 		
 		this.setLayout(defaultBorderLayout());
 		
@@ -320,18 +325,24 @@ public class SetConfigDialog extends AbstractSwingDialog {
 				List<Component> comps = new ArrayList<>();
 				
 				{
-					JPanel p = flowPanel(FlowLayout.LEFT);
-					p.add(this.autoReply);
+					JPanel p = borderPanel();
+					p.setBorder(defaultTitledBorder("Auto-Replies"));
+					
+					{
+						JPanel pp = gridPanel(3, 1);
+						
+						pp.add(this.autoReply);
+						pp.add(this.autoReplyS9Fy);
+						pp.add(this.autoReplySxF0);
+						
+						p.add(pp, BorderLayout.WEST);
+					}
+					
 					comps.add(p);
 				}
 				{
 					JPanel p = flowPanel(FlowLayout.LEFT);
-					p.add(this.autoReplyS9Fy);
-					comps.add(p);
-				}
-				{
-					JPanel p = flowPanel(FlowLayout.LEFT);
-					p.add(this.autoReplySxF0);
+					p.add(this.darkMode);
 					comps.add(p);
 				}
 				
@@ -349,6 +360,18 @@ public class SetConfigDialog extends AbstractSwingDialog {
 			
 			this.add(p, BorderLayout.SOUTH);
 		}
+	}
+	
+	private JRadioButton getRadioButton(String text, boolean selected) {
+		final JRadioButton inst = new JRadioButton(text, selected);
+		inst.setOpaque(false);
+		return inst;
+	}
+	
+	private JCheckBox getCheckBox(String text, boolean selected) {
+		final JCheckBox inst = new JCheckBox(text, selected);
+		inst.setOpaque(false);
+		return inst;
 	}
 	
 	private JPanel timeoutPanel(Component comp, String header, String footer) {
@@ -385,7 +408,7 @@ public class SetConfigDialog extends AbstractSwingDialog {
 	 * @return {@code true} if set success
 	 */
 	public boolean getResult() {
-		return result;
+		return this.result;
 	}
 	
 	private void updateView() {
@@ -471,6 +494,9 @@ public class SetConfigDialog extends AbstractSwingDialog {
 		this.autoReply.setSelected(config().autoReply().booleanValue());
 		this.autoReplyS9Fy.setSelected(config().autoReplyS9Fy().booleanValue());
 		this.autoReplySxF0.setSelected(config().autoReplySxF0().booleanValue());
+		
+		this.darkMode.setSelected(config().darkMode().booleanValue());
+		
 	}
 	
 	private boolean setConfig() {
@@ -579,6 +605,8 @@ public class SetConfigDialog extends AbstractSwingDialog {
 		config().autoReply().set(this.autoReply.isSelected());
 		config().autoReplyS9Fy().set(this.autoReplyS9Fy.isSelected());
 		config().autoReplySxF0().set(this.autoReplySxF0.isSelected());
+		
+		config().darkMode().set(this.darkMode.isSelected());
 		
 		return f;
 	}

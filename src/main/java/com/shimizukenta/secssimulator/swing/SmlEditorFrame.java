@@ -22,21 +22,39 @@ public class SmlEditorFrame extends AbstractSwingInternalFrame {
 	
 	private static final long serialVersionUID = -5437511057134301556L;
 	
-	private final JTextArea textArea = new JTextArea("");
+	private final JTextArea textArea;
 	private final JButton loadButton = new JButton("Load...");
 	private final JButton saveAndAddButton = new JButton("Save & Add...");
 	private final JButton sendButton = new JButton("Send");
-	private final JLabel errorMsg = new JLabel("");
+	private final JLabel errorMsg;
 	
 	public SmlEditorFrame(SwingSecsSimulator parent) {
 		super(parent, "SML Editor", true, true, true, true);
 		
 		this.setDefaultCloseOperation(HIDE_ON_CLOSE);
 		
-		this.errorMsg.setHorizontalAlignment(JLabel.LEFT);
-		this.errorMsg.setVerticalAlignment(JLabel.CENTER);
-		this.errorMsg.setForeground(Color.RED);
-		this.errorMsg.setOpaque(false);
+		{
+			this.textArea = new JTextArea("");
+			
+			final Color bgColor = this.textArea.getBackground();
+			final Color fgColor = this.textArea.getForeground();
+			this.config().darkMode().addChangeListener(dark -> {
+				if ( dark ) {
+					this.textArea.setBackground(this.config().defaultDarkAreaBackGroundColor());
+					this.textArea.setForeground(this.config().defaultDarkAreaForeGroundColor());
+				} else {
+					this.textArea.setBackground(bgColor);
+					this.textArea.setForeground(fgColor);
+				}
+			});
+		}
+		{
+			this.errorMsg = new JLabel("");
+			this.errorMsg.setHorizontalAlignment(JLabel.LEFT);
+			this.errorMsg.setVerticalAlignment(JLabel.CENTER);
+			this.errorMsg.setForeground(Color.RED);
+			this.errorMsg.setOpaque(false);
+		}
 		
 		this.loadButton.addActionListener(ev -> {
 			
@@ -134,6 +152,18 @@ public class SmlEditorFrame extends AbstractSwingInternalFrame {
 			}
 			
 			this.add(p, BorderLayout.EAST);
+		}
+		
+		{
+			final Color bgColor = this.getContentPane().getBackground();
+			
+			this.config().darkMode().addChangeListener(dark -> {
+				if ( dark ) {
+					this.getContentPane().setBackground(this.config().defaultDarkPanelBackGroundColor());
+				} else {
+					this.getContentPane().setBackground(bgColor);
+				}
+			});
 		}
 	}
 	
