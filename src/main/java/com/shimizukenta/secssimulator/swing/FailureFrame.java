@@ -107,17 +107,6 @@ public class FailureFrame extends AbstractSwingInternalFrame {
 			
 			this.add(p, BorderLayout.EAST);
 		}
-		
-		{
-			final Color bgColor = this.getContentPane().getBackground();
-			this.config().darkMode().addChangeListener(dark -> {
-				if ( dark ) {
-					this.getContentPane().setBackground(this.config().defaultDarkPanelBackGroundColor());
-				} else {
-					this.getContentPane().setBackground(bgColor);
-				}
-			});
-		}
 	}
 	
 	private final LinkedList<ThrowablePair> pairs = new LinkedList<>();

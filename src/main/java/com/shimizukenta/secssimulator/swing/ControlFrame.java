@@ -13,7 +13,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.ListSelectionModel;
-import javax.swing.border.TitledBorder;
 
 import com.shimizukenta.secs.BooleanProperty;
 import com.shimizukenta.secssimulator.SmlAliasPair;
@@ -121,20 +120,9 @@ public class ControlFrame extends AbstractSwingInternalFrame {
 		});
 		
 		{
-			this.autoReply = new JCheckBox("Auto-reply");
-			this.autoReply.setOpaque(false);
-			
+			this.autoReply = defaultCheckBox("auto-reply", false);
 			this.autoReply.addActionListener(ev -> {
 				config().autoReply().set(this.autoReply.isSelected());
-			});
-			
-			final Color fgColor = this.autoReply.getForeground();
-			config().darkMode().addChangeListener(dark -> {
-				if ( dark ) {
-					this.autoReply.setForeground(this.config().defaultDarkAreaForeGroundColor());
-				} else {
-					this.autoReply.setForeground(fgColor);
-				}
 			});
 		}
 		
@@ -144,19 +132,7 @@ public class ControlFrame extends AbstractSwingInternalFrame {
 		{
 			JPanel p = borderPanel();
 			
-			{
-				final TitledBorder ttb = defaultTitledBorder("Communicator");
-				p.setBorder(ttb);
-				
-				final Color fgColor = ttb.getTitleColor();
-				config().darkMode().addChangeListener(dark -> {
-					if ( dark ) {
-						ttb.setTitleColor(this.config().defaultDarkAreaForeGroundColor());
-					} else {
-						ttb.setTitleColor(fgColor);
-					}
-				});
-			}
+			p.setBorder(defaultTitledBorder("Communicator"));
 			
 			{
 				JPanel pp = borderPanel();
@@ -178,19 +154,7 @@ public class ControlFrame extends AbstractSwingInternalFrame {
 		{
 			JPanel p = borderPanel();
 			
-			{
-				final TitledBorder ttb = defaultTitledBorder("SML");
-				p.setBorder(ttb);
-				
-				final Color fgColor = ttb.getTitleColor();
-				config().darkMode().addChangeListener(dark -> {
-					if ( dark ) {
-						ttb.setTitleColor(this.config().defaultDarkAreaForeGroundColor());
-					} else {
-						ttb.setTitleColor(fgColor);
-					}
-				});
-			}
+			p.setBorder(defaultTitledBorder("SML"));
 			
 			{
 				JPanel pp = borderPanel();
@@ -239,18 +203,6 @@ public class ControlFrame extends AbstractSwingInternalFrame {
 			this.add(p, BorderLayout.CENTER);
 		}
 		
-		
-		
-		{
-			final Color bgColor = this.getBackground();
-			config().darkMode().addChangeListener(dark -> {
-				if ( dark ) {
-					this.getContentPane().setBackground(this.config().defaultDarkPanelBackGroundColor());
-				} else {
-					this.getContentPane().setBackground(bgColor);
-				}
-			});
-		}
 		
 		config().autoReply().addChangeListener(this.autoReply::setSelected);
 		

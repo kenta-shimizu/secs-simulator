@@ -1,6 +1,7 @@
 package com.shimizukenta.secssimulator.swing;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dialog;
 import java.awt.FlowLayout;
@@ -15,9 +16,13 @@ import java.util.LinkedList;
 import java.util.List;
 
 import javax.swing.BoxLayout;
+import javax.swing.JCheckBox;
 import javax.swing.JDialog;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 
@@ -35,81 +40,108 @@ public abstract class AbstractSwingDialog extends JDialog {
 	public AbstractSwingDialog(SwingSecsSimulator simm) {
 		super();
 		this.simm = simm;
+		setDarkDialog();
 	}
 
 	public AbstractSwingDialog(SwingSecsSimulator simm, Frame owner) {
 		super(owner);
 		this.simm = simm;
+		setDarkDialog();
 	}
 
 	public AbstractSwingDialog(SwingSecsSimulator simm, Dialog owner) {
 		super(owner);
 		this.simm = simm;
+		setDarkDialog();
 	}
 
 	public AbstractSwingDialog(SwingSecsSimulator simm, Window owner) {
 		super(owner);
 		this.simm = simm;
+		setDarkDialog();
 	}
 
 	public AbstractSwingDialog(SwingSecsSimulator simm, Frame owner, boolean modal) {
 		super(owner, modal);
 		this.simm = simm;
+		setDarkDialog();
 	}
 
 	public AbstractSwingDialog(SwingSecsSimulator simm, Frame owner, String title) {
 		super(owner, title);
 		this.simm = simm;
+		setDarkDialog();
 	}
 
 	public AbstractSwingDialog(SwingSecsSimulator simm, Dialog owner, boolean modal) {
 		super(owner, modal);
 		this.simm = simm;
+		setDarkDialog();
 	}
 
 	public AbstractSwingDialog(SwingSecsSimulator simm, Dialog owner, String title) {
 		super(owner, title);
 		this.simm = simm;
+		setDarkDialog();
 	}
 
 	public AbstractSwingDialog(SwingSecsSimulator simm, Window owner, ModalityType modalityType) {
 		super(owner, modalityType);
 		this.simm = simm;
+		setDarkDialog();
 	}
 
 	public AbstractSwingDialog(SwingSecsSimulator simm, Window owner, String title) {
 		super(owner, title);
 		this.simm = simm;
+		setDarkDialog();
 	}
 
 	public AbstractSwingDialog(SwingSecsSimulator simm, Frame owner, String title, boolean modal) {
 		super(owner, title, modal);
 		this.simm = simm;
+		setDarkDialog();
 	}
 
 	public AbstractSwingDialog(SwingSecsSimulator simm, Dialog owner, String title, boolean modal) {
 		super(owner, title, modal);
 		this.simm = simm;
+		setDarkDialog();
 	}
 
 	public AbstractSwingDialog(SwingSecsSimulator simm, Window owner, String title, ModalityType modalityType) {
 		super(owner, title, modalityType);
 		this.simm = simm;
+		setDarkDialog();
 	}
 
 	public AbstractSwingDialog(SwingSecsSimulator simm, Frame owner, String title, boolean modal, GraphicsConfiguration gc) {
 		super(owner, title, modal, gc);
 		this.simm = simm;
+		setDarkDialog();
 	}
 
 	public AbstractSwingDialog(SwingSecsSimulator simm, Dialog owner, String title, boolean modal, GraphicsConfiguration gc) {
 		super(owner, title, modal, gc);
 		this.simm = simm;
+		setDarkDialog();
 	}
 
 	public AbstractSwingDialog(SwingSecsSimulator simm, Window owner, String title, ModalityType modalityType, GraphicsConfiguration gc) {
 		super(owner, title, modalityType, gc);
 		this.simm = simm;
+		setDarkDialog();
+	}
+	
+	private void setDarkDialog() {
+		final Color bgColor = this.getContentPane().getBackground();
+		this.config().darkMode().addChangeListener(dark -> {
+			if ( dark ) {
+				this.getContentPane().setBackground(this.config().defaultDarkPanelBackGroundColor());
+			} else {
+				this.getContentPane().setBackground(bgColor);
+			}
+		});
 	}
 	
 	
@@ -203,12 +235,99 @@ public abstract class AbstractSwingDialog extends JDialog {
 		return p;
 	}
 	
-	protected static TitledBorder defaultTitledBorder(String title) {
-		return new TitledBorder(
+	protected TitledBorder defaultTitledBorder(String title) {
+		
+		final TitledBorder ttb = new TitledBorder(
 				new EtchedBorder(EtchedBorder.LOWERED),
 				title,
 				TitledBorder.LEFT,
 				TitledBorder.TOP);
+		
+		final Color ttColor = ttb.getTitleColor();
+		
+		this.config().darkMode().addChangeListener(dark -> {
+			if ( dark ) {
+				ttb.setTitleColor(this.config().defaultDarkAreaForeGroundColor());
+			} else {
+				ttb.setTitleColor(ttColor);
+			}
+		});
+		
+		return ttb;
+	}
+	
+	protected JRadioButton defaultRadioButton(String text, boolean selected) {
+		
+		final JRadioButton btn = new JRadioButton(text, selected);
+		
+		btn.setOpaque(false);
+		
+		final Color fgColor = btn.getForeground();
+		
+		this.config().darkMode().addChangeListener(dark -> {
+			if ( dark ) {
+				btn.setForeground(this.config().defaultDarkAreaForeGroundColor());
+			} else {
+				btn.setForeground(fgColor);
+			}
+		});
+		
+		return btn;
+	}
+	
+	protected JCheckBox defaultCheckBox(String text, boolean selected) {
+		
+		final JCheckBox box = new JCheckBox(text, selected);
+		
+		box.setOpaque(false);
+		
+		final Color fgColor = box.getForeground();
+		
+		this.config().darkMode().addChangeListener(dark -> {
+			if ( dark ) {
+				box.setForeground(this.config().defaultDarkAreaForeGroundColor());
+			} else {
+				box.setForeground(fgColor);
+			}
+		});
+		
+		return box;
+	}
+	
+	protected JTextArea defaultTextArea() {
+		
+		final JTextArea area = new JTextArea("");
+		
+		final Color bgColor = area.getBackground();
+		final Color fgColor = area.getForeground();
+		
+		this.config().darkMode().addChangeListener(dark -> {
+			if ( dark ) {
+				area.setBackground(this.config().defaultDarkAreaBackGroundColor());
+				area.setForeground(this.config().defaultDarkAreaForeGroundColor());
+			} else {
+				area.setBackground(bgColor);
+				area.setForeground(fgColor);
+			}
+		});
+
+		return area;
+	}
+	
+	protected JLabel defaultLabel(String text,  int horizontalAlignment) {
+		final JLabel lbl = new JLabel(text, horizontalAlignment);
+		
+		final Color fgColor = lbl.getForeground();
+		
+		this.config().darkMode().addChangeListener(dark -> {
+			if ( dark ) {
+				lbl.setForeground(this.config().defaultDarkAreaForeGroundColor());
+			} else {
+				lbl.setForeground(fgColor);
+			}
+		});
+		
+		return lbl;
 	}
 	
 	protected static final JScrollPane defaultScrollPane(Component view) {

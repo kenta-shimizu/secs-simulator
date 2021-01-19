@@ -55,9 +55,11 @@ public class SwingMainFrame extends JFrame {
 	private final SwingSecsSimulator simm;
 	
 	public SwingMainFrame(SwingSecsSimulator simm) {
-		super("Swing SECS Simulator");
+		super();
 		
 		this.simm = simm;
+		
+		this.setTitle(config().title());
 		
 		
 		this.loadConfigFileChooser.setDialogTitle("Load config from file");

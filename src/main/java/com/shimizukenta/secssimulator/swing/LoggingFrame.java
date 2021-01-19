@@ -1,7 +1,6 @@
 package com.shimizukenta.secssimulator.swing;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.FlowLayout;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -21,21 +20,9 @@ public class LoggingFrame extends AbstractSwingInternalFrame {
 		super(parent, "Logging", true, false, true, true);
 		
 		{
-			this.textarea = new JTextArea("");
+			this.textarea = defaultTextArea();
 			this.textarea.setEditable(false);
 			this.textarea.setLineWrap(true);
-			
-			final Color bgColor = this.textarea.getBackground();
-			final Color fgColor = this.textarea.getForeground();
-			this.config().darkMode().addChangeListener(dark -> {
-				if ( dark ) {
-					this.textarea.setBackground(this.config().defaultDarkAreaBackGroundColor());
-					this.textarea.setForeground(this.config().defaultDarkAreaForeGroundColor());
-				} else {
-					this.textarea.setBackground(bgColor);
-					this.textarea.setForeground(fgColor);
-				}
-			});
 		}
 		
 		this.stopButton = new JButton("Stop");
@@ -63,17 +50,6 @@ public class LoggingFrame extends AbstractSwingInternalFrame {
 			catch ( InterruptedException ignore ) {
 			}
 		});
-		
-		{
-			final Color bgColor = this.getContentPane().getBackground();
-			this.config().darkMode().addChangeListener(dark -> {
-				if ( dark ) {
-					this.getContentPane().setBackground(this.config().defaultDarkPanelBackGroundColor());
-				} else {
-					this.getContentPane().setBackground(bgColor);
-				}
-			});
-		}
 	}
 	
 	@Override

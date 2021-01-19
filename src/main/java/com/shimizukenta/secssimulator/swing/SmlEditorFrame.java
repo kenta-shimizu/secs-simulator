@@ -33,21 +33,8 @@ public class SmlEditorFrame extends AbstractSwingInternalFrame {
 		
 		this.setDefaultCloseOperation(HIDE_ON_CLOSE);
 		
-		{
-			this.textArea = new JTextArea("");
-			
-			final Color bgColor = this.textArea.getBackground();
-			final Color fgColor = this.textArea.getForeground();
-			this.config().darkMode().addChangeListener(dark -> {
-				if ( dark ) {
-					this.textArea.setBackground(this.config().defaultDarkAreaBackGroundColor());
-					this.textArea.setForeground(this.config().defaultDarkAreaForeGroundColor());
-				} else {
-					this.textArea.setBackground(bgColor);
-					this.textArea.setForeground(fgColor);
-				}
-			});
-		}
+		this.textArea = this.defaultTextArea();
+		
 		{
 			this.errorMsg = new JLabel("");
 			this.errorMsg.setHorizontalAlignment(JLabel.LEFT);
@@ -152,18 +139,6 @@ public class SmlEditorFrame extends AbstractSwingInternalFrame {
 			}
 			
 			this.add(p, BorderLayout.EAST);
-		}
-		
-		{
-			final Color bgColor = this.getContentPane().getBackground();
-			
-			this.config().darkMode().addChangeListener(dark -> {
-				if ( dark ) {
-					this.getContentPane().setBackground(this.config().defaultDarkPanelBackGroundColor());
-				} else {
-					this.getContentPane().setBackground(bgColor);
-				}
-			});
 		}
 	}
 	

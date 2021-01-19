@@ -17,15 +17,19 @@ public class SwingSecsSimulatorConfig extends AbstractGuiSecsSimulatorConfig {
 	
 	private static final SocketAddress defaultSocketAddress = new InetSocketAddress("127.0.0.1", 5000);
 	private static final int defaultViewerSize = 500;
+	private static final String defaultTitle = "Swing SECS Simulator";
 	private static final boolean defaultOverrideIsEquip = true;
 	
 	private int viewerSize;
+	private String title;
+	
 	
 	public SwingSecsSimulatorConfig() {
 		super();
 		
 		this.socketAddress(defaultSocketAddress);
 		this.viewerSize = defaultViewerSize;
+		this.title = defaultTitle;
 		this.isEquip(defaultOverrideIsEquip);
 	}
 	
@@ -48,6 +52,19 @@ public class SwingSecsSimulatorConfig extends AbstractGuiSecsSimulatorConfig {
 			this.viewerSize = size;
 		}
 	}
+	
+	public String title() {
+		synchronized ( this ) {
+			return this.title;
+		}
+	}
+	
+	public void title(String title) {
+		synchronized ( this ) {
+			this.title = title;
+		}
+	}
+	
 	
 	private static final Color defaultDarkAreaForeGroundColor = Color.WHITE;
 	private static final Color defaultDarkAreaBackGroundColor = Color.BLACK;
@@ -96,6 +113,7 @@ public class SwingSecsSimulatorConfig extends AbstractGuiSecsSimulatorConfig {
 		final JsonHubBuilder jhb = JsonHub.getBuilder();
 		
 		return jhb.object(
+				jhb.pair("title", this.title()),
 				jhb.pair("viewer", this.getGuiSwingViewerJsonHub())
 				);
 	}
@@ -122,6 +140,7 @@ public class SwingSecsSimulatorConfig extends AbstractGuiSecsSimulatorConfig {
 	}
 	
 	protected void setGuiSwingByJson(JsonHub jh) {
+		jh.getOrDefault("title").optionalString().ifPresent(this::title);
 		setGuiSwingViewerByJson(jh.getOrDefault("viewer"));
 	}
 	

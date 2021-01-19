@@ -1,6 +1,7 @@
 package com.shimizukenta.secssimulator.swing;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
@@ -8,9 +9,11 @@ import java.nio.file.Path;
 import java.util.Collection;
 
 import javax.swing.BoxLayout;
+import javax.swing.JCheckBox;
 import javax.swing.JInternalFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 
@@ -28,11 +31,13 @@ public class AbstractSwingInternalFrame extends JInternalFrame {
 	public AbstractSwingInternalFrame(SwingSecsSimulator parent) {
 		super();
 		this.simm = parent;
+		setDarkInternalFrame();
 	}
 
 	public AbstractSwingInternalFrame(SwingSecsSimulator parent, String title) {
 		super(title);
 		this.simm = parent;
+		setDarkInternalFrame();
 	}
 
 	public AbstractSwingInternalFrame(
@@ -42,6 +47,7 @@ public class AbstractSwingInternalFrame extends JInternalFrame {
 		
 		super(title, resizable);
 		this.simm = parent;
+		setDarkInternalFrame();
 	}
 
 	public AbstractSwingInternalFrame(
@@ -52,6 +58,7 @@ public class AbstractSwingInternalFrame extends JInternalFrame {
 		
 		super(title, resizable, closable);
 		this.simm = parent;
+		setDarkInternalFrame();
 	}
 
 	public AbstractSwingInternalFrame(
@@ -63,6 +70,7 @@ public class AbstractSwingInternalFrame extends JInternalFrame {
 		
 		super(title, resizable, closable, maximizable);
 		this.simm = parent;
+		setDarkInternalFrame();
 	}
 
 	public AbstractSwingInternalFrame(
@@ -75,7 +83,20 @@ public class AbstractSwingInternalFrame extends JInternalFrame {
 		
 		super(title, resizable, closable, maximizable, iconifiable);
 		this.simm = parent;
+		setDarkInternalFrame();
 	}
+	
+	private void setDarkInternalFrame() {
+		final Color bgColor = this.getContentPane().getBackground();
+		this.config().darkMode().addChangeListener(dark -> {
+			if ( dark ) {
+				this.getContentPane().setBackground(this.config().defaultDarkPanelBackGroundColor());
+			} else {
+				this.getContentPane().setBackground(bgColor);
+			}
+		});
+	}
+	
 	
 	protected final SwingSecsSimulator simulator() {
 		return simm;
@@ -166,12 +187,64 @@ public class AbstractSwingInternalFrame extends JInternalFrame {
 		return p;
 	}
 	
-	protected static TitledBorder defaultTitledBorder(String title) {
-		return new TitledBorder(
+	protected TitledBorder defaultTitledBorder(String title) {
+		
+		final TitledBorder ttb = new TitledBorder(
 				new EtchedBorder(EtchedBorder.LOWERED),
 				title,
 				TitledBorder.LEFT,
 				TitledBorder.TOP);
+		
+		final Color ttColor = ttb.getTitleColor();
+		
+		this.config().darkMode().addChangeListener(dark -> {
+			if ( dark ) {
+				ttb.setTitleColor(this.config().defaultDarkAreaForeGroundColor());
+			} else {
+				ttb.setTitleColor(ttColor);
+			}
+		});
+		
+		return ttb;
+	}
+	
+	protected JTextArea defaultTextArea() {
+		
+		final JTextArea area = new JTextArea("");
+		
+		final Color bgColor = area.getBackground();
+		final Color fgColor = area.getForeground();
+		
+		this.config().darkMode().addChangeListener(dark -> {
+			if ( dark ) {
+				area.setBackground(this.config().defaultDarkAreaBackGroundColor());
+				area.setForeground(this.config().defaultDarkAreaForeGroundColor());
+			} else {
+				area.setBackground(bgColor);
+				area.setForeground(fgColor);
+			}
+		});
+
+		return area;
+	}
+	
+	protected JCheckBox defaultCheckBox(String text, boolean selected) {
+		
+		final JCheckBox box = new JCheckBox(text, selected);
+		
+		box.setOpaque(false);
+		
+		final Color fgColor = box.getForeground();
+		
+		this.config().darkMode().addChangeListener(dark -> {
+			if ( dark ) {
+				box.setForeground(this.config().defaultDarkAreaForeGroundColor());
+			} else {
+				box.setForeground(fgColor);
+			}
+		});
+		
+		return box;
 	}
 	
 	protected static final JScrollPane defaultScrollPane(Component view) {

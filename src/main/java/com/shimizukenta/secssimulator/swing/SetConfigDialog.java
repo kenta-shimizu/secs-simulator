@@ -1,6 +1,7 @@
 package com.shimizukenta.secssimulator.swing;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Frame;
@@ -125,10 +126,10 @@ public class SetConfigDialog extends AbstractSwingDialog {
 		
 		this.setDefaultCloseOperation(JDialog.HIDE_ON_CLOSE);
 		
-		this.hsmsSsPassiveRadio = getRadioButton("HSMS-SS-Passive", true);
-		this.hsmsSsActiveRadio = getRadioButton("HSMS-SS-Active", false);
-		this.secs1OnTcpIpRadio = getRadioButton("SECS-I-on-TCP/IP", false);
-		this.secs1OnTcpIpRecvRadio = getRadioButton("SECS-I-on-TCP/IP-Receiver", false);
+		this.hsmsSsPassiveRadio = defaultRadioButton("HSMS-SS-Passive", true);
+		this.hsmsSsActiveRadio = defaultRadioButton("HSMS-SS-Active", false);
+		this.secs1OnTcpIpRadio = defaultRadioButton("SECS-I-on-TCP/IP", false);
+		this.secs1OnTcpIpRecvRadio = defaultRadioButton("SECS-I-on-TCP/IP-Receiver", false);
 		this.protocolGroup = new ButtonGroup();
 		this.protocolGroup.add(this.hsmsSsPassiveRadio);
 		this.protocolGroup.add(this.hsmsSsActiveRadio);
@@ -140,13 +141,13 @@ public class SetConfigDialog extends AbstractSwingDialog {
 		
 		this.deviceIdText = new NumberTextField("10", 5);
 		
-		this.equipRadio = getRadioButton("Equip", true);
-		this.hostRadio = getRadioButton("Host", false);
+		this.equipRadio = defaultRadioButton("Equip", true);
+		this.hostRadio = defaultRadioButton("Host", false);
 		this.hostEquipGroup = new ButtonGroup();
 		this.hostEquipGroup.add(this.equipRadio);
 		this.hostEquipGroup.add(this.hostRadio);
 		
-		this.masterMode = getCheckBox("Master-mode (SECS-I)", true);
+		this.masterMode = defaultCheckBox("Master-mode (SECS-I)", true);
 		
 		this.t1Text = new NumberTextField("1", 4);
 		this.t2Text = new NumberTextField("1", 4);
@@ -160,17 +161,17 @@ public class SetConfigDialog extends AbstractSwingDialog {
 		this.retryText = new NumberTextField("3", 3);
 		
 		this.linktestText = new NumberTextField("1", 4);
-		this.linktestCheck = getCheckBox("Linktest (HSMS-SS): ", false);
+		this.linktestCheck = defaultCheckBox("Linktest (HSMS-SS): ", false);
 		this.linktestCheck.addChangeListener(ev -> {
 			this.linktestText.setEditable(this.linktestCheck.isSelected());
 			this.linktestText.setEnabled(this.linktestCheck.isSelected());
 		});
 		
-		this.autoReply = getCheckBox("Auto-reply", true);
-		this.autoReplyS9Fy = getCheckBox("Auto-reply-S9Fy", false);
-		this.autoReplySxF0 = getCheckBox("Auto-reply-SxF0", false);
+		this.autoReply = defaultCheckBox("Auto-reply", true);
+		this.autoReplyS9Fy = defaultCheckBox("Auto-reply-S9Fy", false);
+		this.autoReplySxF0 = defaultCheckBox("Auto-reply-SxF0", false);
 		
-		this.darkMode = getCheckBox("Dark-mode", false);
+		this.darkMode = defaultCheckBox("Dark-mode", false);
 		
 		this.okButton = new JButton("OK");
 		this.okButton.addActionListener(ev -> {
@@ -216,8 +217,8 @@ public class SetConfigDialog extends AbstractSwingDialog {
 						
 						{
 							JPanel pp = gridPanel(2, 1);
-							pp.add(new JLabel("IP: ", JLabel.RIGHT));
-							pp.add(new JLabel("Port: ", JLabel.RIGHT));
+							pp.add(defaultLabel("IP: ", JLabel.RIGHT));
+							pp.add(defaultLabel("Port: ", JLabel.RIGHT));
 							ll.add(pp);
 						}
 						{
@@ -244,7 +245,7 @@ public class SetConfigDialog extends AbstractSwingDialog {
 				}
 				{
 					JPanel p = flowPanel(FlowLayout.LEFT);
-					p.add(new JLabel("Device-ID: ", JLabel.RIGHT));
+					p.add(defaultLabel("Device-ID: ", JLabel.RIGHT));
 					p.add(this.deviceIdText);
 					comps.add(p);
 				}
@@ -271,6 +272,18 @@ public class SetConfigDialog extends AbstractSwingDialog {
 				
 				JPanel p = compactStackPanel(BorderLayout.NORTH, comps);
 				p.setOpaque(true);
+				
+				{
+					final Color bgColor = p.getBackground();
+					
+					this.config().darkMode().addChangeListener(dark -> {
+						if ( dark ) {
+							p.setBackground(this.config().defaultDarkPanelBackGroundColor());
+						} else {
+							p.setBackground(bgColor);
+						}
+					});
+				}
 				
 				tabbedpane.add("General", defaultScrollPane(p));
 			}
@@ -302,7 +315,7 @@ public class SetConfigDialog extends AbstractSwingDialog {
 				{
 					JPanel p = flowPanel(FlowLayout.LEFT);
 					
-					p.add(new JLabel("Retry (SECS-I): ", JLabel.RIGHT));
+					p.add(defaultLabel("Retry (SECS-I): ", JLabel.RIGHT));
 					p.add(this.retryText);
 					
 					comps.add(p);
@@ -312,13 +325,26 @@ public class SetConfigDialog extends AbstractSwingDialog {
 					
 					p.add(linktestCheck);
 					p.add(linktestText);
-					p.add(new JLabel("sec.", JLabel.LEFT));
+					p.add(defaultLabel("sec.", JLabel.LEFT));
 					
 					comps.add(p);
 				}
 				
 				JPanel p = compactStackPanel(BorderLayout.NORTH, comps);
 				p.setOpaque(true);
+				
+				{
+					final Color bgColor = p.getBackground();
+					
+					this.config().darkMode().addChangeListener(dark -> {
+						if ( dark ) {
+							p.setBackground(this.config().defaultDarkPanelBackGroundColor());
+						} else {
+							p.setBackground(bgColor);
+						}
+					});
+				}
+				
 				tabbedpane.add("Timer", defaultScrollPane(p));
 			}
 			{
@@ -348,6 +374,19 @@ public class SetConfigDialog extends AbstractSwingDialog {
 				
 				JPanel p = compactStackPanel(BorderLayout.NORTH, comps);
 				p.setOpaque(true);
+				
+				{
+					final Color bgColor = p.getBackground();
+					
+					this.config().darkMode().addChangeListener(dark -> {
+						if ( dark ) {
+							p.setBackground(this.config().defaultDarkPanelBackGroundColor());
+						} else {
+							p.setBackground(bgColor);
+						}
+					});
+				}
+				
 				tabbedpane.add("Other", defaultScrollPane(p));
 			}
 			
@@ -362,23 +401,11 @@ public class SetConfigDialog extends AbstractSwingDialog {
 		}
 	}
 	
-	private JRadioButton getRadioButton(String text, boolean selected) {
-		final JRadioButton inst = new JRadioButton(text, selected);
-		inst.setOpaque(false);
-		return inst;
-	}
-	
-	private JCheckBox getCheckBox(String text, boolean selected) {
-		final JCheckBox inst = new JCheckBox(text, selected);
-		inst.setOpaque(false);
-		return inst;
-	}
-	
 	private JPanel timeoutPanel(Component comp, String header, String footer) {
 		JPanel p = flowPanel(FlowLayout.RIGHT);
-		p.add(new JLabel(header, JLabel.RIGHT));
+		p.add(defaultLabel(header, JLabel.RIGHT));
 		p.add(comp);
-		p.add(new JLabel(footer, JLabel.LEFT));
+		p.add(defaultLabel(footer, JLabel.LEFT));
 		return p;
 	}
 	

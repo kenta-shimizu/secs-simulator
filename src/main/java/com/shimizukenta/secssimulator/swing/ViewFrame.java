@@ -49,23 +49,9 @@ public class ViewFrame extends AbstractSwingInternalFrame {
 			});
 		}
 		{
-			this.messageLogTextArea = new JTextArea("");
+			this.messageLogTextArea = defaultTextArea();
 			this.messageLogTextArea.setEditable(false);
 			this.messageLogTextArea.setLineWrap(false);
-			this.messageLogTextArea.setOpaque(true);
-			
-			final Color fgColor = this.messageLogTextArea.getForeground();
-			final Color bgColor = this.messageLogTextArea.getBackground();
-			
-			config().darkMode().addChangeListener(dark -> {
-				if ( dark ) {
-					this.messageLogTextArea.setBackground(this.config().defaultDarkAreaBackGroundColor());
-					this.messageLogTextArea.setForeground(this.config().defaultDarkAreaForeGroundColor());
-				} else {
-					this.messageLogTextArea.setBackground(bgColor);
-					this.messageLogTextArea.setForeground(fgColor);
-				}
-			});
 		}
 		
 		this.setLayout(defaultBorderLayout());
@@ -84,17 +70,6 @@ public class ViewFrame extends AbstractSwingInternalFrame {
 			this.vScrollBar = this.scrollPane.getVerticalScrollBar();
 			
 			this.add(scrollPane, BorderLayout.CENTER);
-		}
-		
-		{
-			final Color bgColor = this.getBackground();
-			config().darkMode().addChangeListener(dark -> {
-				if ( dark ) {
-					this.getContentPane().setBackground(this.config().defaultDarkPanelBackGroundColor());
-				} else {
-					this.getContentPane().setBackground(bgColor);
-				}
-			});
 		}
 	}
 	

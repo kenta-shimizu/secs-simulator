@@ -15,7 +15,6 @@ import javax.swing.JButton;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.ListSelectionModel;
-import javax.swing.border.TitledBorder;
 
 import com.shimizukenta.secssimulator.MacroRecipePair;
 import com.shimizukenta.secssimulator.macro.MacroWorker;
@@ -154,19 +153,7 @@ public class MacroFrame extends AbstractSwingInternalFrame {
 		{
 			JPanel p = borderPanel();
 			
-			{
-				TitledBorder ttb = defaultTitledBorder("Recipe");
-				p.setBorder(ttb);
-				
-				final Color fgColor = ttb.getTitleColor();
-				config().darkMode().addChangeListener(dark -> {
-					if ( dark ) {
-						ttb.setTitleColor(this.config().defaultDarkAreaForeGroundColor());
-					} else {
-						ttb.setTitleColor(fgColor);
-					}
-				});
-			}
+			p.setBorder(defaultTitledBorder("Recipe"));
 			
 			{
 				JPanel pp = borderPanel();
@@ -199,19 +186,7 @@ public class MacroFrame extends AbstractSwingInternalFrame {
 		{
 			JPanel p = borderPanel();
 			
-			{
-				TitledBorder ttb = defaultTitledBorder("Worker");
-				p.setBorder(ttb);
-				
-				final Color fgColor = ttb.getTitleColor();
-				config().darkMode().addChangeListener(dark -> {
-					if ( dark ) {
-						ttb.setTitleColor(this.config().defaultDarkAreaForeGroundColor());
-					} else {
-						ttb.setTitleColor(fgColor);
-					}
-				});
-			}
+			p.setBorder(defaultTitledBorder("Worker"));
 			
 			{
 				JPanel pp = borderPanel();
@@ -238,17 +213,6 @@ public class MacroFrame extends AbstractSwingInternalFrame {
 			}
 			
 			this.add(p);
-		}
-		
-		{
-			final Color bgColor = this.getContentPane().getBackground();
-			this.config().darkMode().addChangeListener(dark -> {
-				if ( dark ) {
-					this.getContentPane().setBackground(this.config().defaultDarkPanelBackGroundColor());;
-				} else {
-					this.getContentPane().setBackground(bgColor);
-				}
-			});
 		}
 	}
 	
