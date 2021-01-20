@@ -23,6 +23,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 
@@ -292,6 +293,26 @@ public abstract class AbstractSwingDialog extends JDialog {
 		});
 		
 		return box;
+	}
+	
+	protected JTextField defaultTextField(String text, int columns) {
+		
+		final JTextField field = new JTextField(text, columns);
+		
+		final Color bgColor = field.getBackground();
+		final Color fgColor = field.getForeground();
+		
+		this.config().darkMode().addChangeListener(dark -> {
+			if ( dark ) {
+				field.setBackground(this.config().defaultDarkAreaBackGroundColor());
+				field.setForeground(this.config().defaultDarkAreaForeGroundColor());
+			} else {
+				field.setBackground(bgColor);
+				field.setForeground(fgColor);
+			}
+		});
+		
+		return field;
 	}
 	
 	protected JTextArea defaultTextArea() {

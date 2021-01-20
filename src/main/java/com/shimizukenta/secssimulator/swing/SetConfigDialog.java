@@ -32,13 +32,26 @@ public class SetConfigDialog extends AbstractSwingDialog {
 	
 	private static final long serialVersionUID = 3639672355647254120L;
 	
-	private static class NumberTextField extends JTextField {
+	private class NumberTextField extends JTextField {
 		
 		private static final long serialVersionUID = -7951884917128959768L;
 
 		public NumberTextField(String text, int columns) {
 			super(text, columns);
 			this.setHorizontalAlignment(JTextField.RIGHT);
+			
+			final Color bgColor = this.getBackground();
+			final Color fgColor = this.getForeground();
+			
+			SetConfigDialog.this.config().darkMode().addChangeListener(dark -> {
+				if ( dark ) {
+					this.setBackground(SetConfigDialog.this.config().defaultDarkAreaBackGroundColor());
+					this.setForeground(SetConfigDialog.this.config().defaultDarkAreaForeGroundColor());
+				} else {
+					this.setBackground(bgColor);
+					this.setForeground(fgColor);
+				}
+			});
 		}
 		
 		public void setValue(int v) {
@@ -136,7 +149,7 @@ public class SetConfigDialog extends AbstractSwingDialog {
 		this.protocolGroup.add(this.secs1OnTcpIpRadio);
 		this.protocolGroup.add(this.secs1OnTcpIpRecvRadio);
 		
-		this.ipText = new JTextField("", 15);
+		this.ipText = defaultTextField("", 15);
 		this.portText = new NumberTextField("5000", 5);
 		
 		this.deviceIdText = new NumberTextField("10", 5);
@@ -270,22 +283,7 @@ public class SetConfigDialog extends AbstractSwingDialog {
 					comps.add(p);
 				}
 				
-				JPanel p = compactStackPanel(BorderLayout.NORTH, comps);
-				p.setOpaque(true);
-				
-				{
-					final Color bgColor = p.getBackground();
-					
-					this.config().darkMode().addChangeListener(dark -> {
-						if ( dark ) {
-							p.setBackground(this.config().defaultDarkPanelBackGroundColor());
-						} else {
-							p.setBackground(bgColor);
-						}
-					});
-				}
-				
-				tabbedpane.add("General", defaultScrollPane(p));
+				tabbedpane.add("General", defaultTabComponent(comps));
 			}
 			{
 				List<Component> comps = new ArrayList<>();
@@ -330,22 +328,7 @@ public class SetConfigDialog extends AbstractSwingDialog {
 					comps.add(p);
 				}
 				
-				JPanel p = compactStackPanel(BorderLayout.NORTH, comps);
-				p.setOpaque(true);
-				
-				{
-					final Color bgColor = p.getBackground();
-					
-					this.config().darkMode().addChangeListener(dark -> {
-						if ( dark ) {
-							p.setBackground(this.config().defaultDarkPanelBackGroundColor());
-						} else {
-							p.setBackground(bgColor);
-						}
-					});
-				}
-				
-				tabbedpane.add("Timer", defaultScrollPane(p));
+				tabbedpane.add("Timer", defaultTabComponent(comps));
 			}
 			{
 				List<Component> comps = new ArrayList<>();
@@ -372,22 +355,7 @@ public class SetConfigDialog extends AbstractSwingDialog {
 					comps.add(p);
 				}
 				
-				JPanel p = compactStackPanel(BorderLayout.NORTH, comps);
-				p.setOpaque(true);
-				
-				{
-					final Color bgColor = p.getBackground();
-					
-					this.config().darkMode().addChangeListener(dark -> {
-						if ( dark ) {
-							p.setBackground(this.config().defaultDarkPanelBackGroundColor());
-						} else {
-							p.setBackground(bgColor);
-						}
-					});
-				}
-				
-				tabbedpane.add("Other", defaultScrollPane(p));
+				tabbedpane.add("Other", defaultTabComponent(comps));
 			}
 			
 			this.add(tabbedpane, BorderLayout.CENTER);
@@ -399,6 +367,26 @@ public class SetConfigDialog extends AbstractSwingDialog {
 			
 			this.add(p, BorderLayout.SOUTH);
 		}
+	}
+	
+	private Component defaultTabComponent(List<Component> components) {
+		
+		JPanel p = compactStackPanel(BorderLayout.NORTH, components);
+		p.setOpaque(true);
+		
+		{
+			final Color bgColor = p.getBackground();
+			
+			this.config().darkMode().addChangeListener(dark -> {
+				if ( dark ) {
+					p.setBackground(this.config().defaultDarkPanelBackGroundColor());
+				} else {
+					p.setBackground(bgColor);
+				}
+			});
+		}
+		
+		return defaultScrollPane(p);
 	}
 	
 	private JPanel timeoutPanel(Component comp, String header, String footer) {

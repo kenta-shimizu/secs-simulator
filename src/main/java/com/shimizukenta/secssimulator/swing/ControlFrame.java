@@ -120,7 +120,7 @@ public class ControlFrame extends AbstractSwingInternalFrame {
 		});
 		
 		{
-			this.autoReply = defaultCheckBox("auto-reply", false);
+			this.autoReply = defaultCheckBox("Auto-reply", false);
 			this.autoReply.addActionListener(ev -> {
 				config().autoReply().set(this.autoReply.isSelected());
 			});
