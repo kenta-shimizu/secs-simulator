@@ -15,12 +15,27 @@ public class JsonCommunicatorSecsSimulatorConfig extends AbstractSecsSimulatorCo
 	
 	private final JsonCommunicatorConfig jsonCommConfig = new JsonCommunicatorConfig();
 	
+	private boolean isEcho;
+	
 	public JsonCommunicatorSecsSimulatorConfig() {
 		super();
+		this.isEcho = false;
 	}
 	
 	public JsonCommunicatorConfig jsonCommunicator() {
 		return this.jsonCommConfig;
+	}
+	
+	public void isEcho(boolean f) {
+		synchronized ( this ) {
+			this.isEcho = f;
+		}
+	}
+	
+	public boolean isEcho() {
+		synchronized ( this ) {
+			return this.isEcho;
+		}
 	}
 	
 	public static JsonCommunicatorSecsSimulatorConfig get(String[] args) {
@@ -43,6 +58,10 @@ public class JsonCommunicatorSecsSimulatorConfig extends AbstractSecsSimulatorCo
 		
 		for (String v : map.getOrDefault("--bind", Collections.emptyList())) {
 			config.jsonCommunicator().addBind(parseSocketAddress(v));
+		}
+		
+		for ( String v : map.getOrDefault("--echo", Collections.emptyList())) {
+			config.isEcho(Boolean.parseBoolean(v));
 		}
 		
 		return config;
