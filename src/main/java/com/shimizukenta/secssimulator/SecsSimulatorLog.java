@@ -118,7 +118,7 @@ public class SecsSimulatorLog implements Comparable<SecsSimulatorLog> {
 	@Override
 	public String toString() {
 		
-		StringBuilder sb = new StringBuilder(toStringTimestamp())
+		StringBuilder sb = new StringBuilder(toTimestampString())
 				.append(SPACE);
 		
 		if ( value == null ) {
@@ -151,7 +151,7 @@ public class SecsSimulatorLog implements Comparable<SecsSimulatorLog> {
 		return sb.toString();
 	}
 	
-	private String toStringTimestamp() {
+	public String toTimestampString() {
 		return timestamp.format(DATETIME);
 	}
 	

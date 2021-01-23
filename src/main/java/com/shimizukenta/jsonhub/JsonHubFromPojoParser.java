@@ -92,7 +92,11 @@ public class JsonHubFromPojoParser {
 		if ( pojo == null ) {
 			
 			return jhb.nullValue();
-		
+			
+		} else if ( pojo instanceof AbstractJsonHub ) {
+			
+			return (AbstractJsonHub)pojo;
+			
 		} else if ( pojo.getClass().isArray() ) {
 			
 			final List<JsonHub> ll = new ArrayList<>();

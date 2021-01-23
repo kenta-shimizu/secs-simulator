@@ -7,6 +7,8 @@ public enum JsonCommunicatorRequestCommand {
 	QUIT("quit"),
 	REBOOT("reboot"),
 	
+	SET_CONFIG("set-config", "setconfig"),
+	
 	OPEN("open"),
 	CLOSE("close"),
 	

@@ -10,7 +10,9 @@ import com.shimizukenta.jsoncommunicator.JsonCommunicatorParseException;
 import com.shimizukenta.jsoncommunicator.JsonCommunicators;
 import com.shimizukenta.jsonhub.JsonHub;
 import com.shimizukenta.jsonhub.JsonHubParseException;
+import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.AbstractSecsSimulator;
+import com.shimizukenta.secssimulator.macro.MacroRecipeParseException;
 
 public class JsonCommunicatorSecsSimulator extends AbstractSecsSimulator implements Closeable {
 	
@@ -29,8 +31,12 @@ public class JsonCommunicatorSecsSimulator extends AbstractSecsSimulator impleme
 		this.jsonComm = JsonCommunicators.newInstance(config.jsonCommunicator());
 		this.opened = false;
 		this.closed = false;
+		
 		this.rebootCommunicator = false;
+		
 		this.reportCache = new JsonCommunicatorReportJson();
+		this.reportCache.communicating = false;
+		this.reportCache.config = config.getJsonHub();
 	}
 	
 	public void open() throws IOException {
@@ -53,6 +59,8 @@ public class JsonCommunicatorSecsSimulator extends AbstractSecsSimulator impleme
 		this.jsonComm.addJsonReceiveListener((channel, json) -> {
 			try {
 				receiveJson(channel, JsonHub.fromJson(json));
+			}
+			catch ( InterruptedException ignore ) {
 			}
 			catch ( JsonHubParseException | JsonCommunicatorParseException | IOException e ) {
 				echo(e);
@@ -83,10 +91,33 @@ public class JsonCommunicatorSecsSimulator extends AbstractSecsSimulator impleme
 				JsonCommunicatorReportJson report = new JsonCommunicatorReportJson();
 				report.communicating = Boolean.valueOf(communicating);
 				
-				//TODO
+				try {
+					sendReport(report);
+				}
+				catch ( InterruptedException ignore ) {
+				}
+				catch ( JsonCommunicatorParseException | IOException e ) {
+					echo(e);
+				}
 			}
 		});
 		
+		this.addLogListener(log -> {
+			
+			final LogReport logReport = LogReport.from(log);
+			
+			JsonCommunicatorReportJson report = new JsonCommunicatorReportJson();
+			report.log = logReport;
+			
+			try {
+				sendReport(report);
+			}
+			catch ( InterruptedException ignore ) {
+			}
+			catch ( JsonCommunicatorParseException | IOException e ) {
+				echo(e);
+			}
+		});
 	}
 	
 	@Override
@@ -101,7 +132,25 @@ public class JsonCommunicatorSecsSimulator extends AbstractSecsSimulator impleme
 			this.closed = true;
 		}
 		
-		this.jsonComm.close();
+		IOException ioExcept = null;
+		
+		try {
+			this.quitApplication();
+		}
+		catch ( IOException e ) {
+			ioExcept = e;
+		}
+		
+		try {
+			this.jsonComm.close();
+		}
+		catch ( IOException e ) {
+			ioExcept = e;
+		}
+		
+		if ( ioExcept != null ) {
+			throw ioExcept;
+		}
 	}
 	
 	
@@ -119,7 +168,7 @@ public class JsonCommunicatorSecsSimulator extends AbstractSecsSimulator impleme
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	private boolean openAndWait() throws IOException, InterruptedException {
+	public boolean openAndWait() throws IOException, InterruptedException {
 		
 		this.open();
 		
@@ -144,8 +193,30 @@ public class JsonCommunicatorSecsSimulator extends AbstractSecsSimulator impleme
 		}
 	}
 	
+	private void setConfig(JsonHub jh) throws JsonHubParseException, JsonCommunicatorParseException, IOException, InterruptedException {
+		
+		try {
+			synchronized ( this ) {
+				
+				this.config.setByJson(jh);
+				
+				JsonHub x = this.config.getJsonHub();
+				
+				this.reportCache.config = x;
+				
+				JsonCommunicatorReportJson report = new JsonCommunicatorReportJson();
+				report.config = x;
+				
+				sendReport(report);
+			}
+		}
+		catch ( SmlParseException | MacroRecipeParseException e ) {
+			echo(e);
+		}
+	}
+	
 	private void receiveJson(AsynchronousSocketChannel channel, JsonHub jh)
-			throws JsonHubParseException, JsonCommunicatorParseException, IOException {
+			throws JsonHubParseException, JsonCommunicatorParseException, IOException, InterruptedException {
 		
 		JsonCommunicatorRequestCommand reqCmd = JsonCommunicatorRequestCommand.get(
 				jh.getOrDefault("request").optionalString().orElse(null));
@@ -157,6 +228,10 @@ public class JsonCommunicatorSecsSimulator extends AbstractSecsSimulator impleme
 		}
 		case REBOOT: {
 			notifyRebootCommunicator();
+			break;
+		}
+		case SET_CONFIG: {
+			setConfig(jh.getOrDefault("option"));
 			break;
 		}
 		case OPEN: {
@@ -171,6 +246,12 @@ public class JsonCommunicatorSecsSimulator extends AbstractSecsSimulator impleme
 			/* Nothing */
 		}
 		}
+	}
+	
+	private void sendReport( JsonCommunicatorReportJson report )
+			throws JsonCommunicatorParseException, IOException, InterruptedException {
+		
+		this.jsonComm.send(report);
 	}
 	
 	private void echo(Object o) {
@@ -202,8 +283,6 @@ public class JsonCommunicatorSecsSimulator extends AbstractSecsSimulator impleme
 				}
 			}
 			catch ( InterruptedException ignore ) {
-			}
-			catch ( Throwable t ) {
 			}
 		}
 		catch ( Throwable t ) {

@@ -1,5 +1,6 @@
 package com.shimizukenta.secssimulator.jsoncommunicator;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -7,7 +8,11 @@ import java.util.List;
 import java.util.Map;
 
 import com.shimizukenta.jsoncommunicator.JsonCommunicatorConfig;
+import com.shimizukenta.jsonhub.JsonHub;
+import com.shimizukenta.jsonhub.JsonHubBuilder;
+import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.AbstractSecsSimulatorConfig;
+import com.shimizukenta.secssimulator.macro.MacroRecipeParseException;
 
 public class JsonCommunicatorSecsSimulatorConfig extends AbstractSecsSimulatorConfig {
 	
@@ -36,6 +41,24 @@ public class JsonCommunicatorSecsSimulatorConfig extends AbstractSecsSimulatorCo
 		synchronized ( this ) {
 			return this.isEcho;
 		}
+	}
+	
+	@Override
+	protected JsonHub getJsonHub() {
+		
+		final JsonHubBuilder jhb = JsonHub.getBuilder();
+		
+		return jhb.object(
+				jhb.pair("communicator", super.getCommunicatorJsonHub()),
+				jhb.pair("autoReply", super.autoReply().booleanValue()),
+				jhb.pair("autoReplyS9Fy", super.autoReplyS9Fy().booleanValue()),
+				jhb.pair("autoReplySxF0", super.autoReplySxF0().booleanValue())
+				);
+	}
+	
+	@Override
+	protected void setByJson(JsonHub jh) throws SmlParseException, MacroRecipeParseException, IOException {
+		super.setByJson(jh);
 	}
 	
 	public static JsonCommunicatorSecsSimulatorConfig get(String[] args) {
