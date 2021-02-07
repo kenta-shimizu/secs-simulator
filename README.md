@@ -6,7 +6,8 @@ This is SEMI-SECS-Simulator Java application.
 
 ## Get Application, How to use
 
-[github.io](https://kenta-shimizu.github.io/secs-simulator/index.html)
+[github.io](https://kenta-shimizu.github.io/secs-simulator/index.html).  
+This application is free of charge.
 
 ## Related repositories
  

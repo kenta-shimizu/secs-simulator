@@ -5,6 +5,7 @@ import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.CompletionHandler;
 
 import com.shimizukenta.secs.ReadOnlyTimeProperty;
@@ -57,25 +58,65 @@ public abstract class AbstractHsmsSsRebindPassiveCommunicator extends AbstractHs
 			
 			final SocketAddress socketAddr = hsmsSsConfig().socketAddress().getSocketAddress();
 			
-			String socketAddrInfo = socketAddr.toString();
+			notifyLog(HsmsSsPassiveBindLog.tryBind(socketAddr));
 			
 			server.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 			server.bind(socketAddr);
 			
-			notifyLog("AbstractHsmsSsRebindPassiveCommunicator#binded", socketAddrInfo);
+			notifyLog(HsmsSsPassiveBindLog.binded(socketAddr));
 			
 			server.accept(null, new CompletionHandler<AsynchronousSocketChannel, Void>() {
 
 				@Override
 				public void completed(AsynchronousSocketChannel channel, Void attachment) {
 					server.accept(attachment, this);
-					completedAction(channel);
+					
+					
+					SocketAddress local = null;
+					SocketAddress remote = null;
+					
+					try {
+						local = channel.getLocalAddress();
+						remote = channel.getRemoteAddress();
+						
+						notifyLog(HsmsSsConnectionLog.accepted(local, remote));
+						
+						completedAction(channel);
+					}
+					catch ( IOException e ) {
+						notifyLog(e);
+					}
+					catch ( InterruptedException ignore ) {
+					}
+					finally {
+						
+						sendReplyManager.clear();
+						
+						removeChannel(channel);
+						
+						try {
+							channel.shutdownOutput();
+						}
+						catch ( IOException ignore ) {
+						}
+						
+						try {
+							channel.close();
+						}
+						catch ( IOException e ) {
+							notifyLog(e);
+						}
+						
+						notifyLog(HsmsSsConnectionLog.closed(local, remote));
+					}
 				}
-
+				
 				@Override
 				public void failed(Throwable t, Void attachment) {
 					
-					notifyLog("AbstractHsmsSsRebindPassiveCommunicator AsynchronousSeverSocketChannel#accept failed", t);
+					if ( ! (t instanceof ClosedChannelException) ) {
+						notifyLog(t);
+					}
 					
 					synchronized ( server ) {
 						server.notifyAll();
@@ -84,7 +125,13 @@ public abstract class AbstractHsmsSsRebindPassiveCommunicator extends AbstractHs
 			});
 			
 			synchronized ( server ) {
-				server.wait();
+				
+				try {
+					server.wait();
+				}
+				finally {
+					notifyLog(HsmsSsPassiveBindLog.closed(socketAddr));
+				}
 			}
 			
 		}

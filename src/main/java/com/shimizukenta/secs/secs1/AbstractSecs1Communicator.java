@@ -1,6 +1,7 @@
 package com.shimizukenta.secs.secs1;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -8,6 +9,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.shimizukenta.secs.AbstractSecsCommunicator;
+import com.shimizukenta.secs.AbstractSecsWaitReplyMessageExceptionLog;
 import com.shimizukenta.secs.ByteArrayProperty;
 import com.shimizukenta.secs.InterruptableRunnable;
 import com.shimizukenta.secs.ReadOnlyTimeProperty;
@@ -119,7 +121,16 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 		try {
 			return sendReplyManager.send(msg);
 		}
-		catch (SecsException e) {
+		catch ( SecsWaitReplyMessageException e ) {
+			
+			notifyLog(new AbstractSecsWaitReplyMessageExceptionLog(e) {
+				
+				private static final long serialVersionUID = 6987300659468550084L;
+			});
+			
+			throw e;
+		}
+		catch ( SecsException e ) {
 			notifyLog(e);
 			throw e;
 		}
@@ -256,14 +267,8 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 					circuitControl();
 				}
 			}
-			catch ( InterruptedException e ) {
-				throw e;
-			}
 			catch ( SecsException e ) {
 				notifyLog(e);
-			}
-			catch ( Throwable t ) {
-				throw t;
 			}
 		}
 		
@@ -294,21 +299,20 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 				catch ( InterruptedException ignore ) {
 				}
 				
-				return null;
+				return PollCircuitControl.RETRY;
 			};
 			
 			try {
-				return executeInvokeAny(task, secs1Config().timeout().t2());
+				return executeInvokeAny(
+						Arrays.asList(task),
+						secs1Config().timeout().t2()
+						);
 			}
 			catch ( TimeoutException giveup ) {
 			}
 			catch ( ExecutionException e ) {
 				
 				Throwable t = e.getCause();
-				
-				if ( t instanceof Error ) {
-					throw (Error)t;
-				}
 				
 				if ( t instanceof RuntimeException ) {
 					throw (RuntimeException)t;
@@ -328,10 +332,6 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 				
 				PollCircuitControl p = pollCircuitControl();
 				
-				if ( p == null ) {
-					throw new InterruptedException("Circuit-control-Interrupted");
-				}
-				
 				switch ( p ) {
 				case RX: {
 					
@@ -348,15 +348,16 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 					} else {
 						
 						counter += 1;
+						notifyLog(Secs1RetryCircuitControlLog.newInstance(counter));
 					}
 					
 					break;
 				}
 				case RETRY: {
 					
-					notifyLog("AbstractSecs1Communicator#circuitControl pollByte RETRY");
-					
 					counter += 1;
+					notifyLog(Secs1RetryCircuitControlLog.newInstance(counter));
+					
 					break;
 				}
 				}
@@ -392,7 +393,7 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 					
 					if ( lengthByte < 10 || lengthByte > 254 ) {
 						
-						receiveBlockGarbage("Receieve Secs1Message LengthByte failed (length=" + lengthByte + ")");
+						receiveBlockGarbage(Secs1IllegalLengthByteCircuitControlLog.newInstance(lengthByte));
 						
 						return;
 					}
@@ -404,25 +405,25 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 					
 					sendByte(NAK);
 					
-					notifyLog("Receive Secs1MessageBlock T2-Timeout (Length-byte)");
+					notifyLog(Secs1TimeoutT2LengthByteCircuitColtrolLog.newInstance());
 					
 					return;
 				}
 			}
 			
-			for ( int i = 1, m = bs.length ; i < m ; ++i ) {
+			for ( int pos = 1, m = bs.length ; pos < m ; ++pos ) {
 				
 				Optional<Byte> op = pollByteT1();
 				
 				if ( op.isPresent() ) {
 					
-					bs[i] = op.get().byteValue();
+					bs[pos] = op.get().byteValue();
 					
 				} else {
 					
 					sendByte(NAK);
 					
-					notifyLog("Receive Secs1MessageBlock T1-Timeout (pos=" + i + ")");
+					notifyLog(Secs1TimeoutT1CircuitControlLog.newInstance(pos));
 					
 					return;
 				}
@@ -450,22 +451,22 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 							
 						} else {
 							
-							notifyLog("Wait next Block, receive not ENQ (" + String.format("%02X",  b) + ")", block);
+							notifyLog(Secs1NotReceiveNextBlockEnqCircuitControlLog.newInstance(block, b));
 						}
 						
 					} else {
 						
-						notifyLog("Wait next Block, T4-timeout", block);
+						notifyLog(Secs1TimeoutT4CircuitControlLog.newInstance(block));
 					}
 				}
 				
 			} else {
 				
-				receiveBlockGarbage("Receieve Secs1Message sum-check failed");
+				receiveBlockGarbage(Secs1SumCheckMismatchCirsuitControlLog.newInstance());
 			}
 		}
 		
-		private void receiveBlockGarbage(String reason) throws SecsException, InterruptedException {
+		private void receiveBlockGarbage(AbstractSecs1CircuitControlLog reasonLog) throws SecsException, InterruptedException {
 			
 			for ( ;; ) {
 				if ( ! pollByteT1().isPresent() ) {
@@ -475,10 +476,12 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 			
 			sendByte(NAK);
 			
-			notifyLog(reason);
+			notifyLog(reasonLog);
 		}
 		
 		private boolean sendBlock() throws SecsException, InterruptedException {
+			
+			notifyLog(new Secs1TrySendMessageBlockLog(presentBlock));
 			
 			pollByteUntilEmpty();
 			
@@ -500,12 +503,12 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 					
 				} else {
 					
-					notifyLog("AbstractSecs1Communicator#sendBlock revieve-not-ACK (" + String.format("%02X", b) + ")", presentBlock);
+					notifyLog(Secs1NotReceiveAckCircuitControlLog.newInstance(presentBlock, b));
 				}
 				
 			} else {
 				
-				notifyLog("AbstractSecs1Communicator#sendBlock Timeout-T2", presentBlock);
+				notifyLog(Secs1TimeoutT2AckCircuitControlLog.newInstance(presentBlock));
 			}
 			
 			return false;

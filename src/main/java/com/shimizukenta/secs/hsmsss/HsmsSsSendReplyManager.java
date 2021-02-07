@@ -4,6 +4,7 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -108,6 +109,8 @@ public class HsmsSsSendReplyManager extends AbstractSecsInnerEngine {
 		synchronized ( channel ) {
 			
 			try {
+				notifyLog(new HsmsSsTrySendMessageLog(msg));
+				
 				Secs2ByteBuffersBuilder bb = Secs2ByteBuffersBuilder.build(1024, msg.secs2());
 				
 				long len = bb.size() + 10L;
@@ -160,7 +163,8 @@ public class HsmsSsSendReplyManager extends AbstractSecsInnerEngine {
 				}
 				
 				notifySendedMessagePassThrough(msg);
-				notifyLog("Sended HsmsSs-Message", msg);
+				
+				notifyLog(new HsmsSsSendedMessageLog(msg));
 			}
 			catch ( ExecutionException e ) {
 				
@@ -170,7 +174,7 @@ public class HsmsSsSendReplyManager extends AbstractSecsInnerEngine {
 					throw (RuntimeException)t;
 				}
 				
-				throw new HsmsSsSendMessageException(msg, e);
+				throw new HsmsSsSendMessageException(msg, t);
 			}
 			catch ( Secs2BuildException | HsmsSsDetectTerminateException e ) {
 				throw new HsmsSsSendMessageException(msg, e);
@@ -244,7 +248,13 @@ public class HsmsSsSendReplyManager extends AbstractSecsInnerEngine {
 		};
 		
 		try {
-			HsmsSsMessage msg = executeInvokeAny(getMsgTask, checkTerminateTask, timeout);
+			
+			Collection<Callable<HsmsSsMessage>> tasks = Arrays.asList(
+					getMsgTask,
+					checkTerminateTask
+					);
+			
+			HsmsSsMessage msg = executeInvokeAny(tasks, timeout);
 			
 			if ( msg == null ) {
 				throw new HsmsSsDetectTerminateException();
@@ -264,7 +274,7 @@ public class HsmsSsSendReplyManager extends AbstractSecsInnerEngine {
 				throw (RuntimeException)t;
 			}
 			
-			throw new SecsException(e);
+			throw new SecsException(t);
 		}
 	}
 	
@@ -290,21 +300,13 @@ public class HsmsSsSendReplyManager extends AbstractSecsInnerEngine {
 	}
 	
 	public Optional<HsmsSsMessage> put(HsmsSsMessage msg) {
-		
-		final Integer key = msg.systemBytesKey();
-		
 		synchronized ( packs ) {
-			
 			for ( Pack p : packs ) {
-				
-				if ( p.key().equals(key) ) {
-					
-					p.put(msg);
+				if ( p.put(msg) ) {
 					packs.notifyAll();
 					return Optional.empty();
 				}
 			}
-			
 			return Optional.of(msg);
 		}
 	}
@@ -312,22 +314,20 @@ public class HsmsSsSendReplyManager extends AbstractSecsInnerEngine {
 	private class Pack {
 		
 		private final HsmsSsMessage primary;
-		private final Integer key;
 		private HsmsSsMessage reply;
 		
 		public Pack(HsmsSsMessage primaryMsg) {
 			this.primary = primaryMsg;
-			this.key = primary.systemBytesKey();
 			this.reply = null;
 		}
 		
-		public Integer key() {
-			return key;
-		}
-		
-		public void put(HsmsSsMessage replyMsg) {
+		public boolean put(HsmsSsMessage replyMsg) {
 			synchronized ( this ) {
-				this.reply = replyMsg;
+				if ( replyMsg.systemBytesKey().equals(primary.systemBytesKey()) ) {
+					this.reply = replyMsg;
+					return true;
+				}
+				return false;
 			}
 		}
 		
@@ -337,15 +337,19 @@ public class HsmsSsSendReplyManager extends AbstractSecsInnerEngine {
 			}
 		}
 		
+		private Integer key() {
+			return this.primary.systemBytesKey();
+		}
+		
 		@Override
 		public int hashCode() {
-			return key.hashCode();
+			return key().hashCode();
 		}
 		
 		@Override
 		public boolean equals(Object o) {
 			if ((o != null) && (o instanceof Pack)) {
-				return ((Pack)o).key.equals(key);
+				return ((Pack)o).key().equals(key());
 			} else {
 				return false;
 			}

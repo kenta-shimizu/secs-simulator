@@ -1,9 +1,7 @@
 package com.shimizukenta.secs;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
@@ -30,7 +28,7 @@ public abstract class AbstractSecsCommunicator implements SecsCommunicator {
 	
 	private final ExecutorService execServ = Executors.newCachedThreadPool(r -> {
 		Thread th = new Thread(r);
-		th.setDaemon(true);
+		th.setDaemon(false);
 		return th;
 	});
 	
@@ -62,48 +60,9 @@ public abstract class AbstractSecsCommunicator implements SecsCommunicator {
 		return execServ.invokeAny(tasks);
 	}
 	
-	protected <T> T executeInvokeAny(Callable<T> task)
-			throws InterruptedException, ExecutionException{
-		return execServ.invokeAny(Collections.singleton(task));
-	}
-	
-	protected <T> T executeInvokeAny(Callable<T> task1, Callable<T> task2)
-			throws InterruptedException, ExecutionException{
-		return execServ.invokeAny(Arrays.asList(task1, task2));
-	}
-	
-	protected <T> T executeInvokeAny(Callable<T> task1, Callable<T> task2, Callable<T> task3)
-			throws InterruptedException, ExecutionException{
-		return execServ.invokeAny(Arrays.asList(task1, task2, task3));
-	}
-	
 	protected <T> T executeInvokeAny(Collection<? extends Callable<T>> tasks, ReadOnlyTimeProperty timeout)
 			throws InterruptedException, ExecutionException, TimeoutException {
 		return execServ.invokeAny(tasks, timeout.getMilliSeconds(), TimeUnit.MILLISECONDS);
-	}
-	
-	protected <T> T executeInvokeAny(Callable<T> task, ReadOnlyTimeProperty timeout)
-			throws InterruptedException, ExecutionException, TimeoutException {
-		return execServ.invokeAny(
-				Collections.singleton(task),
-				timeout.getMilliSeconds(),
-				TimeUnit.MILLISECONDS);
-	}
-	
-	protected <T> T executeInvokeAny(Callable<T> task1, Callable<T> task2, ReadOnlyTimeProperty timeout)
-			throws InterruptedException, ExecutionException, TimeoutException {
-		return execServ.invokeAny(
-				Arrays.asList(task1, task2),
-				timeout.getMilliSeconds(),
-				TimeUnit.MILLISECONDS);
-	}
-	
-	protected <T> T executeInvokeAny(Callable<T> task1, Callable<T> task2, Callable<T> task3, ReadOnlyTimeProperty timeout)
-			throws InterruptedException, ExecutionException, TimeoutException {
-		return execServ.invokeAny(
-				Arrays.asList(task1, task2, task3),
-				timeout.getMilliSeconds(),
-				TimeUnit.MILLISECONDS);
 	}
 	
 	
@@ -172,12 +131,9 @@ public abstract class AbstractSecsCommunicator implements SecsCommunicator {
 		}
 		
 		try {
-			execServ.shutdown();
-			if (! execServ.awaitTermination(1L, TimeUnit.MILLISECONDS)) {
-				execServ.shutdownNow();
-				if (! execServ.awaitTermination(5L, TimeUnit.SECONDS)) {
-					throw new IOException("ExecutorService#shutdown failed");
-				}
+			execServ.shutdownNow();
+			if (! execServ.awaitTermination(5L, TimeUnit.SECONDS)) {
+				throw new IOException("ExecutorService#shutdown failed");
 			}
 		}
 		catch ( InterruptedException ignore ) {
@@ -291,45 +247,52 @@ public abstract class AbstractSecsCommunicator implements SecsCommunicator {
 	private final BlockingQueue<SecsLog> logQueue = new LinkedBlockingQueue<>();
 	
 	private void executeLogQueueTask() {
-		executeLoopTask(() -> {
-			SecsLog log = logQueue.take();
-			logListeners.forEach(l -> {l.received(log);});
+		
+		this.executorService().execute(() -> {
+			
+			try {
+				for ( ;; ) {
+					final SecsLog log = logQueue.take();
+					logListeners.forEach(l -> {
+						l.received(log);
+					});
+				}
+			}
+			catch ( InterruptedException ignore ) {
+			}
+			
+			try {
+				for ( ;; ) {
+					
+					final SecsLog log = logQueue.poll(100L, TimeUnit.MILLISECONDS);
+					if ( log == null ) {
+						break;
+					}
+					logListeners.forEach(l -> {
+						l.received(log);
+					});
+				}
+			}
+			catch ( InterruptedException ignore ) {
+			}
 		});
 	}
 	
-	protected final boolean offerLogQueue(SecsLog log) {
+	protected final boolean offerLogQueue(AbstractSecsLog log) {
 		return logQueue.offer(log);
 	}
 	
-	protected void notifyLog(SecsLog log) {
-		offerLogQueue(new SecsLog(
-				createLogSubject(log.subject()),
-				log.timestamp(),
-				log.value().orElse(null)));
-	}
-	
-	protected void notifyLog(CharSequence subject) {
-		offerLogQueue(new SecsLog(createLogSubject(subject)));
-	}
-	
-	protected void notifyLog(CharSequence subject, Object value) {
-		offerLogQueue(new SecsLog(
-				createLogSubject(subject),
-				value));
+	protected void notifyLog(AbstractSecsLog log) {
+		log.subjectHeader(this.config.logSubjectHeader().get());
+		offerLogQueue(log);
 	}
 	
 	protected void notifyLog(Throwable t) {
-		offerLogQueue(new SecsLog(
-				createLogSubject(SecsLog.createThrowableSubject(t)),
-				t));
-	}
-	
-	private String createLogSubject(CharSequence subject) {
-		if ( subject == null ) {
-			return "No-subject";
-		} else {
-			return config.logSubjectHeader().get() + subject.toString();
-		}
+		
+		notifyLog(new AbstractSecsThrowableLog(t) {
+			
+			private static final long serialVersionUID = -1271705310309086030L;
+		});
 	}
 	
 	

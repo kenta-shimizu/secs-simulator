@@ -1,6 +1,7 @@
 package com.shimizukenta.secs.secs1;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -50,10 +51,15 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 		
 		try {
 			
-			notifyLog("Secs1-Message entry-send", msg);
+			notifyLog(new Secs1TrySendMessageLog(msg));
+			
 			notifyTrySendMessagePassThrough(msg);
+			
 			waitUntilSended(p);
+			
 			notifySendedMessagePassThrough(msg);
+			
+			notifyLog(new Secs1SendedMessageLog(msg));
 			
 			if ( msg.wbit() ) {
 				
@@ -77,7 +83,7 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 				synchronized ( packs ) {
 					for ( ;; ) {
 						if ( p.isSended() ) {
-							return p;
+							break;
 						}
 						packs.wait();
 					}
@@ -86,7 +92,7 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 			catch ( InterruptedException ignore ) {
 			}
 			
-			return null;
+			return p;
 		};
 		
 		final Callable<Pack> failedTask = () -> {
@@ -94,7 +100,7 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 				synchronized ( packs ) {
 					for ( ;; ) {
 						if ( p.failedCause() != null ) {
-							return p;
+							break;
 						}
 						packs.wait();
 					}
@@ -103,7 +109,7 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 			catch ( InterruptedException ignore ) {
 			}
 			
-			return null;
+			return p;
 		};
 		
 		final Callable<Pack> terminateTask = () -> {
@@ -111,7 +117,7 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 				synchronized ( packs ) {
 					for ( ;; ) {
 						if ( packs.isEmpty() ) {
-							return null;
+							break;
 						}
 						packs.wait();
 					}
@@ -124,7 +130,13 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 		};
 		
 		try {
-			Pack pp = executeInvokeAny(sendedTask, failedTask, terminateTask);
+			Collection<Callable<Pack>> tasks = Arrays.asList(
+					sendedTask,
+					failedTask,
+					terminateTask
+					);
+			
+			Pack pp = executeInvokeAny(tasks);
 			
 			if ( pp == null ) {
 				throw new Secs1DetectTerminateException(p.primaryMsg());
@@ -142,7 +154,7 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 				throw (RuntimeException)t;
 			}
 			
-			throw new Secs1SendMessageException(p.primaryMsg(), e.getCause());
+			throw new Secs1SendMessageException(p.primaryMsg(), t);
 		}
 		
 	}
@@ -202,9 +214,16 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 			
 			for ( ;; ) {
 				
+				Collection<Callable<ReplyStatus>> tasks = Arrays.asList(
+						replyTask,
+						resetTimerTask,
+						terminateTask
+						);
+				
 				ReplyStatus r = executeInvokeAny(
-						replyTask, resetTimerTask, terminateTask,
-						parent.secs1Config().timeout().t3());
+						tasks,
+						parent.secs1Config().timeout().t3()
+						);
 				
 				if ( r.resetTimer() ) {
 					continue;
@@ -228,7 +247,7 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 				throw (RuntimeException)t;
 			}
 			
-			throw new SecsException(e);
+			throw new SecsException(t);
 		}
 	}
 	
@@ -285,7 +304,7 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 	
 	public void sended(Secs1MessageBlock block) {
 		
-		notifyLog("Secs1-Message-Block sended", block);
+		notifyLog(new Secs1SendedMessageBlockLog(block));
 		
 		if ( block.ebit() ) {
 			final Integer key = block.systemBytesKey();
@@ -322,7 +341,7 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 	
 	public void received(Secs1MessageBlock block) throws InterruptedException {
 		
-		notifyLog("Secs1-Message-Block received", block);
+		notifyLog(new Secs1ReceiveMessageBlockLog(block));
 		
 		if ( recvBlocks.isEmpty() ) {
 			
@@ -369,7 +388,7 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 			try {
 				Secs1Message msg = Secs1MessageBlockConverter.toSecs1Message(recvBlocks);
 				notifyReceiveMessagePassThrough(msg);
-				notifyLog("Secs1-Message received", msg);
+				notifyLog(new Secs1ReceiveMessageLog(msg));
 				put(msg);
 			}
 			catch ( Secs2Exception e ) {
@@ -389,21 +408,19 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 	private class Pack {
 		
 		private final Secs1Message primary;
-		private final Integer key;
 		private Secs1Message reply;
 		private boolean sended;
 		private Exception failedCause;
 		
 		public Pack(Secs1Message primaryMsg) {
 			this.primary = primaryMsg;
-			this.key = primaryMsg.systemBytesKey();
 			this.reply = null;
 			this.sended = false;
 			this.failedCause = null;
 		}
 		
 		public Integer key() {
-			return key;
+			return primary.systemBytesKey();
 		}
 		
 		public void put(Secs1Message replyMsg) {
@@ -448,13 +465,13 @@ public class Secs1SendReplyManager extends AbstractSecsInnerEngine {
 		
 		@Override
 		public int hashCode() {
-			return key.hashCode();
+			return key().hashCode();
 		}
 		
 		@Override
 		public boolean equals(Object o) {
 			if ((o != null) && (o instanceof Pack)) {
-				return ((Pack)o).key.equals(key);
+				return ((Pack)o).key().equals(key());
 			} else {
 				return false;
 			}

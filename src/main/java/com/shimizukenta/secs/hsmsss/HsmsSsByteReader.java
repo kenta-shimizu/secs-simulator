@@ -85,7 +85,8 @@ public class HsmsSsByteReader extends AbstractSecsInnerEngine implements Callabl
 				});
 				
 				notifyReceiveMessagePassThrough(msg);
-				notifyLog("Received HsmsSs-Message", msg);
+				
+				notifyLog(new HsmsSsReceiveMessageLog(msg));
 			}
 		}
 		catch ( HsmsSsDetectTerminateException | HsmsSsTimeoutT8Exception e ) {
@@ -101,18 +102,18 @@ public class HsmsSsByteReader extends AbstractSecsInnerEngine implements Callabl
 	private int readToByteBuffer(ByteBuffer buffer, boolean detectT8Timeout)
 			throws HsmsSsDetectTerminateException, HsmsSsTimeoutT8Exception, InterruptedException {
 		
-		Future<Integer> f = channel.read(buffer);
+		final Future<Integer> f = channel.read(buffer);
 		
 		try {
 			int r;
 			
 			if ( detectT8Timeout ) {
 				
-				r = parent.hsmsSsConfig().timeout().t8().future(f);
+				r = parent.hsmsSsConfig().timeout().t8().future(f).intValue();
 				
 			} else {
 				
-				r = f.get();
+				r = f.get().intValue();
 			}
 			
 			if ( r < 0 ) {
@@ -133,11 +134,7 @@ public class HsmsSsByteReader extends AbstractSecsInnerEngine implements Callabl
 				throw (RuntimeException)t;
 			}
 			
-			if ( t instanceof Error ) {
-				throw (Error)t;
-			}
-			
-			throw new HsmsSsDetectTerminateException(e);
+			throw new HsmsSsDetectTerminateException(t);
 		}
 		catch ( InterruptedException e ) {
 			f.cancel(true);
