@@ -25,11 +25,12 @@ import com.shimizukenta.secs.sml.SmlMessage;
 import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.AbstractSecsSimulator;
 import com.shimizukenta.secssimulator.AbstractSecsSimulatorConfig;
+import com.shimizukenta.secssimulator.AbstractSecsSimulatorThrowableLog;
 import com.shimizukenta.secssimulator.SecsSimulatorException;
-import com.shimizukenta.secssimulator.SecsSimulatorLog;
 import com.shimizukenta.secssimulator.SecsSimulatorProtocol;
-import com.shimizukenta.secssimulator.macro.MacroRecipeParseException;
+import com.shimizukenta.secssimulator.macro.AbstractSecsSimulatorMacroWorkerLog;
 import com.shimizukenta.secssimulator.macro.MacroRecipe;
+import com.shimizukenta.secssimulator.macro.MacroRecipeParseException;
 import com.shimizukenta.secssimulator.macro.MacroWorker;
 
 public class CliSecsSimulator extends AbstractSecsSimulator {
@@ -335,7 +336,11 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 			simm.addLogListener(log -> {echo(log);});
 			
 			simm.addMacroWorkerStateChangeListener(w -> {
-				echo(SecsSimulatorLog.from(w));
+				
+				echo(new AbstractSecsSimulatorMacroWorkerLog(w) {
+					
+					private static final long serialVersionUID = -3905142429402218208L;
+				});
 			});
 			
 			try {
@@ -736,12 +741,21 @@ public class CliSecsSimulator extends AbstractSecsSimulator {
 	private static final Object syncEcho = new Object();
 	
 	private static void echo(Object o) {
+		
 		synchronized ( syncEcho ) {
+			
 			if ( o instanceof Throwable ) {
-				System.out.println(new SecsSimulatorLog((Throwable)o));
+				
+				System.out.println(new AbstractSecsSimulatorThrowableLog((Throwable)o) {
+					
+					private static final long serialVersionUID = -3456444578844843433L;
+				});
+				
 			} else {
+				
 				System.out.println(o);
 			}
+			
 			System.out.println();
 		}
 	}

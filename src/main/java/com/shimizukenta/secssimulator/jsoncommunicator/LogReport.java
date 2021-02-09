@@ -1,5 +1,7 @@
 package com.shimizukenta.secssimulator.jsoncommunicator;
 
+import java.time.format.DateTimeFormatter;
+
 import com.shimizukenta.secs.SecsMessage;
 import com.shimizukenta.secssimulator.SecsSimulatorLog;
 
@@ -15,43 +17,39 @@ public class LogReport {
 		this.value = value;
 	}
 	
+	private static DateTimeFormatter DATETIME = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+	
 	public static LogReport from(SecsSimulatorLog log) {
 		
-		Object o = log.value().orElse(null);
+		final String subject = log.subject();
+		final String timestamp = log.timestamp().format(DATETIME);
 		
-		if ( o == null ) {
+		Object v = log.value().orElse(null);
+		
+		if ( v == null ) {
 			
-			return new LogReport(log.subject(), log.toTimestampString(), null);
+			return new LogReport(subject, timestamp, null);
 			
 		} else {
 			
-			if ( o instanceof Throwable ) {
+			if ( v instanceof SecsMessage ) {
 				
-				final StringBuilder sb = new StringBuilder();
-				
-				Throwable t = (Throwable)o;
-				
-				sb.append(t.getClass().getSimpleName());
-				
-				{
-					String msg = t.getMessage();
-					if ( msg != null && ! msg.isEmpty() ) {
-						sb.append(": ").append(msg);
-					}
-				}
-				
-				return new LogReport("Error", log.toTimestampString(), sb.toString());
-				
-			} else if ( o instanceof SecsMessage ) {
-				
-				SecsMessage sm = (SecsMessage)o;
-				return new LogReport(log.subject(), log.toTimestampString(), sm.toJson());
+				return new LogReport(
+						subject,
+						timestamp,
+						((SecsMessage)v).toJson()
+						);
 				
 			} else {
 				
-				return new LogReport(log.subject(), log.toTimestampString(), o.toString());
+				return new LogReport(
+						subject,
+						timestamp,
+						log.optionalValueString().orElse(null)
+						);
 			}
 		}
+		
 	}
 	
 }

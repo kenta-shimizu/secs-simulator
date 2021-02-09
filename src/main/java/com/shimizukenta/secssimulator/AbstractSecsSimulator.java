@@ -168,7 +168,11 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			});
 			
 			comm.addSecsLogListener(log -> {
-				notifyLog(SecsSimulatorLog.from(log));
+				
+				notifyLog(new AbstractSecsSimulatorSecsCommunicatorLog(log) {
+					
+					private static final long serialVersionUID = -3607161900228501443L;
+				});
 			});
 			
 			if ( config.protocol().get() == SecsSimulatorProtocol.SECS1_ON_TCP_IP_RECEIVER ) {
@@ -209,7 +213,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 				}
 				finally {
 					secsComm = null;
-					notifyLog(new SecsSimulatorLog("Communicator closed"));
+					//notifyLog(new AbstractSecsSimulatorLog("Communicator closed"));
 				}
 			}
 			
