@@ -32,7 +32,7 @@ public abstract class AbstractJsonCommunicator<T> implements JsonCommunicator<T>
 	
 	private final ExecutorService execServ = Executors.newCachedThreadPool(r -> {
 		Thread th = new Thread(r);
-		th.setDaemon(false);
+		th.setDaemon(true);
 		return th;
 	});
 	

@@ -1,7 +1,6 @@
 package com.shimizukenta.secssimulator.gui;
 
 import java.io.IOException;
-import java.nio.file.Path;
 
 import com.shimizukenta.jsonhub.JsonHub;
 import com.shimizukenta.jsonhub.JsonHubBuilder;
@@ -100,8 +99,8 @@ public abstract class AbstractGuiSecsSimulatorConfig extends AbstractSecsSimulat
 				jhb.pair("autoReplySxF0", this.autoReplySxF0().booleanValue()),
 				jhb.pair("smlFiles", this.smlAliasPairPool().getJsonHub()),
 				jhb.pair("macroRecipeFiles", this.macroRecipePairPool().getJsonHub()),
-				jhb.pair("autoOpen", this.autoOpen().booleanValue()),
-				jhb.pair("autoLogging", this.autoLogging().map(Path::normalize).map(Path::toString).orElse(null)),
+				jhb.pair("autoOpen", false),
+				jhb.pair("autoLogging", null),
 				jhb.pair("gui", this.getGuiJsonHub())
 				);
 	}

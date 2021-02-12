@@ -40,7 +40,7 @@ public abstract class AbstractJsonCommunicatorThrowableLog extends AbstractJsonC
 	public String subject() {
 		synchronized ( this ) {
 			if ( this.cacheSubject == null ) {
-				this.cacheSubject = this.cause.getClass().getSimpleName();
+				this.cacheSubject = this.cause.toString();
 			}
 			
 			return this.cacheSubject;

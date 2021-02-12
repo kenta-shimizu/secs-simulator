@@ -379,8 +379,8 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 				jhb.pair("autoReplySxF0", this.autoReplySxF0().booleanValue()),
 				jhb.pair("smlFiles", this.smlAliasPairPool().getJsonHub()),
 				jhb.pair("macroRecipeFiles", this.macroRecipePairPool().getJsonHub()),
-				jhb.pair("autoOpen", this.autoOpen().booleanValue()),
-				jhb.pair("autoLogging", this.autoLogging().map(Path::normalize).map(Path::toString).orElse(null))
+				jhb.pair("autoOpen", false),
+				jhb.pair("autoLogging", null)
 				);
 	}
 	
