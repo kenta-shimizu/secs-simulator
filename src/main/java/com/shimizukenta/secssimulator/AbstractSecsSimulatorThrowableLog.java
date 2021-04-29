@@ -40,7 +40,13 @@ public abstract class AbstractSecsSimulatorThrowableLog extends AbstractSecsSimu
 		synchronized ( this ) {
 			if ( this.cacheToValueString == null ) {
 				
-				this.cacheToValueString = this.cause.toString();
+				StringBuilder sb = new StringBuilder()
+						.append(this.cause.getClass().getSimpleName());
+				String msg = this.cause.getMessage();
+				if ( msg != null ) {
+					sb.append(": ").append(msg);
+				}
+				this.cacheToValueString = sb.toString();
 			}
 			
 			return Optional.of(this.cacheToValueString);

@@ -7,6 +7,7 @@ import com.shimizukenta.secs.AbstractSecsMessage;
 import com.shimizukenta.secs.SecsLog;
 import com.shimizukenta.secs.SecsSendedMessageLog;
 import com.shimizukenta.secs.SecsThrowableLog;
+import com.shimizukenta.secs.SecsWaitReplyMessageExceptionLog;
 
 public abstract class AbstractSecsSimulatorSecsCommunicatorLog extends AbstractSecsSimulatorLog {
 	
@@ -29,7 +30,12 @@ public abstract class AbstractSecsSimulatorSecsCommunicatorLog extends AbstractS
 		synchronized ( this ) {
 			if ( this.cacheSubject == null ) {
 				
-				if ( log instanceof SecsThrowableLog ) {
+				if ( log instanceof SecsWaitReplyMessageExceptionLog ) {
+					
+					SecsWaitReplyMessageExceptionLog rlog = (SecsWaitReplyMessageExceptionLog)log;
+					this.cacheSubject = log.subjectHeader() + rlog.getCause().getClass().getSimpleName();
+
+				} else if ( log instanceof SecsThrowableLog ) {
 					
 					this.cacheSubject = log.subjectHeader() + "SECS-Communicator Error";
 					
@@ -58,9 +64,31 @@ public abstract class AbstractSecsSimulatorSecsCommunicatorLog extends AbstractS
 		synchronized ( this ) {
 			if ( this.cacheToValueString == null ) {
 				
-				if ( log instanceof SecsThrowableLog ) {
+				if ( log instanceof SecsWaitReplyMessageExceptionLog ) {
+				
+					final SecsWaitReplyMessageExceptionLog rlog = (SecsWaitReplyMessageExceptionLog)log;
 					
-					this.cacheToValueString = ((SecsThrowableLog) log).getCause().toString();
+					this.cacheToValueString = rlog.referenceSecsMessage()
+							.map(msg -> {
+								if ( msg instanceof AbstractSecsMessage ) {
+									return ((AbstractSecsMessage)msg).toHeaderBytesString();
+								}
+								return null;
+							})
+							.orElse(null);
+					
+				} else if ( log instanceof SecsThrowableLog ) {
+					
+					Throwable cause = ((SecsThrowableLog) log).getCause();
+					
+					StringBuilder sb = new StringBuilder()
+							.append(cause.getClass().getSimpleName());
+					String msg = cause.getMessage();
+					if ( msg != null ) {
+						sb.append(": ").append(msg);
+					}
+					
+					this.cacheToValueString = sb.toString();
 					
 				} else if ( log instanceof SecsSendedMessageLog ) {
 					
