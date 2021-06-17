@@ -526,7 +526,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		boolean alreadyReply = false;
 		
 		{
-			/*** Auto-reply SxF0 or S9F5 ***/
+			/*** Auto-reply SxF0 ***/
 			
 			final LocalSecsMessage reply = autoReplySxF0(primaryMsg).orElse(null);
 			
@@ -594,6 +594,10 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 	}
 	
 	private Optional<LocalSecsMessage> autoReplySxF0(SecsMessage primary) {
+		
+		if ( ! config.autoReplySxF0().booleanValue() ) {
+			return Optional.empty();
+		}
 		
 		int strm = primary.getStream();
 		
