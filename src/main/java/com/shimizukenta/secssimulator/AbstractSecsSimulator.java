@@ -560,7 +560,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		if (
 				! alreadyReply
 				&& primaryMsg.wbit()
-				&& ((primaryMsg.getFunction() % 2) == 0)
+				&& ((primaryMsg.getFunction() % 2) == 1)
 				) {
 			
 			synchronized ( waitPrimaryMsgs ) {
