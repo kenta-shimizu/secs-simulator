@@ -60,9 +60,7 @@ public class Secs2Now extends AbstractSecs2 {
 	
 	@Override
 	protected void putBytesPack(Secs2BytesPackBuilder builder) throws Secs2BuildException {
-		byte[] bs = now().getBytes(StandardCharsets.US_ASCII);
-		this.putHeaderBytesToBytesPack(builder, bs.length);
-		builder.put(bs);
+		this.putHeadAndBodyBytesToBytesPack(builder, now().getBytes(StandardCharsets.US_ASCII));
 	}
 	
 	@Override

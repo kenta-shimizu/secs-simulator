@@ -33,9 +33,7 @@ public abstract class AbstractSecs2AutoNumber extends AbstractSecs2 {
 	
 	@Override
 	protected void putBytesPack(Secs2BytesPackBuilder builder) throws Secs2BuildException {
-		byte[] bs = createNumberBytes();
-		this.putHeaderBytesToBytesPack(builder, bs.length);
-		builder.put(bs);
+		this.putHeadAndBodyBytesToBytesPack(builder, createNumberBytes());
 	}
 	
 	protected Number getNumber() {
