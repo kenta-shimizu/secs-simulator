@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.shimizukenta.secs.secs2.AbstractSecs2;
 import com.shimizukenta.secs.secs2.Secs2BuildException;
-import com.shimizukenta.secs.secs2.Secs2ByteBuffersBuilder;
+import com.shimizukenta.secs.secs2.Secs2BytesPackBuilder;
 import com.shimizukenta.secs.secs2.Secs2Exception;
 import com.shimizukenta.secs.secs2.Secs2IndexOutOfBoundsException;
 
@@ -32,10 +32,10 @@ public abstract class AbstractSecs2AutoNumber extends AbstractSecs2 {
 	abstract protected byte[] createNumberBytes();
 	
 	@Override
-	protected void putByteBuffers(Secs2ByteBuffersBuilder buffers) throws Secs2BuildException {
+	protected void putBytesPack(Secs2BytesPackBuilder builder) throws Secs2BuildException {
 		byte[] bs = createNumberBytes();
-		putHeaderBytesToByteBuffers(buffers, bs.length);
-		buffers.put(bs);
+		this.putHeaderBytesToBytesPack(builder, bs.length);
+		builder.put(bs);
 	}
 	
 	protected Number getNumber() {

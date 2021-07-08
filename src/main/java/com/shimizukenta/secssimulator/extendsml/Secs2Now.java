@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets;
 import com.shimizukenta.secs.gem.Clock;
 import com.shimizukenta.secs.secs2.AbstractSecs2;
 import com.shimizukenta.secs.secs2.Secs2BuildException;
-import com.shimizukenta.secs.secs2.Secs2ByteBuffersBuilder;
+import com.shimizukenta.secs.secs2.Secs2BytesPackBuilder;
 import com.shimizukenta.secs.secs2.Secs2Exception;
 import com.shimizukenta.secs.secs2.Secs2Item;
 import com.shimizukenta.secs.sml.SmlParseException;
@@ -59,10 +59,10 @@ public class Secs2Now extends AbstractSecs2 {
 	}
 	
 	@Override
-	protected void putByteBuffers(Secs2ByteBuffersBuilder buffers) throws Secs2BuildException {
+	protected void putBytesPack(Secs2BytesPackBuilder builder) throws Secs2BuildException {
 		byte[] bs = now().getBytes(StandardCharsets.US_ASCII);
-		putHeaderBytesToByteBuffers(buffers, bs.length);
-		buffers.put(bs);
+		this.putHeaderBytesToBytesPack(builder, bs.length);
+		builder.put(bs);
 	}
 	
 	@Override
@@ -84,6 +84,5 @@ public class Secs2Now extends AbstractSecs2 {
 	protected String toStringValue() {
 		return "\"" + now() + "\"";
 	}
-
 
 }

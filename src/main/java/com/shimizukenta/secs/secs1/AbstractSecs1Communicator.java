@@ -1,23 +1,19 @@
 package com.shimizukenta.secs.secs1;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.Optional;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.shimizukenta.secs.AbstractSecsCommunicator;
 import com.shimizukenta.secs.AbstractSecsWaitReplyMessageExceptionLog;
 import com.shimizukenta.secs.ByteArrayProperty;
-import com.shimizukenta.secs.InterruptableRunnable;
-import com.shimizukenta.secs.ReadOnlyTimeProperty;
 import com.shimizukenta.secs.SecsException;
 import com.shimizukenta.secs.SecsMessage;
 import com.shimizukenta.secs.SecsSendMessageException;
 import com.shimizukenta.secs.SecsWaitReplyMessageException;
 import com.shimizukenta.secs.secs2.Secs2;
+import com.shimizukenta.secs.secs2.Secs2Exception;
 
 /**
  * This abstract class is implementation of SECS-I (SEMI-E4).
@@ -32,30 +28,17 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 	protected static final byte ACK = (byte)0x06;
 	protected static final byte NAK = (byte)0x15;
 	
-	
 	private final Secs1CommunicatorConfig secs1Config;
-	private final Secs1SendReplyManager sendReplyManager;
 	private final ByteArrayProperty deviceIdBytes = ByteArrayProperty.newInstance(new byte[] {0, 0});
-	private final CircuitLoop circuit = new CircuitLoop();
 	
-	protected void circuitNotifyAll() {
-		synchronized ( circuit ) {
-			circuit.notifyAll();
-		}
-	}
-	
-	protected void circuitNotifyAll(InterruptableRunnable r) throws InterruptedException {
-		synchronized ( circuit ) {
-			r.run();
-			circuit.notifyAll();
-		}
-	}
+	private final ByteAndSecs1MessageQueue circuitQueue = new ByteAndSecs1MessageQueue();
+	private final Secs1SendMessageManager sendMgr = new Secs1SendMessageManager();
+	private final Secs1ReplyMessageManager replyMgr = new Secs1ReplyMessageManager();
 	
 	public AbstractSecs1Communicator(Secs1CommunicatorConfig config) {
 		super(config);
 		
 		this.secs1Config = config;
-		this.sendReplyManager = new Secs1SendReplyManager(this);
 		
 		this.secs1Config.deviceId().addChangeListener(n -> {
 			int v = n.intValue();
@@ -75,9 +58,11 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 	public void open() throws IOException {
 		super.open();
 		
-		executeLoopTask(circuit);
+		executeLoopTask(() -> {
+			entryCircuit();
+		});
 	}
-
+	
 	@Override
 	public void close() throws IOException {
 		
@@ -90,33 +75,19 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 		}
 	}
 	
-	
-	abstract protected Optional<Byte> pollByte();
-	abstract protected Optional<Byte> pollByte(byte[] request) throws InterruptedException;
-	abstract protected Optional<Byte> pollByte(ReadOnlyTimeProperty timeout) throws InterruptedException;
-	abstract protected Optional<Byte> pollByte(byte[] request, ReadOnlyTimeProperty timeout) throws InterruptedException;
-	
-	private Optional<Byte> pollByteT1() throws InterruptedException {
-		return pollByte(secs1Config.timeout().t1());
+	protected void putByte(byte b) throws InterruptedException {
+		this.circuitQueue.putByte(b);
 	}
 	
-	private Optional<Byte> pollByteT2() throws InterruptedException {
-		return pollByte(secs1Config.timeout().t2());
-	}
-	
-	private Optional<Byte> pollByteT4() throws InterruptedException {
-		return pollByte(secs1Config.timeout().t4());
-	}
-	
-	protected void pollByteUntilEmpty() {
-		while (pollByte().isPresent());
+	protected void putBytes(byte[] bs) throws InterruptedException {
+		this.circuitQueue.putBytes(bs);
 	}
 	
 	
-	abstract protected void sendByte(byte[] bs) throws SecsSendMessageException, SecsException, InterruptedException;
+	abstract protected void sendBytes(byte[] bs) throws SecsSendMessageException, SecsException, InterruptedException;
 	
 	private void sendByte(byte b) throws SecsSendMessageException, SecsException, InterruptedException {
-		sendByte(new byte[] {b});
+		this.sendBytes(new byte[] {b});
 	}
 	
 	@Override
@@ -125,7 +96,42 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 			, InterruptedException {
 		
 		try {
-			return sendReplyManager.send(msg);
+			
+			this.sendMgr.entry(msg);
+			
+			this.offerTrySendMsgPassThroughQueue(msg);
+			this.notifyLog(new Secs1TrySendMessageLog(msg));
+			
+			if ( msg.wbit() ) {
+				
+				try {
+					this.replyMgr.entry(msg);
+					
+					this.circuitQueue.putSecs1Message(msg);
+					
+					this.sendMgr.waitUntilSended(msg);
+					
+					Optional<Secs1Message> r = this.replyMgr.reply(msg, this.secs1Config().timeout().t3());
+					
+					if ( ! r.isPresent() ) {
+						throw new Secs1TimeoutT3Exception(msg);
+					}
+					
+					return r;
+				}
+				finally {
+					
+					this.replyMgr.exit(msg);
+				}
+				
+			} else {
+				
+				this.circuitQueue.putSecs1Message(msg);
+				
+				this.sendMgr.waitUntilSended(msg);
+				
+				return Optional.empty();
+			}
 		}
 		catch ( SecsWaitReplyMessageException e ) {
 			
@@ -140,6 +146,9 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 			notifyLog(e);
 			throw e;
 		}
+		finally {
+			this.sendMgr.exit(msg);
+		}
 	}
 	
 	@Override
@@ -151,7 +160,6 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 	public Secs1Message createSecs1Message(byte[] header, Secs2 body) {
 		return new Secs1Message(header, body);
 	}
-	
 	
 	private final AtomicInteger autoNumber = new AtomicInteger();
 	
@@ -224,346 +232,251 @@ public abstract class AbstractSecs1Communicator extends AbstractSecsCommunicator
 		return send(createSecs1Message(head, secs2)).map(msg -> (SecsMessage)msg);
 	}
 	
-	private enum NextCircuitControlBehavior {
+	private void entryCircuit() throws InterruptedException {
 		
-		ToReceiveBlock,
-		ToCircuitControl,
-		ToNextLoop,
+		ByteOrSecs1Message v = this.circuitQueue.takeByteOrSecs1Message();
 		
-		;
-	}
-	
-	private enum PollCircuitControl {
+		final Secs1MessageBlockPack pack = v.message();
 		
-		RX,
-		TX,
-		RETRY,
-		
-		;
-	}
-	
-	
-	private class CircuitLoop implements InterruptableRunnable {
-		
-		/**
-		 * Watch-dog-timer
-		 */
-		private final long wdt = 3000L;
-		
-		private Secs1MessageBlock presentBlock;
-		
-		public CircuitLoop() {
-			presentBlock = null;
-		}
-		
-		@Override
-		public void run() throws InterruptedException {
+		if ( pack == null ) {
 			
-			NextCircuitControlBehavior next = NextCircuitControlBehavior.ToNextLoop;
-			
-			synchronized ( this ) {
+			if ( v.isENQ() ) {
 				
-				if ( presentBlock == null ) {
-					presentBlock = sendReplyManager.pollBlock();
+				try {
+					this.receiveCircuit();
 				}
+				catch ( SecsException e ) {
+					this.notifyLog(e);
+				}
+			}
+			
+		} else {
+			
+			try {
 				
-				if ( presentBlock == null ) {
+				this.sendByte(ENQ);
+				
+				for (int retry = 0; retry <= this.secs1Config().retry().intValue(); ) {
 					
-					Byte b = pollByte().orElse(null);
+					Byte b = this.circuitQueue.pollByte(this.secs1Config().timeout().t2());
 					
 					if ( b == null ) {
 						
-						long t = secs1Config().timeout().t2().getMilliSeconds();
+						this.notifyLog(Secs1RetryCircuitControlLog.newInstance(retry));
+						retry += 1;
 						
-						if ( t > wdt ) {
-							this.wait(wdt);
-						} else {
-							this.wait(t / 2L);
+						this.sendByte(ENQ);
+						
+					} else if ( b.byteValue() == ENQ && ! this.secs1Config().isMaster().booleanValue() ) {
+							
+						try {
+							this.receiveCircuit();
+						}
+						catch ( SecsException e ) {
+							this.notifyLog(e);
 						}
 						
-					} else {
+						retry = 0;
+						pack.reset();
 						
-						if ( b.byteValue() == ENQ ) {
-							next = NextCircuitControlBehavior.ToReceiveBlock;
-						}
-					}
-					
-				} else {
-					
-					next = NextCircuitControlBehavior.ToCircuitControl;
-				}
-			}
-			
-			try {
-				switch ( next ) {
-				case ToReceiveBlock: {
-					receiveBlock();
-					break;
-				}
-				case ToCircuitControl: {
-					circuitControl();
-					break;
-				}
-				case ToNextLoop:
-				default: {
-					/* Nothing */
-				}
-				}
-			}
-			catch ( SecsException e ) {
-				notifyLog(e);
-			}
-		}
-		
-		private final byte[] request = new byte[] {ENQ, EOT};
-		
-		private PollCircuitControl pollCircuitControl() throws InterruptedException {
-			
-			Callable<PollCircuitControl> task = () -> {
-				
-				try {
-					for ( ;; ) {
-						Optional<Byte> op = pollByte(request);
+						this.sendByte(ENQ);
 						
-						if ( op.isPresent() ) {
+					} else if ( b.byteValue() == EOT ) {
+						
+						if ( this.sendCircuit(pack.present()) ) {
 							
-							byte b = op.get().byteValue();
-							
-							if ( ! secs1Config().isMaster().booleanValue() && b == ENQ ) {
-								return PollCircuitControl.RX;
+							if ( pack.ebit() ) {
+								
+								this.sendMgr.putSended(pack.message());
+								this.offerSendedMsgPassThroughQueue(pack.message());
+								this.notifyLog(new Secs1SendedMessageLog(pack.message()));
+								
+								return;
+								
+							} else {
+								
+								pack.next();
+								retry = 0;
+								
+								this.sendByte(ENQ);
 							}
 							
-							if ( b == EOT ) {
-								return PollCircuitControl.TX;
-							}
-						}
-					}
-				}
-				catch ( InterruptedException ignore ) {
-				}
-				
-				return PollCircuitControl.RETRY;
-			};
-			
-			try {
-				return executeInvokeAny(
-						Arrays.asList(task),
-						secs1Config().timeout().t2()
-						);
-			}
-			catch ( TimeoutException giveup ) {
-			}
-			catch ( ExecutionException e ) {
-				
-				Throwable t = e.getCause();
-				
-				if ( t instanceof RuntimeException ) {
-					throw (RuntimeException)t;
-				}
-				
-				notifyLog(t);
-			}
-			
-			return PollCircuitControl.RETRY;
-		}
-		
-		private void circuitControl() throws InterruptedException {
-			
-			try {
-				
-				for ( int counter = 0, m = secs1Config.retry().intValue(); counter <= m; ) {
-					
-					sendByte(ENQ);
-					
-					PollCircuitControl p = pollCircuitControl();
-					
-					switch ( p ) {
-					case RX: {
-						
-						receiveBlock();
-						return;
-						/* break; */
-					}
-					case TX: {
-						
-						if ( sendBlock() ) {
-							
-							return;
-							
 						} else {
 							
-							counter += 1;
-							notifyLog(Secs1RetryCircuitControlLog.newInstance(counter));
+							this.notifyLog(Secs1RetryCircuitControlLog.newInstance(retry));
+							retry += 1;
+							
+							this.sendByte(ENQ);
 						}
-						
-						break;
-					}
-					case RETRY: {
-						
-						counter += 1;
-						notifyLog(Secs1RetryCircuitControlLog.newInstance(counter));
-						
-						break;
-					}
 					}
 				}
 				
-				{
-					sendReplyManager.sendFailed(presentBlock, new Secs1RetryOverException());
-					
-					this.presentBlock = null;
-				}
+				this.sendMgr.putException(pack.message(), new Secs1RetryOverException());
+				
 			}
 			catch ( SecsException e ) {
-				
-				sendReplyManager.sendFailed(presentBlock, e);
-				
-				this.presentBlock = null;
-			}
-
-		}
-		
-		private void receiveBlock() throws SecsException, InterruptedException {
-			
-			pollByteUntilEmpty();
-			
-			sendByte(EOT);
-			
-			int lengthByte = 0;
-			byte[] bs;
-			
-			{
-				/*** read Length-Byte ***/
-				
-				Optional<Byte> op = pollByteT2();
-				
-				if ( op.isPresent() ) {
-					
-					byte b = op.get().byteValue();
-					
-					lengthByte = ((int)b) & 0xFF;
-					
-					if ( lengthByte < 10 || lengthByte > 254 ) {
-						
-						receiveBlockGarbage(Secs1IllegalLengthByteCircuitControlLog.newInstance(lengthByte));
-						
-						return;
-					}
-					
-					bs = new byte[lengthByte + 3];
-					bs[0] = b;
-					
-				} else {
-					
-					sendByte(NAK);
-					
-					notifyLog(Secs1TimeoutT2LengthByteCircuitColtrolLog.newInstance());
-					
-					return;
-				}
-			}
-			
-			for ( int pos = 1, m = bs.length ; pos < m ; ++pos ) {
-				
-				Optional<Byte> op = pollByteT1();
-				
-				if ( op.isPresent() ) {
-					
-					bs[pos] = op.get().byteValue();
-					
-				} else {
-					
-					sendByte(NAK);
-					
-					notifyLog(Secs1TimeoutT1CircuitControlLog.newInstance(pos));
-					
-					return;
-				}
-			}
-			
-			Secs1MessageBlock block = new Secs1MessageBlock(bs);
-			
-			if ( block.sumCheck() ) {
-				
-				sendByte(ACK);
-				
-				sendReplyManager.received(block);
-				
-				if ( ! block.ebit() ) {
-					
-					Optional<Byte> op = pollByteT4();
-					
-					if ( op.isPresent() ) {
-						
-						byte b = op.get();
-						
-						if ( b == ENQ ) {
-							
-							receiveBlock();
-							
-						} else {
-							
-							notifyLog(Secs1NotReceiveNextBlockEnqCircuitControlLog.newInstance(block, b));
-						}
-						
-					} else {
-						
-						notifyLog(Secs1TimeoutT4CircuitControlLog.newInstance(block));
-					}
-				}
-				
-			} else {
-				
-				receiveBlockGarbage(Secs1SumCheckMismatchCirsuitControlLog.newInstance());
+				this.sendMgr.putException(pack.message(), e);
+				this.notifyLog(e);
 			}
 		}
+	}
+	
+	/**
+	 * Secs1MessageBlock sender, Returns true if send success and receive ACK.
+	 * 
+	 * @param block
+	 * @return true if send success and receive ACK
+	 * @throws SecsSendMessageException
+	 * @throws SecsException
+	 * @throws InterruptedException
+	 */
+	private boolean sendCircuit(Secs1MessageBlock block)
+			throws SecsSendMessageException, SecsException, InterruptedException {
 		
-		private void receiveBlockGarbage(AbstractSecs1CircuitControlLog reasonLog) throws SecsException, InterruptedException {
-			
-			for ( ;; ) {
-				if ( ! pollByteT1().isPresent() ) {
-					break;
-				}
-			}
-			
-			sendByte(NAK);
-			
-			notifyLog(reasonLog);
-		}
+		this.notifyLog(new Secs1TrySendMessageBlockLog(block));
 		
-		private boolean sendBlock() throws SecsException, InterruptedException {
+		this.sendBytes(block.getBytes());
+		
+		Byte b = this.circuitQueue.pollByte(this.secs1Config().timeout().t2());
+		
+		if ( b == null ) {
 			
-			notifyLog(new Secs1TrySendMessageBlockLog(presentBlock));
-			
-			pollByteUntilEmpty();
-			
-			sendByte(presentBlock.getBytes());
-			
-			Optional<Byte> op = pollByteT2();
-			
-			if ( op.isPresent() ) {
-				
-				byte b = op.get();
-				
-				if ( b == ACK ) {
-					
-					sendReplyManager.sended(presentBlock);
-					
-					this.presentBlock = null;
-					
-					return true;
-					
-				} else {
-					
-					notifyLog(Secs1NotReceiveAckCircuitControlLog.newInstance(presentBlock, b));
-				}
-				
-			} else {
-				
-				notifyLog(Secs1TimeoutT2AckCircuitControlLog.newInstance(presentBlock));
-			}
-			
+			this.notifyLog(Secs1TimeoutT2AckCircuitControlLog.newInstance(block));
 			return false;
+			
+		} else if ( b.byteValue() == ACK ) {
+			
+			this.notifyLog(new Secs1SendedMessageBlockLog(block));
+			return true;
+			
+		} else {
+			
+			this.notifyLog(Secs1NotReceiveAckCircuitControlLog.newInstance(block, b));
+			return false;
+		}
+	}
+	
+	private final LinkedList<Secs1MessageBlock> cacheBlocks = new LinkedList<>();
+	
+	private void receiveCircuit() throws SecsException, InterruptedException {
+		
+		this.sendByte(EOT);
+		
+		byte[] bs = new byte[257];
+		
+		{
+			int r = this.circuitQueue.pollBytes(bs, 0, 1, this.secs1Config().timeout().t2());
+			
+			if ( r <= 0 ) {
+				this.sendByte(NAK);
+				this.notifyLog(Secs1TimeoutT2LengthByteCircuitColtrolLog.newInstance());
+				return;
+			}
+		}
+		
+		{
+			int len = (int)(bs[0]) & 0x000000FF;
+			
+			if ( len < 10 || len > 254 ) {
+				this.circuitQueue.garbageBytes(this.secs1Config().timeout().t1());
+				this.sendByte(NAK);
+				this.notifyLog(Secs1IllegalLengthByteCircuitControlLog.newInstance(len));
+				return;
+			}
+			
+			for (int pos = 1, m = (len + 3); pos < m;) {
+				
+				int r = this.circuitQueue.pollBytes(bs, pos, m, this.secs1Config().timeout().t1());
+				
+				if ( r <= 0 ) {
+					this.sendByte(NAK);
+					this.notifyLog(Secs1TimeoutT1CircuitControlLog.newInstance(pos));
+					return;
+				}
+				
+				pos += r;
+			}
+		}
+		
+		Secs1MessageBlock block = new Secs1MessageBlock(bs);
+		
+		if ( block.sumCheck() ) {
+			
+			this.sendByte(ACK);
+			
+		} else {
+			
+			this.circuitQueue.garbageBytes(this.secs1Config().timeout().t1());
+			this.sendByte(NAK);
+			this.notifyLog(Secs1SumCheckMismatchCirsuitControlLog.newInstance());
+			return;
+		}
+		
+		this.notifyLog(new Secs1ReceiveMessageBlockLog(block));
+		
+		if (block.deviceId() != this.secs1Config().deviceId().intValue()) {
+			return;
+		}
+		
+		if ( this.cacheBlocks.isEmpty() ) {
+			
+			this.cacheBlocks.add(block);
+			
+		} else {
+			
+			Secs1MessageBlock prev = this.cacheBlocks.getLast();
+			
+			if ( prev.sameSystemBytes(block) ) {
+				
+				if ( prev.isNextBlock(block) ) {
+					this.cacheBlocks.add(block);
+				}
+				
+			} else {
+				
+				this.cacheBlocks.clear();
+				this.cacheBlocks.add(block);
+			}
+		}
+		
+		if ( block.ebit() ) {
+			
+			try {
+				Secs1Message s1msg = Secs1MessageBlockConverter.toSecs1Message(this.cacheBlocks);
+				
+				this.replyMgr.put(s1msg).ifPresent(m -> {
+					this.offerMsgRecvQueue(m);
+				});
+				
+				this.offerRecvMsgPassThroughQueue(s1msg);
+				this.notifyLog(new Secs1ReceiveMessageLog(s1msg));
+				
+			}
+			catch ( Secs2Exception e ) {
+				this.notifyLog(e);
+			}
+			finally {
+				this.cacheBlocks.clear();
+			}
+			
+		} else {
+			
+			this.replyMgr.resetTimer(block);
+			
+			Byte b = this.circuitQueue.pollByte(this.secs1Config().timeout().t4());
+			
+			if ( b == null ) {
+				
+				this.notifyLog(Secs1TimeoutT4CircuitControlLog.newInstance(block));
+				
+			} else if ( b.byteValue() == ENQ ) {
+				
+				this.receiveCircuit();
+				
+			} else {
+				
+				this.notifyLog(Secs1NotReceiveNextBlockEnqCircuitControlLog.newInstance(block, b));
+			}
 		}
 	}
 	

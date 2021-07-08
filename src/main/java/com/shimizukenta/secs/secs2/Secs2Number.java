@@ -76,12 +76,12 @@ abstract public class Secs2Number<T extends Number> extends AbstractSecs2 {
 	}
 	
 	@Override
-	protected void putByteBuffers(Secs2ByteBuffersBuilder buffers) throws Secs2BuildException {
+	protected void putBytesPack(Secs2BytesPackBuilder builder) throws Secs2BuildException {
 		byte[] bs = bytes();
-		putHeaderBytesToByteBuffers(buffers, bs.length);
-		buffers.put(bs);
+		this.putHeaderBytesToBytesPack(builder, bs.length);
+		builder.put(bs);
 	}
-	
+
 	@Override
 	protected int getInt(int index) throws Secs2Exception {
 		

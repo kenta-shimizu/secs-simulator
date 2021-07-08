@@ -39,10 +39,10 @@ public class Secs2Ascii extends AbstractSecs2 {
 	}
 	
 	@Override
-	protected void putByteBuffers(Secs2ByteBuffersBuilder buffers) throws Secs2BuildException {
+	protected void putBytesPack(Secs2BytesPackBuilder builder) throws Secs2BuildException {
 		byte[] bs = bytes();
-		putHeaderBytesToByteBuffers(buffers, bs.length);
-		buffers.put(bs);
+		putHeaderBytesToBytesPack(builder, bs.length);
+		builder.put(bs);
 	}
 	
 	private synchronized String ascii() {

@@ -62,15 +62,15 @@ public class Secs2List extends AbstractSecs2 {
 	}
 	
 	@Override
-	protected void putByteBuffers(Secs2ByteBuffersBuilder buffers) throws Secs2BuildException {
+	protected void putBytesPack(Secs2BytesPackBuilder builder) throws Secs2BuildException {
 		
-		putHeaderBytesToByteBuffers(buffers, size());
+		this.putHeaderBytesToBytesPack(builder, size());
 		
 		for ( Secs2 ss : values ) {
 			
 			if ( ss instanceof AbstractSecs2 ) {
 				
-				((AbstractSecs2)ss).putByteBuffers(buffers);
+				((AbstractSecs2)ss).putBytesPack(builder);
 				
 			} else {
 				

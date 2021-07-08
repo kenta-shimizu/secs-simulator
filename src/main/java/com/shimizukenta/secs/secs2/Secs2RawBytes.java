@@ -30,10 +30,10 @@ public class Secs2RawBytes extends AbstractSecs2 {
 	public Secs2Item secs2Item() {
 		return Secs2Item.UNDEFINED;
 	}
-
+	
 	@Override
-	protected void putByteBuffers(Secs2ByteBuffersBuilder buffers) {
-		buffers.put(bs);
+	protected void putBytesPack(Secs2BytesPackBuilder builder) throws Secs2BuildException {
+		builder.put(bs);
 	}
 	
 	@Override
