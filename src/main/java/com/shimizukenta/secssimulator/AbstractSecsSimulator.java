@@ -1,8 +1,6 @@
 package com.shimizukenta.secssimulator;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -174,19 +172,6 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 					private static final long serialVersionUID = -3607161900228501443L;
 				});
 			});
-			
-			if ( config.protocol().get() == SecsSimulatorProtocol.SECS1_ON_TCP_IP_RECEIVER ) {
-				
-				SocketAddress s = new InetSocketAddress("127.0.0.1", 0);
-				tcpipAdapter = TcpIpAdapter.open(config.secs1AdapterSocketAddress().get(), s);
-				
-				SocketAddress bx = tcpipAdapter.socketAddressB();
-				config.secs1OnTcpIpReceiverCommunicatorConfig().socketAddress(bx);
-				
-				tcpipAdapter.addThrowableListener((sock, t) -> {
-					/* Nothing */
-				});
-			}
 			
 			comm.open();
 			

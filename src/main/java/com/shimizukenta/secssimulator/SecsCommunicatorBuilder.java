@@ -3,6 +3,7 @@ package com.shimizukenta.secssimulator;
 import com.shimizukenta.secs.SecsCommunicator;
 import com.shimizukenta.secs.hsmsss.HsmsSsCommunicator;
 import com.shimizukenta.secs.secs1ontcpip.Secs1OnTcpIpCommunicator;
+import com.shimizukenta.secs.secs1ontcpip.Secs1OnTcpIpReceiverCommunicator;
 
 public class SecsCommunicatorBuilder {
 
@@ -34,7 +35,7 @@ public class SecsCommunicatorBuilder {
 		}
 		case SECS1_ON_TCP_IP_RECEIVER: {
 			
-			return Secs1OnTcpIpCommunicator.newInstance(config.secs1OnTcpIpReceiverCommunicatorConfig());
+			return Secs1OnTcpIpReceiverCommunicator.newInstance(config.secs1OnTcpIpReceiverCommunicatorConfig());
 			/* break */
 		}
 		default: {

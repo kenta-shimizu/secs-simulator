@@ -26,6 +26,7 @@ import com.shimizukenta.secs.SecsTimeout;
 import com.shimizukenta.secs.hsmsss.HsmsSsCommunicatorConfig;
 import com.shimizukenta.secs.hsmsss.HsmsSsProtocol;
 import com.shimizukenta.secs.secs1ontcpip.Secs1OnTcpIpCommunicatorConfig;
+import com.shimizukenta.secs.secs1ontcpip.Secs1OnTcpIpReceiverCommunicatorConfig;
 import com.shimizukenta.secs.sml.SmlParseException;
 import com.shimizukenta.secssimulator.macro.MacroRecipeParseException;
 
@@ -50,8 +51,7 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 	
 	private final HsmsSsCommunicatorConfig hsmsSsCommConfig = new HsmsSsCommunicatorConfig();
 	private final Secs1OnTcpIpCommunicatorConfig secs1OnTcpIpCommConfig = new Secs1OnTcpIpCommunicatorConfig();
-	private final Secs1OnTcpIpCommunicatorConfig secs1OnTcpIpRecvCommConfig = new Secs1OnTcpIpCommunicatorConfig();
-	private final Property<SocketAddress> secs1AdapterSocketAddress = Property.newInstance(null);
+	private final Secs1OnTcpIpReceiverCommunicatorConfig secs1OnTcpIpRecvCommConfig = new Secs1OnTcpIpReceiverCommunicatorConfig();
 	
 	private final SmlAliasPairPool smlPool = new SmlAliasPairPool();
 	private final MacroRecipePairPool macroPool = new MacroRecipePairPool();
@@ -143,14 +143,9 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 		return secs1OnTcpIpCommConfig;
 	}
 	
-	public Secs1OnTcpIpCommunicatorConfig secs1OnTcpIpReceiverCommunicatorConfig() {
+	public Secs1OnTcpIpReceiverCommunicatorConfig secs1OnTcpIpReceiverCommunicatorConfig() {
 		return secs1OnTcpIpRecvCommConfig;
 	}
-	
-	public Property<SocketAddress> secs1AdapterSocketAddress() {
-		return secs1AdapterSocketAddress;
-	}
-	
 	
 	public Property<SecsSimulatorProtocol> protocol() {
 		return protocol;
@@ -184,7 +179,7 @@ public abstract class AbstractSecsSimulatorConfig implements Serializable {
 		synchronized ( this ) {
 			this.hsmsSsCommConfig.socketAddress(socketAddress);
 			this.secs1OnTcpIpCommConfig.socketAddress(socketAddress);
-			this.secs1AdapterSocketAddress.set(socketAddress);
+			this.secs1OnTcpIpRecvCommConfig.socketAddress(socketAddress);
 		}
 	}
 	
