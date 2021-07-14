@@ -156,17 +156,28 @@ public class SmlAliasPairPool {
 	 */
 	public Optional<SmlMessage> optionalOnlyOneStreamFunction(int strm, int func) {
 		
-		Collection<SmlMessage> smls = pairs.stream()
+		final List<SmlMessage> smls = getReplyMessages(strm, func);
+		
+		if ( smls.size() == 1 ) {
+			return Optional.of(smls.get(0));
+		}
+		
+		return Optional.empty();
+	}
+	
+	/**
+	 * Returns SmlMessages of same Stream and Funcion Number.
+	 * 
+	 * @param strm of SmlMessage stream-number
+	 * @param func of SmlMessage function-number
+	 * @return SmlMessages of same Stream and Funcion Number
+	 */
+	public List<SmlMessage> getReplyMessages(int strm, int func) {
+		return pairs.stream()
 				.map(p -> p.sml())
 				.filter(sm -> sm.getStream() == strm)
 				.filter(sm -> sm.getFunction() == func)
 				.collect(Collectors.toList());
-		
-		if ( smls.size() == 1 ) {
-			return smls.stream().findAny();
-		}
-		
-		return Optional.empty();
 	}
 	
 	/**

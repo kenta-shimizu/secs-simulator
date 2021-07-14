@@ -495,11 +495,12 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		{
 			/*** Auto-reply ***/
 			
-			final SmlMessage reply = autoReply(primaryMsg).orElse(null);
+			final List<SmlMessage> replys = autoReplys(primaryMsg);
+			
+			if ( replys.size() == 1 ) {
 				
-			if ( reply != null ) {
 				try {
-					send(primaryMsg, reply);
+					send(primaryMsg, replys.get(0));
 				}
 				catch (SecsSimulatorException ignore) {
 				}
@@ -554,7 +555,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		}
 	}
 	
-	private Optional<SmlMessage> autoReply(SecsMessage primary) {
+	private List<SmlMessage> autoReplys(SecsMessage primary) {
 		
 		if (
 				primary.wbit()
@@ -571,11 +572,11 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 					) {
 				
 				return config.smlAliasPairPool()
-						.optionalOnlyOneStreamFunction(strm, func + 1);
+						.getReplyMessages(strm, func + 1);
 			}
 		}
 		
-		return Optional.empty();
+		return Collections.emptyList();
 	}
 	
 	private Optional<LocalSecsMessage> autoReplySxF0(SecsMessage primary) {
@@ -598,7 +599,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 		
 		if ( primary.wbit() ) {
 			
-			if ( ! config.smlAliasPairPool().hasReplyMessages(strm, func) ) {
+			if ( ! config.smlAliasPairPool().hasReplyMessages(strm, func + 1) ) {
 				
 				if ( config.smlAliasPairPool().hasReplyMessages(strm) ) {
 					
@@ -638,7 +639,7 @@ public abstract class AbstractSecsSimulator implements SecsSimulator {
 			
 			if ( strm >= 0 ) {
 				
-				if ( ! config.smlAliasPairPool().hasReplyMessages(strm, func) ) {
+				if ( ! config.smlAliasPairPool().hasReplyMessages(strm, func + 1) ) {
 					
 					if ( config.smlAliasPairPool().hasReplyMessages(strm) ) {
 						
